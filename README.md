@@ -9,6 +9,7 @@ As soon as the minimum number of gamers is reached, i.e. 3, the game can be star
 The game can have up to 6 players.
 
 During his turn, a gamer can:
+
 - roll a dice to be able to move in the house. The sides of the die represent the rooms of the house + one or more entrances;
 - formulate an assumption if it is in a room;
 - formulate an accusation
@@ -22,11 +23,14 @@ Gamers who make wrong accusations must continue to show cards to other participa
 or they can redeal their cards and leave the game.
 
 ## Architecture
+
 The adopting architecture is a distributed P2P (peer-to-peer) architecture with a discovery server.
 
 Communications between different peers and discovery server happen through RESTful APIs and socket events.
 RESTful API and socket event specifications are provided via Swagger:
+
 - [CluedoRestAPI](https://app.swaggerhub.com/apis/marica.pasquali/CluedoRestAPI/1.0.0) (OpenAPI)
+
 - [CluedoSocketAPI](https://app.swaggerhub.com/apis/marica.pasquali/CluedoSocketAPI/1.0.0) (AsyncAPI)
 
 ### Peer
@@ -37,6 +41,7 @@ The server side of a peer is also used as a backup server for other peers' games
 The client side allows the user to play through a graphical interface, which communicates with the server side through the REST API in response to user interaction.
 
 ### Discovery Server
+
 The Discovery Server allows newly started peers to know the addresses of other peers and after that, the peer can communicate with other peers through REST API and/or socket connections.
 Registration of peers (in an 'online' state) to the server occurs immediately after the server side of the peer is started.
 Upon creation of a game, the status of the peer changes to 'shareable'.

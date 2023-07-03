@@ -1,0 +1,43 @@
+{
+  "name": "cluedo",
+  "version": "1.0.0",
+  "description": "This is a digital and distributed version of the well-known board game Cluedo",
+  "scripts": {
+    "test": "npm test -ws",
+    "coverage": "npm run coverage -ws",
+    "lint": "gts lint",
+    "lint:fix": "gts fix"
+  },
+  "pre-commit": [
+    "lint:fix"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://dvcs.apice.unibo.it/pika-lab/courses/ds/projects/ds-project-pasquali-ay2021.git"
+  },
+  "author": "Marica Pasquali",
+  "license": "ISC",
+  "workspaces": [
+    "discovery",
+    "peer"
+  ],
+  "devDependencies": {
+    "@types/mocha": "^10.0.1",
+    "@types/node": "^14.11.2",
+    "cross-env": "^7.0.3",
+    "gts": "^3.1.1",
+    "mocha": "^10.2.0",
+    "nodemon": "^2.0.22",
+    "nyc": "^15.1.0",
+    "pino-pretty": "^10.0.0",
+    "pre-commit": "^1.2.2",
+    "ts-node": "^10.9.1",
+    "tsconfig-paths": "^4.2.0",
+    "typescript": "4.4"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "pino": "^8.14.1",
+    "pino-http": "^8.3.3"
+  }
+}

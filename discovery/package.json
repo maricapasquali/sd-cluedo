@@ -1,0 +1,18 @@
+{
+  "name": "discovery-server",
+  "version": "1.0.0",
+  "description": "This represents a discovery server.",
+  "main": "src/index.ts",
+  "scripts": {
+    "start": "cross-env NODE_ENV=production ts-node --transpile-only src",
+    "dev": "nodemon src/index.ts --config ../nodemon.json | pino-pretty",
+    "test": "mocha",
+    "coverage": "nyc npm test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://dvcs.apice.unibo.it/pika-lab/courses/ds/projects/ds-project-pasquali-ay2021.git"
+  },
+  "author": "Marica Pasquali",
+  "license": "ISC"
+}
