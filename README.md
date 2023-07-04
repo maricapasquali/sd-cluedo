@@ -3,9 +3,9 @@
 The project consists in the design and implementation of a distributed version of the well-known board game
 [_Cluedo_](https://it.wikipedia.org/wiki/Cluedo).
 
-In this version of the game, users can create or join games created by other users. 
-Initially a waiting "room" is created, in which users wait for the arrival of other users. 
-As soon as the minimum number of gamers is reached, i.e. 3, the game can be started by the gamer who entered first. 
+In this version of the game, users can create or join games created by other users.
+Initially a waiting "room" is created, in which users wait for the arrival of other users.
+As soon as the minimum number of gamers is reached, i.e. 3, the game can be started by the gamer who entered first.
 The game can have up to 6 players.
 
 During his turn, a gamer can:
@@ -14,12 +14,12 @@ During his turn, a gamer can:
 - formulate an assumption if it is in a room;
 - formulate an accusation
 
-In the case of an assumption, the other gamers must then refute it (if possible), showing at most one card that contains one of 
-the elements named by the gamer whose turn it is; this action demonstrates that the card definitely cannot be inside the envelope 
+In the case of an assumption, the other gamers must then refute it (if possible), showing at most one card that contains one of
+the elements named by the gamer whose turn it is; this action demonstrates that the card definitely cannot be inside the envelope
 containing the solution to the murder.
-In the case of an accusation, the current gamer, if the accusation is incorrect, is out of the game; otherwise, 
+In the case of an accusation, the current gamer, if the accusation is incorrect, is out of the game; otherwise,
 if he "pronounces" a correct accusation, the solution cards are revealed to the other players and the game ends.
-Gamers who make wrong accusations must continue to show cards to other participants for the remainder of the game, 
+Gamers who make wrong accusations must continue to show cards to other participants for the remainder of the game,
 or they can redeal their cards and leave the game.
 
 ## Architecture
@@ -47,3 +47,79 @@ Registration of peers (in an 'online' state) to the server occurs immediately af
 Upon creation of a game, the status of the peer changes to 'shareable'.
 The peer's status changes back to 'online' if they have no more games to share.
 In case of connection errors and therefore in case the peer is no longer reachable, the status of the peer will be set to 'offline'.
+
+## Deployment in production mode
+
+### Local
+
+```bash
+npm install
+```
+
+Discovery server
+
+```bash
+PORT=<some-free-port> npm start -w discovery
+```
+
+Defaults:
+
+- ```PORT=3000```
+
+Peer
+
+```bash
+PORT=<some-free-port> DISCOVERY_ADDRESS=<https-address-of-discovery-server> npm start -w peer
+```
+
+Defaults:
+
+- ```PORT=3001```
+
+- ```DISCOVERY_ADDRESS=https://localhost:3000```
+
+### Docker
+
+#### Build and start all project
+
+```bash
+bash ./deploy-scripts/all.up.sh -n <number-of-peer-to-up> -d <host-port-discovery-server> -p <host-port-first-peer>
+```
+
+Defaults:
+
+- ```<number-of-peer-to-up> = 1```
+
+- ```<host-port-discovery-server> = 3000```
+
+- ```<host-port-first-peer> = 3001```
+
+#### Build and start single components
+
+Discovery server
+
+```bash
+bash ./deploy-scripts/discovery.build.sh
+
+bash ./deploy-scripts/discovery.start.sh -p <host-port-discovery-server>
+```
+
+Defaults:
+
+- ```<host-port-discovery-server> = 3000```
+
+Peer
+
+```bash
+bash ./deploy-scripts/peer.build.sh
+
+bash ./deploy-scripts/peer.start.sh -n <number-of-peer-to-up> -p <host-port-first-peer> -d <https-address-discovery-server>
+```
+
+Defaults:
+
+- ```<number-of-peer-to-up> = 1```
+
+- ```<host-port-first-peer> = 3001```
+
+- ```<https-address-discovery-server> = https://discovery:3000```
