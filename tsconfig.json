@@ -8,12 +8,16 @@
   "compilerOptions": {
     "rootDir": ".",
     "outDir": "build",
+    "typeRoots": [
+      "@types",
+      "node_modules/@types"
+    ],
     "paths": {
       "@utils/*" : [
         "./libs/utils/*"
       ],
-      "@model/*" : [
-        "./libs/model/*"
+      "@model" : [
+        "./libs/model"
       ]
     }
   },
