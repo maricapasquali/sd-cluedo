@@ -42,9 +42,9 @@ RUN npm install
 
 COPY ./discovery.entrypoint.sh /cluedo
 
-EXPOSE 3000
+RUN npm run build
 
-ARG PORT
+EXPOSE 3000
 
 CMD [ "/cluedo/discovery.entrypoint.sh"]
 
@@ -61,6 +61,8 @@ WORKDIR /cluedo
 RUN npm install
 
 COPY ./peer.entrypoint.sh /cluedo
+
+RUN npm run build
 
 EXPOSE 3001
 

@@ -1,0 +1,48 @@
+image: node:latest
+
+before_script:
+  - npm install
+
+cache:
+  paths:
+    - node_modules/
+
+build:
+  stage: build
+  script:
+  - echo 'Build application'
+  - npm run build
+
+deploy-discovery:
+  stage: deploy
+  before_script:
+  - npm run build
+  script:
+  - echo 'Run discovery server'
+  - npm start -w discovery
+
+deploy-peer:
+  stage: deploy
+  before_script:
+  - npm run build
+  script:
+  - echo 'Run discovery server'
+  - npm start -w peer
+
+test-discovery:
+  stage: test
+  script:
+    - echo 'Run tests of discovery server'
+    - npm test -w discovery
+
+test-peer:
+  stage: test
+  script:
+    - echo 'Run tests of peer'
+    - npm test -w peer
+
+lint:
+  stage: test
+  script:
+    - echo 'Run lint'
+    - npm run lint
