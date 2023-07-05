@@ -54,6 +54,7 @@ In case of connection errors and therefore in case the peer is no longer reachab
 
 ```bash
 npm install
+npm run build
 ```
 
 Discovery server

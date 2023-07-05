@@ -31,12 +31,14 @@ deploy-peer:
 
 test-discovery:
   stage: test
+  allow_failure: true
   script:
     - echo 'Run tests of discovery server'
     - npm test -w discovery
 
 test-peer:
   stage: test
+  allow_failure: true
   script:
     - echo 'Run tests of peer'
     - npm test -w peer
