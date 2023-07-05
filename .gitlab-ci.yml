@@ -1,5 +1,9 @@
 image: node:latest
 
+before_script:
+  - echo 'Install dependencies'
+  - npm install
+  
 cache:
   paths:
     - node_modules/
@@ -7,8 +11,6 @@ cache:
 build:
   stage: build
   script:
-  - echo 'Install dependencies'
-  - npm install
   - echo 'Build application'
   - npm run build
   artifacts:
