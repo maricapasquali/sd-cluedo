@@ -1,8 +1,5 @@
 image: node:latest
 
-before_script:
-  - npm install
-
 cache:
   paths:
     - node_modules/
@@ -10,21 +7,28 @@ cache:
 build:
   stage: build
   script:
+  - echo 'Install dependencies'
+  - npm install
   - echo 'Build application'
   - npm run build
+  artifacts:
+    paths:
+      - build/
 
 deploy-discovery:
   stage: deploy
-  before_script:
-  - npm run build
+  needs:
+    - job: build
+      artifacts: true
   script:
   - echo 'Run discovery server'
   - npm start -w discovery
 
 deploy-peer:
   stage: deploy
-  before_script:
-  - npm run build
+  needs:
+    - job: build
+      artifacts: true
   script:
   - echo 'Run discovery server'
   - npm start -w peer
