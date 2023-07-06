@@ -4,7 +4,7 @@
     "@typescript-eslint/no-empty-interface": ["off"],
     "@typescript-eslint/no-namespace": ["off"],
     "node/no-extraneous-import": ["error", {
-      "allowModules": ["chai", "uuid"]
+      "allowModules": ["chai", "uuid", "axios", "express"]
     }]
   }
 }
