@@ -1,19 +1,31 @@
+const _peers: Peer[] = [];
+
 export function peers(): Peer[] {
-  throw new Error('Not implemented');
+  return _peers;
 }
 
 export function addPeer(peer: Peer): void {
-  throw new Error('Not implemented');
+  _peers.push(peer);
 }
 
 export function updatePeer(id: string, status: string): void {
-  throw new Error('Not implemented');
+  const index: number = findIndexPeer(id);
+  if (index > -1) {
+    _peers.splice(index, 1, {..._peers[index], status});
+  }
 }
 
 export function removePeer(id: string): void {
-  throw new Error('Not implemented');
+  const index: number = findIndexPeer(id);
+  if (index > -1) {
+    _peers.splice(index, 1);
+  }
 }
 
 export function findPeer(id: string): Peer | undefined {
-  throw new Error('Not implemented');
+  return _peers[findIndexPeer(id)];
+}
+
+function findIndexPeer(id: string): number {
+  return _peers.findIndex(p => p.identifier === id);
 }
