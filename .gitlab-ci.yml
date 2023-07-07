@@ -28,7 +28,7 @@ deploy-discovery:
       artifacts: true
   script:
   - echo 'Run discovery server'
-  - NODE_ENV=$ENV_CI npm start -w discovery
+  - ENV_CI=$ENV_CI npm start -w discovery
 
 deploy-peer:
   stage: deploy
@@ -37,7 +37,7 @@ deploy-peer:
       artifacts: true
   script:
   - echo 'Run discovery server'
-  - NODE_ENV=$ENV_CI npm start -w peer
+  - ENV_CI=$ENV_CI npm start -w peer
 
 test-discovery:
   stage: test

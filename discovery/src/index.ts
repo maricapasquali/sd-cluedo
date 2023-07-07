@@ -34,7 +34,7 @@ const httsServer: Server = createServer(
 
 httsServer.listen(internalPort, () => {
   logger.debug('Listen on ' + internalPort);
-  if (process.env.NODE_ENV === 'CI/CD') httsServer.close();
+  if (process.env.ENV_CI === 'CI/CD') httsServer.close();
 });
 
 export default httsServer;
