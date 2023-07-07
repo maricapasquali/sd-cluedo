@@ -12,8 +12,10 @@ export default function (
   it('201 created', async () => {
     try {
       axiosInstance.interceptors.response.use(response => {
-        axiosInstance.defaults.headers['authorization'] =
-          response.headers['x-access-token'];
+        if (response.headers['x-access-token']) {
+          axiosInstance.defaults.headers['authorization'] =
+            response.headers['x-access-token'];
+        }
         return response;
       });
       const res: AxiosResponse = await axiosInstance.post(
@@ -29,8 +31,8 @@ export default function (
       const accessToken = res.headers['x-access-token'] as string;
       should.exist(accessToken);
       accessToken.should.be.contains('Bearer');
-      const _peers: Peer[] = res.data;
-      _peers.should.contains(peer);
+      const _peers: Peer[] = res.data?.peers;
+      _peers.should.deep.contains(peer);
     } catch (err: any) {
       assert.fail(err?.message);
     }

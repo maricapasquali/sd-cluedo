@@ -10,19 +10,6 @@ export default function (
   args: {peer: Peer}
 ): void {
   const {peer} = args;
-  it('200 deleted peer', async () => {
-    try {
-      const res: AxiosResponse = await axiosInstance.get(RouteName.PEERS, {
-        headers: {
-          'X-Forwarded-For': peer.address,
-        },
-      });
-      const _peers: Peer[] = res.data;
-      _peers.should.contains(peer);
-    } catch (err: any) {
-      assert.fail(err?.message);
-    }
-  });
 
   it('400 error', done => {
     axiosInstance
@@ -100,5 +87,22 @@ export default function (
           done(err);
         }
       });
+  });
+
+  it('200 deleted peer', async () => {
+    try {
+      const res: AxiosResponse = await axiosInstance.delete(RouteName.PEER, {
+        headers: {
+          'X-Forwarded-For': peer.address,
+        },
+        urlParams: {
+          id: peer.identifier,
+        },
+      });
+      const _peer: Peer = res.data;
+      _peer.should.deep.equals(peer);
+    } catch (err: any) {
+      assert.fail(err?.message);
+    }
   });
 }

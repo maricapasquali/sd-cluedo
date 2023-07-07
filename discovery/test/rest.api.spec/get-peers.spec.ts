@@ -11,28 +11,11 @@ export default function (
   const {peer} = args;
   it('200 list of peers', async () => {
     try {
-      const res: AxiosResponse = await axiosInstance.get(RouteName.PEERS, {
-        headers: {
-          'X-Forwarded-For': peer.address,
-        },
-      });
+      const res: AxiosResponse = await axiosInstance.get(RouteName.PEERS);
       const _peers: Peer[] = res.data;
-      _peers.should.contains(peer);
+      _peers.should.deep.contains(peer);
     } catch (err: any) {
       assert.fail(err?.message);
     }
-  });
-
-  it('400 error', done => {
-    axiosInstance
-      .get(RouteName.PEERS)
-      .then(done)
-      .catch(err => {
-        if (err?.response?.status === 400) {
-          done();
-        } else {
-          done(err);
-        }
-      });
   });
 }

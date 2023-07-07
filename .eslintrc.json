@@ -3,8 +3,9 @@
   "rules": {
     "@typescript-eslint/no-empty-interface": ["off"],
     "@typescript-eslint/no-namespace": ["off"],
+    "@typescript-eslint/no-explicit-any": ["off"],
     "node/no-extraneous-import": ["error", {
-      "allowModules": ["chai", "uuid", "axios", "express"]
+      "allowModules": ["chai", "uuid", "axios", "express", "runtypes", "jsonwebtoken"]
     }]
   }
 }

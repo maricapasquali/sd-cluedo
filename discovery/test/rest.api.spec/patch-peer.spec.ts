@@ -28,6 +28,7 @@ export default function (
       );
       const _peer: Peer = res.data;
       _peer.should.have.property('status').equal(Peers.Status.SHAREABLE);
+      peer.status = Peers.Status.SHAREABLE;
     } catch (err: any) {
       assert.fail(err?.message);
     }

@@ -1,16 +1,59 @@
 import * as express from 'express';
+import {Response, Request, NextFunction} from 'express';
 import * as controller from './controller';
+import * as middleware from './middleware';
+import {logger} from '@utils/logger';
+import {ITokensManager} from '@utils/jwt.token';
+import {ResponseStatus} from '@utils/rest-api';
 
 export enum RouteName {
-  PEERS = '/peers',
-  PEER = '/peers/:id',
+  PEERS = '/api/v1/peers',
+  PEER = '/api/v1/peers/:id',
 }
 
-export default function (app: express.Application): void {
-  app.route(RouteName.PEERS).post(controller.postPeer).get(controller.getPeers);
+export default function (
+  app: express.Application,
+  tokensManger: ITokensManager
+): void {
+  app
+    .route(RouteName.PEERS)
+    .post(
+      middleware.post.handlerBadRequest,
+      middleware.post.handlerForbiddenRequest,
+      middleware.post.handlerConflictRequest,
+      controller.postPeer(tokensManger)
+    )
+    .get(controller.getPeers);
 
   app
     .route(RouteName.PEER)
-    .patch(controller.updateStatusPeer)
-    .delete(controller.deletePeer);
+    .patch(
+      middleware.patch.handlerBadRequest,
+      middleware.patch.handlerNotFoundRequest,
+      middleware.patch.handlerUnauthorizedRequest(tokensManger),
+      middleware.patch.handlerForbiddenRequest(tokensManger),
+      controller.updateStatusPeer
+    )
+    .delete(
+      middleware.remove.handlerBadRequest,
+      middleware.remove.handlerNotFoundRequest,
+      middleware.remove.handlerUnauthorizedRequest(tokensManger),
+      middleware.remove.handlerForbiddenRequest(tokensManger),
+      controller.deletePeer(tokensManger)
+    );
+
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    logger.error(err?.stack || err);
+    res
+      .status(ResponseStatus.SERVER_ERROR)
+      .json({message: 'Server Error', cause: err?.stack || err});
+  });
+
+  app.use((req: Request, res: Response) => {
+    logger.debug(req);
+    res.status(ResponseStatus.NOT_FOUND).json({
+      message: req.method + ' ' + req.path + ' not found',
+      cause: 'wrong path or wrong method',
+    });
+  });
 }
