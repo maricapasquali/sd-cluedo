@@ -1,8 +1,10 @@
-import {assert, should as shouldFunc} from 'chai';
-import {AxiosInstance, AxiosResponse} from 'axios';
+import {should as shouldFunc} from 'chai';
+import {AxiosInstance} from 'axios';
 import {RouteName} from 'discovery/src/routes';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
+import {handlerResponseErrorCheck} from './helper';
+import {ResponseStatus} from '@utils/rest-api/responses';
 
 const should = shouldFunc();
 
@@ -12,9 +14,9 @@ export default function (
 ): void {
   const {peer} = args;
 
-  it('200 updated peer', async () => {
-    try {
-      const res: AxiosResponse = await axiosInstance.patch(
+  it('200 updated peer', done => {
+    axiosInstance
+      .patch(
         RouteName.PEER,
         {status: Peers.Status.SHAREABLE},
         {
@@ -25,13 +27,15 @@ export default function (
             id: peer.identifier,
           },
         }
-      );
-      const _peer: Peer = res.data;
-      _peer.should.have.property('status').equal(Peers.Status.SHAREABLE);
-      peer.status = Peers.Status.SHAREABLE;
-    } catch (err: any) {
-      assert.fail(err?.message);
-    }
+      )
+      .then(res => {
+        res?.status?.should.equal(ResponseStatus.OK);
+        const _peer: Peer = res.data;
+        _peer.should.have.property('status').equal(Peers.Status.SHAREABLE);
+        peer.status = Peers.Status.SHAREABLE;
+        done();
+      })
+      .catch(done);
   });
 
   it('400 error', done => {
@@ -49,13 +53,9 @@ export default function (
         }
       )
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 400) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST))
+      .then(done)
+      .catch(done);
   });
 
   it('401 error', done => {
@@ -74,13 +74,9 @@ export default function (
         }
       )
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 401) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.UNAUTHORIZED))
+      .then(done)
+      .catch(done);
   });
 
   it('403 error', done => {
@@ -98,13 +94,9 @@ export default function (
         }
       )
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 403) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.FORBIDDEN))
+      .then(done)
+      .catch(done);
   });
 
   it('404 error', done => {
@@ -122,12 +114,8 @@ export default function (
         }
       )
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 404) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.NOT_FOUND))
+      .then(done)
+      .catch(done);
   });
 }

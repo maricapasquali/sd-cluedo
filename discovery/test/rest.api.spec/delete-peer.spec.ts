@@ -1,7 +1,9 @@
-import {assert, should as shouldFunc} from 'chai';
-import {AxiosInstance, AxiosResponse} from 'axios';
+import {should as shouldFunc} from 'chai';
+import {AxiosInstance} from 'axios';
 import {RouteName} from 'discovery/src/routes';
 import {v4 as uuid} from 'uuid';
+import {handlerResponseErrorCheck} from './helper';
+import {ResponseStatus} from '@utils/rest-api/responses';
 
 const should = shouldFunc();
 
@@ -19,13 +21,9 @@ export default function (
         },
       })
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 400) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST))
+      .then(done)
+      .catch(done);
   });
 
   it('401 error', done => {
@@ -40,13 +38,9 @@ export default function (
         },
       })
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 401) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.UNAUTHORIZED))
+      .then(done)
+      .catch(done);
   });
 
   it('403 error', done => {
@@ -60,13 +54,9 @@ export default function (
         },
       })
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 403) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.FORBIDDEN))
+      .then(done)
+      .catch(done);
   });
 
   it('404 error', done => {
@@ -80,29 +70,27 @@ export default function (
         },
       })
       .then(done)
-      .catch(err => {
-        if (err?.response?.status === 404) {
-          done();
-        } else {
-          done(err);
-        }
-      });
+      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.NOT_FOUND))
+      .then(done)
+      .catch(done);
   });
 
-  it('200 deleted peer', async () => {
-    try {
-      const res: AxiosResponse = await axiosInstance.delete(RouteName.PEER, {
+  it('200 deleted peer', done => {
+    axiosInstance
+      .delete(RouteName.PEER, {
         headers: {
           'X-Forwarded-For': peer.address,
         },
         urlParams: {
           id: peer.identifier,
         },
-      });
-      const _peer: Peer = res.data;
-      _peer.should.deep.equals(peer);
-    } catch (err: any) {
-      assert.fail(err?.message);
-    }
+      })
+      .then(res => {
+        res?.status?.should.equal(ResponseStatus.OK);
+        const _peer: Peer = res.data;
+        _peer.should.deep.equals(peer);
+        done();
+      })
+      .catch(done);
   });
 }

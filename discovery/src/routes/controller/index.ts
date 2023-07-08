@@ -1,23 +1,25 @@
 import {Response, Request, NextFunction} from 'express';
-import {addPeer, peers, updatePeer, removePeer} from '../../../src/manager';
-import {catchableRequestHandler, ResponseStatus} from '@utils/rest-api';
+import {addPeer, peers, updatePeer, removePeer} from '../../manager';
+import {CreatedSender, OkSender} from '@utils/rest-api/responses';
 import {ITokensManager} from '@utils/jwt.token';
+import {catchableHandlerRequestPromise} from '@utils/rest-api';
 
 export function postPeer(tokenManager: ITokensManager): Middleware {
   return (req: Request, res: Response, next: NextFunction) => {
-    catchableRequestHandler(next, () => {
+    catchableHandlerRequestPromise(() => {
       const {peer} = res.locals;
       addPeer(peer);
       const accessToken: string = tokenManager.createToken(
         peer.identifier,
         peer
       );
-      res
-        .setHeader('x-access-token', ['Bearer', accessToken].join(' '))
-        .status(ResponseStatus.CREATED)
-        .json({newPeer: peer, peers: peers()});
-      return ResponseStatus.CREATED;
-    });
+      return CreatedSender.json(
+        res.setHeader('x-access-token', ['Bearer', accessToken].join(' ')),
+        {newPeer: peer, peers: peers()}
+      );
+    })
+      .then(next)
+      .catch(next);
   };
 }
 
@@ -26,10 +28,11 @@ export function getPeers(
   res: Response,
   next: NextFunction
 ): void {
-  catchableRequestHandler(next, () => {
-    res.status(ResponseStatus.OK).json(peers());
-    return ResponseStatus.OK;
-  });
+  catchableHandlerRequestPromise(() => {
+    return OkSender.json(res, peers());
+  })
+    .then(next)
+    .catch(next);
 }
 
 export function updateStatusPeer(
@@ -37,23 +40,25 @@ export function updateStatusPeer(
   res: Response,
   next: NextFunction
 ): void {
-  catchableRequestHandler(next, () => {
+  catchableHandlerRequestPromise(() => {
     const {peer} = res.locals;
     updatePeer(peer.identifier, req.body.status);
     peer.status = req.body.status;
-    res.status(ResponseStatus.OK).json(peer);
-    return ResponseStatus.OK;
-  });
+    return OkSender.json(res, peer);
+  })
+    .then(next)
+    .catch(next);
 }
 
 export function deletePeer(tokenManager: ITokensManager): Middleware {
   return (req: Request, res: Response, next: NextFunction) => {
-    catchableRequestHandler(next, () => {
+    catchableHandlerRequestPromise(() => {
       const {peer} = res.locals;
       removePeer(peer.identifier);
       tokenManager.removeToken(peer.identifier);
-      res.status(ResponseStatus.OK).json(peer);
-      return ResponseStatus.OK;
-    });
+      return OkSender.json(res, peer);
+    })
+      .then(next)
+      .catch(next);
   };
 }

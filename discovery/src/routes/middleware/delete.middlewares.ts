@@ -1,34 +1,40 @@
 import {NextFunction, Request, Response} from 'express';
-import {ResponseStatus, catchableRequestHandler} from '@utils/rest-api';
+import {
+  catchableHandlerRequestPromise,
+  HeadersFormatter,
+} from '@utils/rest-api';
 import * as net from 'net';
 import {findPeer} from '../../manager';
 import {ITokensManager} from '@utils/jwt.token';
+import {
+  BadRequestSender,
+  ForbiddenSender,
+  NotFoundSender,
+  UnauthorizedSender,
+} from '@utils/rest-api/responses';
 
 export function handlerBadRequest(
   req: Request,
   res: Response,
   next: NextFunction
 ): void {
-  catchableRequestHandler(next, () => {
-    const xForwardedFor = req.headers['x-forwarded-for'] as string;
-    const ipClient = xForwardedFor?.split(',')[0].trim();
-    if (!ipClient || ipClient.length === 0) {
-      res.status(ResponseStatus.BAD_REQUEST).json({
+  catchableHandlerRequestPromise(() => {
+    const ipClient = HeadersFormatter.clientIp(req);
+    if (!ipClient) {
+      return BadRequestSender.json(res, {
         message: 'Missing header "x-forwarded-for"',
-        cause: 'Bad request',
       });
-      return ResponseStatus.BAD_REQUEST;
     }
     if (!net.isIPv4(ipClient)) {
-      res.status(ResponseStatus.BAD_REQUEST).json({
+      return BadRequestSender.json(res, {
         message: '"x-forwarded-for" value is not a ipv4',
-        cause: 'Bad request',
       });
-      return ResponseStatus.BAD_REQUEST;
     }
     res.locals = {ipClient};
     return;
-  });
+  })
+    .then(next)
+    .catch(next);
 }
 
 export function handlerNotFoundRequest(
@@ -36,48 +42,43 @@ export function handlerNotFoundRequest(
   res: Response,
   next: NextFunction
 ): void {
-  catchableRequestHandler(next, () => {
+  catchableHandlerRequestPromise(() => {
     const {id} = req.params;
     res.locals.peer = findPeer(id);
     if (!res.locals.peer) {
-      res.status(ResponseStatus.NOT_FOUND).json({
+      return NotFoundSender.json(res, {
         message: 'resource ' + id + ' not found',
-        cause: 'Not Found',
       });
-      return ResponseStatus.NOT_FOUND;
     }
     return;
-  });
+  })
+    .then(next)
+    .catch(next);
 }
 
 export function handlerUnauthorizedRequest(
   tokenManager: ITokensManager
 ): Middleware {
   return (req: Request, res: Response, next: NextFunction) => {
-    catchableRequestHandler(next, () => {
+    catchableHandlerRequestPromise(() => {
       const {id} = req.params;
-      const authorization = req.headers['authorization'];
+      const authorization = req.headers.authorization;
       if (!authorization) {
-        res.status(ResponseStatus.UNAUTHORIZED).json({
+        return UnauthorizedSender.json(res, {
           message: 'Missing header "authorization"',
-          cause: 'unauthenticated',
         });
-        return ResponseStatus.UNAUTHORIZED;
       }
-      const authorizationSplit = authorization.split(' ');
-      if (
-        authorizationSplit[0] !== 'Bearer' ||
-        !tokenManager.checker(id, authorizationSplit[1])
-      ) {
-        res.status(ResponseStatus.UNAUTHORIZED).json({
+      const {scheme, parameters} = HeadersFormatter.authorization(req);
+      if (scheme !== 'Bearer' || !tokenManager.checker(id, parameters)) {
+        return UnauthorizedSender.json(res, {
           message: 'token is not a bearer token or it is not present on server',
-          cause: 'unauthenticated',
         });
-        return ResponseStatus.UNAUTHORIZED;
       }
-      res.locals.accessToken = authorizationSplit[1];
+      res.locals.accessToken = parameters;
       return;
-    });
+    })
+      .then(next)
+      .catch(next);
   };
 }
 
@@ -85,24 +86,22 @@ export function handlerForbiddenRequest(
   tokenManager: ITokensManager
 ): Middleware {
   return (req: Request, res: Response, next: NextFunction) => {
-    catchableRequestHandler(next, () => {
+    catchableHandlerRequestPromise(() => {
       const {ipClient, accessToken, peer} = res.locals;
       if (ipClient !== peer?.address) {
-        res.status(ResponseStatus.FORBIDDEN).json({
+        return ForbiddenSender.json(res, {
           message: '"x-forwarded-for" value is different to peer.address',
-          cause: 'Forbidden',
         });
-        return ResponseStatus.FORBIDDEN;
       }
       if (!tokenManager.validity(peer.identifier, accessToken)) {
-        res.status(ResponseStatus.FORBIDDEN).json({
+        return ForbiddenSender.json(res, {
           message:
             'bearer token is not of peer with identifier' + req.params.id,
-          cause: 'Forbidden',
         });
-        return ResponseStatus.FORBIDDEN;
       }
       return;
-    });
+    })
+      .then(next)
+      .catch(next);
   };
 }

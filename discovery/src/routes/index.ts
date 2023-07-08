@@ -4,7 +4,7 @@ import * as controller from './controller';
 import * as middleware from './middleware';
 import {logger} from '@utils/logger';
 import {ITokensManager} from '@utils/jwt.token';
-import {ResponseStatus} from '@utils/rest-api';
+import {NotFoundSender, ServerErrorSender} from '@utils/rest-api/responses';
 
 export enum RouteName {
   PEERS = '/api/v1/peers',
@@ -44,14 +44,15 @@ export default function (
 
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     logger.error(err?.stack || err);
-    res
-      .status(ResponseStatus.SERVER_ERROR)
-      .json({message: 'Server Error', cause: err?.stack || err});
+    ServerErrorSender.json(res, {
+      message: 'Server Error',
+      cause: err?.stack || err,
+    });
   });
 
   app.use((req: Request, res: Response) => {
     logger.debug(req);
-    res.status(ResponseStatus.NOT_FOUND).json({
+    NotFoundSender.json(res, {
       message: req.method + ' ' + req.path + ' not found',
       cause: 'wrong path or wrong method',
     });

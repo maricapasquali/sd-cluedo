@@ -6,7 +6,9 @@ WORKDIR /cluedo
 
 COPY ./package*.json /cluedo
 
-COPY ./tsconfig.json /cluedo
+COPY ./*tsconfig.json /cluedo
+
+COPY ./@types /cluedo/@types
 
 COPY ./libs /cluedo/libs
 
@@ -32,9 +34,7 @@ FROM node-alpine AS discovery
 
 WORKDIR /cluedo/discovery
 
-COPY ./discovery/package*.json /cluedo/discovery
-
-COPY ./discovery/src /cluedo/discovery/src
+COPY ./discovery /cluedo/discovery
 
 WORKDIR /cluedo
 
@@ -52,9 +52,7 @@ FROM node-mongo-alpine AS peer
 
 WORKDIR /cluedo/peer
 
-COPY ./peer/package*.json /cluedo/peer
-
-COPY ./peer/src /cluedo/peer/src
+COPY ./peer /cluedo/peer
 
 WORKDIR /cluedo
 
