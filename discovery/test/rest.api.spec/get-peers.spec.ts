@@ -1,6 +1,6 @@
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
-import {RouteName} from 'discovery/src/routes';
+import {RestAPIRouteName} from 'discovery/src/routes';
 import {ResponseStatus} from '@utils/rest-api/responses';
 
 const should = shouldFunc();
@@ -12,7 +12,7 @@ export default function (
   const {peer} = args;
   it('200 list of peers', done => {
     axiosInstance
-      .get(RouteName.PEERS)
+      .get(RestAPIRouteName.PEERS)
       .then(res => {
         res?.status?.should.equal(ResponseStatus.OK);
         const _peers: Peer[] = res.data;

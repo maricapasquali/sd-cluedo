@@ -1,6 +1,6 @@
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
-import {RouteName} from 'discovery/src/routes';
+import {RestAPIRouteName} from 'discovery/src/routes';
 import {v4 as uuid} from 'uuid';
 import {handlerResponseErrorCheck} from './helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
@@ -15,7 +15,7 @@ export default function (
 
   it('400 error', done => {
     axiosInstance
-      .delete(RouteName.PEER, {
+      .delete(RestAPIRouteName.PEER, {
         urlParams: {
           id: peer.identifier,
         },
@@ -28,7 +28,7 @@ export default function (
 
   it('401 error', done => {
     axiosInstance
-      .delete(RouteName.PEER, {
+      .delete(RestAPIRouteName.PEER, {
         headers: {
           'X-Forwarded-For': peer.address,
           authorization: undefined,
@@ -45,7 +45,7 @@ export default function (
 
   it('403 error', done => {
     axiosInstance
-      .delete(RouteName.PEER, {
+      .delete(RestAPIRouteName.PEER, {
         headers: {
           'X-Forwarded-For': '192.168.1.2',
         },
@@ -61,7 +61,7 @@ export default function (
 
   it('404 error', done => {
     axiosInstance
-      .delete(RouteName.PEER, {
+      .delete(RestAPIRouteName.PEER, {
         headers: {
           'X-Forwarded-For': peer.address,
         },
@@ -77,7 +77,7 @@ export default function (
 
   it('200 deleted peer', done => {
     axiosInstance
-      .delete(RouteName.PEER, {
+      .delete(RestAPIRouteName.PEER, {
         headers: {
           'X-Forwarded-For': peer.address,
         },

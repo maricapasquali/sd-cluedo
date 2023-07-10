@@ -7,7 +7,7 @@ import {createAxiosInstance} from '@utils/axios';
 import {logger} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
-import {RouteName} from '../../src/routes';
+import {RestAPIRouteName} from '../../src/routes';
 import {Server} from 'https';
 import {handlerResponseErrorCheck} from './helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
@@ -36,16 +36,22 @@ describe('Rest API', () => {
     });
   });
 
-  describe('POST ' + RouteName.PEERS, () => postTests(axiosInstance, {peer}));
-  describe('GET ' + RouteName.PEERS, () => getTests(axiosInstance, {peer}));
-  describe('PATCH ' + RouteName.PEER, () => patchTests(axiosInstance, {peer}));
-  describe('DELETE ' + RouteName.PEER, () =>
+  describe('POST ' + RestAPIRouteName.PEERS, () =>
+    postTests(axiosInstance, {peer})
+  );
+  describe('GET ' + RestAPIRouteName.PEERS, () =>
+    getTests(axiosInstance, {peer})
+  );
+  describe('PATCH ' + RestAPIRouteName.PEER, () =>
+    patchTests(axiosInstance, {peer})
+  );
+  describe('DELETE ' + RestAPIRouteName.PEER, () =>
     deleteTests(axiosInstance, {peer})
   );
 
-  it('NOT FOUND PUT ' + RouteName.PEERS, done => {
+  it('NOT FOUND PUT ' + RestAPIRouteName.PEERS, done => {
     axiosInstance
-      .put(RouteName.PEERS, peer)
+      .put(RestAPIRouteName.PEERS, peer)
       .then(done)
       .catch(err => handlerResponseErrorCheck(err, ResponseStatus.NOT_FOUND))
       .then(done)

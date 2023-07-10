@@ -1,6 +1,6 @@
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
-import {RouteName} from 'discovery/src/routes';
+import {RestAPIRouteName} from 'discovery/src/routes';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
 import {handlerResponseErrorCheck} from './helper';
@@ -17,7 +17,7 @@ export default function (
   it('200 updated peer', done => {
     axiosInstance
       .patch(
-        RouteName.PEER,
+        RestAPIRouteName.PEER,
         {status: Peers.Status.SHAREABLE},
         {
           headers: {
@@ -41,7 +41,7 @@ export default function (
   it('400 error', done => {
     axiosInstance
       .patch(
-        RouteName.PEER,
+        RestAPIRouteName.PEER,
         {status: 'stopped'},
         {
           headers: {
@@ -61,7 +61,7 @@ export default function (
   it('401 error', done => {
     axiosInstance
       .patch(
-        RouteName.PEER,
+        RestAPIRouteName.PEER,
         {status: Peers.Status.ONLINE},
         {
           headers: {
@@ -82,7 +82,7 @@ export default function (
   it('403 error', done => {
     axiosInstance
       .patch(
-        RouteName.PEER,
+        RestAPIRouteName.PEER,
         {status: Peers.Status.ONLINE},
         {
           headers: {
@@ -102,7 +102,7 @@ export default function (
   it('404 error', done => {
     axiosInstance
       .patch(
-        RouteName.PEER,
+        RestAPIRouteName.PEER,
         {status: Peers.Status.ONLINE},
         {
           headers: {

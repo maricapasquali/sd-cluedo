@@ -1,4 +1,6 @@
 import {Request} from 'express';
+import {ITokensManager} from '@utils/tokens-manager';
+import {Server} from 'socket.io';
 
 export function catchableHandlerRequestPromise(
   fun: () => number | void
@@ -11,6 +13,17 @@ export function catchableHandlerRequestPromise(
       reject(err);
     }
   });
+}
+
+export namespace AppGetter {
+  export function tokensManger(req: Request): ITokensManager {
+    const tokensManager: ITokensManager = req.app.get('tokensManager');
+    if (!tokensManager) throw new Error('"tokensManager" is not set');
+    return tokensManager;
+  }
+  export function socketServer(req: Request): Server {
+    return req.app.get('socket');
+  }
 }
 
 export namespace HeadersFormatter {

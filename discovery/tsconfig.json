@@ -3,7 +3,6 @@
   "compilerOptions": {
     "baseUrl": "..",
     "typeRoots": [
-      "./@types",
       "../@types",
       "../node_modules/@types"
     ]

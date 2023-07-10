@@ -6,8 +6,8 @@ import {Server} from 'socket.io';
 export interface HTTPSServerConfig {
   options: ServerOptions;
   uses?: RequestHandler[];
-  routes: (app: express.Application, ...args: any) => void;
-  routesArgs: any[];
+  routes: (app: express.Application) => void;
+  sets?: {[key: string]: any};
   additionalOptions?: any;
 }
 export interface SocketServerConfig {
@@ -24,16 +24,17 @@ export function createHTTPSServer({
   options,
   uses = [],
   routes,
-  routesArgs,
+  sets = {},
 }: HTTPSServerConfig) {
   const app: express.Application = express();
   uses.forEach(h => app.use(h));
-  routes(app, ...routesArgs);
+  Object.entries(sets).forEach(([k, v]) => app.set(k, v));
+  routes(app);
   return createServer(options, app);
 }
 
 export function createHTTPSServerWithSocketServer(
-  {options, uses = [], routes, routesArgs}: HTTPSServerConfig,
+  {options, uses = [], routes, sets = {}}: HTTPSServerConfig,
   {options: socketOptions, initSocketHandler}: SocketServerConfig
 ): HTTPSServerWithSocket {
   const app: express.Application = express();
@@ -49,6 +50,7 @@ export function createHTTPSServerWithSocketServer(
   });
   initSocketHandler(socketServer);
   app.set('socket', socketServer);
-  routes(app, ...routesArgs);
+  Object.entries(sets).forEach(([k, v]) => app.set(k, v));
+  routes(app);
   return {httpsServer, socketServer};
 }

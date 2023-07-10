@@ -1,5 +1,5 @@
 import {should as shouldFunc} from 'chai';
-import {peers, addPeer, updatePeer, removePeer, findPeer} from '../src/manager';
+import PeersManager from '../src/managers/peers';
 import {Peers} from '@model';
 import {v4 as uuid} from 'uuid';
 
@@ -14,29 +14,29 @@ describe('Discovery Manager', () => {
     hostname: 'localhost',
   };
 
-  it('#peers()', () => {
-    peers().should.have.lengthOf(0);
+  it('peers', () => {
+    PeersManager.peers.should.have.lengthOf(0);
   });
 
   it('#addPeer()', () => {
-    addPeer(peer);
-    const _peers: Peer[] = peers();
+    PeersManager.addPeer(peer);
+    const _peers: Peer[] = PeersManager.peers;
     _peers.should.have.lengthOf(1);
     _peers.should.contains(peer);
   });
 
   it('#updatePeer()', () => {
-    should.exist(findPeer(peer.identifier));
-    updatePeer(peer.identifier, Peers.Status.SHAREABLE);
-    peers().should.have.lengthOf(1);
-    findPeer(peer.identifier)
+    should.exist(PeersManager.findPeer(peer.identifier));
+    PeersManager.updatePeer(peer.identifier, Peers.Status.SHAREABLE);
+    PeersManager.peers.should.have.lengthOf(1);
+    PeersManager.findPeer(peer.identifier)
       ?.should.have.property('status')
       .equal(Peers.Status.SHAREABLE);
   });
 
   it('#removePeer()', () => {
-    removePeer(peer.identifier);
-    const _peers: Peer[] = peers();
+    PeersManager.removePeer(peer.identifier);
+    const _peers: Peer[] = PeersManager.peers;
     _peers.should.have.lengthOf(0);
     _peers.should.not.contains(peer);
   });

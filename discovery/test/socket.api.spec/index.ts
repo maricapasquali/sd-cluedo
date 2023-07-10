@@ -3,13 +3,14 @@ import {Server as HTTPSServer} from 'https';
 import {logger} from '@utils/logger';
 import {io as Client, Socket} from 'socket.io-client';
 import {Server} from 'socket.io';
-import {NamespaceEvent} from '../../src/socket';
+import {DiscoveryPeerEvent} from '../../src/socket';
 import {v4 as uuid} from 'uuid';
 import {AxiosInstance} from 'axios';
-import {RouteName} from '../../src/routes';
+import {RestAPIRouteName} from '../../src/routes';
 import {createAxiosInstance} from '@utils/axios';
 import {Peers} from '@model';
 import {should as shouldFunc} from 'chai';
+import {promises} from './helper';
 
 const should = shouldFunc();
 
@@ -84,7 +85,7 @@ describe('Socket API', () => {
         );
         posts.push(
           axiosInstance
-            .post(RouteName.PEERS, peer, {
+            .post(RestAPIRouteName.PEERS, peer, {
               headers: {'x-forwarded-for': peer.address},
             })
             .then(res => {
@@ -117,7 +118,7 @@ describe('Socket API', () => {
     });
   });
 
-  describe(NamespaceEvent.PEER + ' event', () => {
+  describe(DiscoveryPeerEvent.PEER + ' event', () => {
     it('when one peer posts himself, other peers should receive his information', done => {
       socketPeer = Client(discoveryServerAddress, {
         secure: true,
@@ -134,25 +135,25 @@ describe('Socket API', () => {
           logger.error(socketPeer.id + ': err ', err);
         });
 
-      const receiver = [];
-      for (const client of socketPeers) {
-        receiver.push(
-          new Promise<number>((resolve, reject) => {
-            client.once(NamespaceEvent.PEER, _peer => {
-              try {
-                logger.debug("Event '%s' (add new peer)", NamespaceEvent.PEER);
-                _peer.should.deep.equal(peer);
-                resolve(200);
-              } catch (err) {
-                reject(err);
-              }
-            });
-          })
-        );
-      }
+      const receiver = promises<number>(socketPeers, peerAsClient => {
+        return (resolve, reject) => {
+          peerAsClient.once(DiscoveryPeerEvent.PEER, (_peer: PeerMessage) => {
+            try {
+              logger.debug(
+                "Event '%s' (add new peer)",
+                DiscoveryPeerEvent.PEER
+              );
+              _peer.should.deep.equal(peer);
+              resolve(200);
+            } catch (err) {
+              reject(err);
+            }
+          });
+        };
+      });
 
       const post = axiosInstance
-        .post(RouteName.PEERS, peer, {
+        .post(RestAPIRouteName.PEERS, peer, {
           headers: {'x-forwarded-for': peer.address},
         })
         .then(res => res.status);
@@ -166,31 +167,28 @@ describe('Socket API', () => {
     });
 
     it('when one peer changes his status, other peers should receive it', done => {
-      const receiver = [];
-      for (const client of socketPeers) {
-        receiver.push(
-          new Promise<number>((resolve, reject) => {
-            client.once(NamespaceEvent.PEER, _peer => {
-              try {
-                logger.debug(
-                  "Event '%s' (update status peer)",
-                  NamespaceEvent.PEER
-                );
-                _peer.should.have
-                  .property('status')
-                  .equal(Peers.Status.SHAREABLE);
-                resolve(200);
-              } catch (err) {
-                logger.error(err);
-                reject(err);
-              }
-            });
-          })
-        );
-      }
+      const receiver = promises<number>(socketPeers, peerAsClient => {
+        return (resolve, reject) => {
+          peerAsClient.once(DiscoveryPeerEvent.PEER, (_peer: PeerMessage) => {
+            try {
+              logger.debug(
+                "Event '%s' (update status peer)",
+                DiscoveryPeerEvent.PEER
+              );
+              _peer.should.have
+                .property('status')
+                .equal(Peers.Status.SHAREABLE);
+              resolve(200);
+            } catch (err) {
+              logger.error(err);
+              reject(err);
+            }
+          });
+        };
+      });
       const updateStatusPromise = axiosInstance
         .patch(
-          RouteName.PEER,
+          RestAPIRouteName.PEER,
           {status: Peers.Status.SHAREABLE},
           {
             headers: {'x-forwarded-for': peer.address},
@@ -212,17 +210,17 @@ describe('Socket API', () => {
     });
   });
 
-  describe(NamespaceEvent.PEER_DELETE + ' event', () => {
+  describe(DiscoveryPeerEvent.PEER_DELETE + ' event', () => {
     it('when one peer deletes himself, other peers should receive it', done => {
-      const receiver = [];
-      for (const client of socketPeers) {
-        receiver.push(
-          new Promise<number>((resolve, reject) => {
-            client.once(NamespaceEvent.PEER_DELETE, _peer => {
+      const receiver = promises<number>(socketPeers, peerAsClient => {
+        return (resolve, reject) => {
+          peerAsClient.once(
+            DiscoveryPeerEvent.PEER_DELETE,
+            (_peer: PeerMessage) => {
               try {
                 logger.debug(
                   "Event '%s' (delete peer) ",
-                  NamespaceEvent.PEER_DELETE
+                  DiscoveryPeerEvent.PEER_DELETE
                 );
                 _peer.should.deep.equal(peer);
                 resolve(200);
@@ -230,12 +228,13 @@ describe('Socket API', () => {
                 logger.error(err);
                 reject(err);
               }
-            });
-          })
-        );
-      }
+            }
+          );
+        };
+      });
+
       const deletePromise = axiosInstance
-        .delete(RouteName.PEER, {
+        .delete(RestAPIRouteName.PEER, {
           headers: {'x-forwarded-for': peer.address},
           urlParams: {
             id: peer.identifier,
@@ -251,11 +250,11 @@ describe('Socket API', () => {
     });
   });
 
-  describe(NamespaceEvent.PEER_DEVICES + ' event', () => {
+  describe(DiscoveryPeerEvent.PEER_DEVICES + ' event', () => {
     it('when a new client connects to the peer, discovery server should receive the updated number of peer clients', done => {
       const _numConnectedDevices: PeerDeviceMessage = 3;
       socketPeers[0].emit(
-        NamespaceEvent.PEER_DEVICES,
+        DiscoveryPeerEvent.PEER_DEVICES,
         _numConnectedDevices,
         (response: any) => {
           logger.debug(response);
@@ -266,13 +265,16 @@ describe('Socket API', () => {
     });
 
     it('when a peer disconnects, other peers should receive it', done => {
-      const receiver = [];
-      for (const client of socketPeers.filter((s, i) => i > 0)) {
-        receiver.push(
-          new Promise<number>((resolve, reject) => {
-            client.once(NamespaceEvent.PEER, _peer => {
+      const receiver = promises<number>(
+        socketPeers.filter((s, i) => i > 0),
+        peerAsClient => {
+          return (resolve, reject) => {
+            peerAsClient.once(DiscoveryPeerEvent.PEER, (_peer: PeerMessage) => {
               try {
-                logger.debug("Event '%s' (offline peer) ", NamespaceEvent.PEER);
+                logger.debug(
+                  "Event '%s' (offline peer) ",
+                  DiscoveryPeerEvent.PEER
+                );
                 _peer.should.have
                   .property('status')
                   .equal(Peers.Status.OFFLINE);
@@ -282,9 +284,9 @@ describe('Socket API', () => {
                 reject(err);
               }
             });
-          })
-        );
-      }
+          };
+        }
+      );
       Promise.all([...receiver])
         .then(() => done())
         .catch(done);

@@ -1,11 +1,11 @@
 import {Server, Socket} from 'socket.io';
 import {logger} from '@utils/logger';
 
-import {findPeer, updatePeer} from '../manager';
-import {PeerDeviceManager} from '../devices-manager';
+import PeersManager from '../managers/peers';
+import PeersDevicesManager from '../managers/peers/devices';
 import {Peers} from '@model';
 
-export namespace NamespaceEvent {
+export namespace DiscoveryPeerEvent {
   export const PEER = '/discovery/peer';
   export const PEER_DELETE = PEER + '/delete';
   export const PEER_DEVICES = PEER + '/devices';
@@ -25,7 +25,7 @@ export default function handlerSocket(socketServer: Server): void {
         socket.handshake.auth.peerId
       );
       const {peerId, nConnectedDevice} = socket.handshake.auth;
-      PeerDeviceManager.addNumberOfPeerDevices(peerId, nConnectedDevice);
+      PeersDevicesManager.addNumberOfPeerDevices(peerId, nConnectedDevice);
 
       socket.on('disconnect', reason => {
         logger.debug(
@@ -34,24 +34,27 @@ export default function handlerSocket(socketServer: Server): void {
           socket.handshake.auth.peerId,
           reason
         );
-        PeerDeviceManager.removeNumberOfPeerDevices(
+        PeersDevicesManager.removeNumberOfPeerDevices(
           socket.handshake.auth.peerId
         );
-        updatePeer(socket.handshake.auth.peerId, Peers.Status.OFFLINE);
-        const peer = findPeer(socket.handshake.auth.peerId);
+        PeersManager.updatePeer(
+          socket.handshake.auth.peerId,
+          Peers.Status.OFFLINE
+        );
+        const peer = PeersManager.findPeer(socket.handshake.auth.peerId);
         if (peer) {
-          socketServer.emit(NamespaceEvent.PEER, peer as PeerMessage);
+          socketServer.emit(DiscoveryPeerEvent.PEER, peer as PeerMessage);
         }
       });
 
-      socket.on(NamespaceEvent.PEER_DEVICES, (nClients, ack) => {
+      socket.on(DiscoveryPeerEvent.PEER_DEVICES, (nClients, ack) => {
         logger.debug(
           _socketDebugStr + '# connected clients = %s',
           socket.id,
           socket.handshake.auth.peerId,
           nClients
         );
-        PeerDeviceManager.addNumberOfPeerDevices(
+        PeersDevicesManager.addNumberOfPeerDevices(
           socket.handshake.auth.peerId,
           nClients
         );

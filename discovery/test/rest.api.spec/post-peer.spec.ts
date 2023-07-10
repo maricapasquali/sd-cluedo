@@ -1,6 +1,6 @@
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
-import {RouteName} from 'discovery/src/routes';
+import {RestAPIRouteName} from 'discovery/src/routes';
 import {handlerResponseErrorCheck} from './helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 
@@ -14,7 +14,7 @@ export default function (
 
   it('201 created', done => {
     axiosInstance
-      .post(RouteName.PEERS, peer, {
+      .post(RestAPIRouteName.PEERS, peer, {
         headers: {
           'X-Forwarded-For': peer.address,
         },
@@ -33,7 +33,7 @@ export default function (
 
   it('400 error', done => {
     axiosInstance
-      .post(RouteName.PEERS, peer)
+      .post(RestAPIRouteName.PEERS, peer)
       .then(done)
       .catch(err => handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST))
       .then(done)
@@ -42,7 +42,7 @@ export default function (
 
   it('403 error', done => {
     axiosInstance
-      .post(RouteName.PEERS, peer, {
+      .post(RestAPIRouteName.PEERS, peer, {
         headers: {
           'X-Forwarded-For': '192.168.1.2',
         },
@@ -55,7 +55,7 @@ export default function (
 
   it('409 error', done => {
     axiosInstance
-      .post(RouteName.PEERS, peer, {
+      .post(RestAPIRouteName.PEERS, peer, {
         headers: {
           'X-Forwarded-For': peer.address,
         },

@@ -1,4 +1,4 @@
-import {ITokensManager, Token} from '@utils/jwt.token';
+import {ITokensManager, Token} from '@utils/tokens-manager';
 import * as fs from 'fs';
 import * as path from 'path';
 import {decode, sign, verify} from 'jsonwebtoken';

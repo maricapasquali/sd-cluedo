@@ -11,7 +11,7 @@ import {
 import * as net from 'net';
 import * as Checkers from '@model/checker';
 import {ValidationError} from 'runtypes';
-import {findPeer} from '../../manager';
+import PeersManager from '../../managers/peers';
 
 export function handlerBadRequest(
   req: Request,
@@ -71,7 +71,7 @@ export function handlerConflictRequest(
 ): void {
   catchableHandlerRequestPromise(() => {
     const {peer} = res.locals;
-    if (findPeer(peer.identifier)) {
+    if (PeersManager.findPeer(peer.identifier)) {
       return ConflictSender.json(res, {message: 'current peer already exists'});
     }
     return;

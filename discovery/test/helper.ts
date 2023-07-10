@@ -11,7 +11,7 @@ import {
   SocketServerConfig,
 } from '@utils/https-server';
 import routes from '../src/routes';
-import createTokenManager from '../src/token-manager';
+import createTokenManager from '../src/managers/tokens';
 import handlerSocket from '../src/socket';
 
 function getHttpsConfig(port: number): HTTPSServerConfig {
@@ -22,7 +22,9 @@ function getHttpsConfig(port: number): HTTPSServerConfig {
     },
     uses: [express.json(), loggerHttp],
     routes,
-    routesArgs: [createTokenManager('https://localhost:' + port)],
+    sets: {
+      tokensManager: createTokenManager('https://localhost:' + port),
+    },
   };
 }
 export function createAndUpDiscoveryServer(port: number): Server {

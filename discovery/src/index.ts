@@ -5,7 +5,7 @@ import * as os from 'os';
 import {logger, loggerHttp} from '@utils/logger';
 import {HTTPSServerConfig} from '@utils/https-server';
 import routes from './routes';
-import createTokenManager from './token-manager';
+import createTokenManager from './managers/tokens';
 import {
   createHTTPSServerWithSocketServer,
   SocketServerConfig,
@@ -26,9 +26,11 @@ const serverConfig: HTTPSServerConfig = {
   },
   uses: [express.json(), loggerHttp],
   routes,
-  routesArgs: [
-    createTokenManager('https://' + os.hostname() + ':' + externalPort),
-  ],
+  sets: {
+    tokensManager: createTokenManager(
+      'https://' + os.hostname() + ':' + externalPort
+    ),
+  },
 };
 
 const socketConfig: SocketServerConfig = {

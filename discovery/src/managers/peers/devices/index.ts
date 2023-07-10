@@ -1,12 +1,17 @@
-interface IPeerDeviceManager {
+type PeersDevicesManagerType = {[peerId: string]: number};
+interface IPeersDevicesManager {
+  numberOfPeerDevices: PeersDevicesManagerType;
   addNumberOfPeerDevices(peerId: string, nClients?: number): void;
   removeNumberOfPeerDevices(peerId: string): void;
 }
 
-export const PeerDeviceManager: IPeerDeviceManager = new (class
-  implements IPeerDeviceManager
+const PeersDevicesManager: IPeersDevicesManager = new (class
+  implements IPeersDevicesManager
 {
-  private peerDevices: {[peerId: string]: number} = {};
+  private readonly peerDevices: PeersDevicesManagerType = {};
+  get numberOfPeerDevices(): PeersDevicesManagerType {
+    return this.peerDevices;
+  }
   addNumberOfPeerDevices(peerId: string, nClients?: number): void {
     if (typeof nClients !== 'number') {
       this.peerDevices[peerId] = 0;
@@ -19,3 +24,5 @@ export const PeerDeviceManager: IPeerDeviceManager = new (class
     delete this.peerDevices[peerId];
   }
 })();
+
+export default PeersDevicesManager;
