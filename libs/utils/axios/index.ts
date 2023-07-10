@@ -25,5 +25,12 @@ export function createAxiosInstance(
       url: pathname,
     };
   });
+  axiosInstance.interceptors.response.use(response => {
+    if (response.headers['x-access-token']) {
+      axiosInstance.defaults.headers['authorization'] =
+        response.headers['x-access-token'];
+    }
+    return response;
+  });
   return axiosInstance;
 }

@@ -12,16 +12,6 @@ export default function (
 ): void {
   const {peer} = args;
 
-  before(() => {
-    axiosInstance.interceptors.response.use(response => {
-      if (response.headers['x-access-token']) {
-        axiosInstance.defaults.headers['authorization'] =
-          response.headers['x-access-token'];
-      }
-      return response;
-    });
-  });
-
   it('201 created', done => {
     axiosInstance
       .post(RouteName.PEERS, peer, {

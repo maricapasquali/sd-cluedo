@@ -4,22 +4,19 @@ import patchTests from './patch-peer.spec';
 import deleteTests from './delete-peer.spec';
 import {AxiosInstance} from 'axios';
 import {createAxiosInstance} from '@utils/axios';
-import {logger, loggerHttp} from '@utils/logger';
+import {logger} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
-import routes, {RouteName} from '../../src/routes';
-import createHTTPSServer, {HTTPSServerConfig} from '@utils/https-server';
-import * as fs from 'fs';
-import * as path from 'path';
-import * as express from 'express';
-import createTokenManager from '../../src/token-manager';
+import {RouteName} from '../../src/routes';
 import {Server} from 'https';
 import {handlerResponseErrorCheck} from './helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
+import {createAndUpDiscoveryServer} from '../helper';
 
 describe('Rest API', () => {
+  const port: number = Number(process.env.PORT) || 3000;
   const axiosInstance: AxiosInstance = createAxiosInstance({
-    baseURL: 'https://localhost:3000',
+    baseURL: 'https://localhost:' + port,
   });
   const peer: Peer = {
     protocol: Peers.Protocol.HTTPS,
@@ -31,20 +28,11 @@ describe('Rest API', () => {
   };
   let server: Server;
 
-  before(() => {
-    const port: number = Number(process.env.PORT) || 3000;
-    const serverConfig: HTTPSServerConfig = {
-      options: {
-        key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
-        cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
-      },
-      uses: [express.json(), loggerHttp],
-      routes,
-      routesArgs: [createTokenManager('https://localhost:' + port)],
-    };
-    server = createHTTPSServer(serverConfig);
+  before(done => {
+    server = createAndUpDiscoveryServer(port);
     server.listen(port, () => {
       logger.debug('Listen on ' + port);
+      done();
     });
   });
 
@@ -55,12 +43,12 @@ describe('Rest API', () => {
     deleteTests(axiosInstance, {peer})
   );
 
-  it('NOT FOUND PATCH ' + RouteName.PEERS, done => {
+  it('NOT FOUND PUT ' + RouteName.PEERS, done => {
     axiosInstance
       .put(RouteName.PEERS, peer)
       .then(done)
       .catch(err => handlerResponseErrorCheck(err, ResponseStatus.NOT_FOUND))
-      .then(() => done())
+      .then(done)
       .catch(done);
   });
 
