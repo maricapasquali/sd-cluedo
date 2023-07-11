@@ -43,10 +43,10 @@ const {httpsServer} = createHTTPSServerWithSocketServer(
 );
 
 httpsServer.listen(internalPort, () => {
-  logger.debug('Listen on ' + internalPort);
+  logger.info('Listen on ' + internalPort);
   if (process.env.ENV_CI === 'CI/CD') {
     httpsServer.close(() => {
-      logger.debug('Close server');
+      logger.info('Close server');
     });
   }
 });

@@ -2,7 +2,7 @@ import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
 import {RestAPIRouteName} from 'discovery/src/routes';
 import {v4 as uuid} from 'uuid';
-import {handlerResponseErrorCheck} from './helper';
+import {handlerResponseErrorCheck} from '../helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 
 const should = shouldFunc();

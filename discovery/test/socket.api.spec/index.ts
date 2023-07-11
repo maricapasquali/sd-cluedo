@@ -1,4 +1,4 @@
-import {createDiscoveryServerWithSocketServer} from '../helper';
+import {createDiscoveryServerWithSocketServer, promises} from '../helper';
 import {Server as HTTPSServer} from 'https';
 import {logger} from '@utils/logger';
 import {io as Client, Socket} from 'socket.io-client';
@@ -10,7 +10,6 @@ import {RestAPIRouteName} from '../../src/routes';
 import {createAxiosInstance} from '@utils/axios';
 import {Peers} from '@model';
 import {should as shouldFunc} from 'chai';
-import {promises} from './helper';
 
 const should = shouldFunc();
 

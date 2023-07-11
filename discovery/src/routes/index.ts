@@ -7,7 +7,13 @@ export enum RestAPIRouteName {
   PEER = '/api/v1/peers/:id',
 }
 
+export enum DiscoveryRouteName {
+  BASE = '/',
+}
+
 export default function (app: express.Application): void {
+  app.route(DiscoveryRouteName.BASE).get(controller.baseHandler);
+
   app
     .route(RestAPIRouteName.PEERS)
     .post(

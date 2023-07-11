@@ -14,4 +14,6 @@ declare interface Peer extends Device {
 declare namespace Peers {
   enum Status {}
   enum Protocol {}
+
+  function url(peer: Peer): string;
 }

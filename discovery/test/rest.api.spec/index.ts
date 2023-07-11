@@ -9,9 +9,8 @@ import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
 import {RestAPIRouteName} from '../../src/routes';
 import {Server} from 'https';
-import {handlerResponseErrorCheck} from './helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {createAndUpDiscoveryServer} from '../helper';
+import {handlerResponseErrorCheck, createAndUpDiscoveryServer} from '../helper';
 
 describe('Rest API', () => {
   const port: number = Number(process.env.PORT) || 3000;
