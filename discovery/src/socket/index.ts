@@ -19,16 +19,17 @@ export default function handlerSocket(socketServer: Server): void {
     })
     .on('connection', (socket: Socket) => {
       const _socketDebugStr = 'Socket (id) %s (peer = %s): ';
-      logger.debug(
-        'Socket ID = %s (peerId = %s) connects',
+      logger.info(
+        'Socket ID = %s (peerId = %s) connects: nDevices = %s',
         socket.id,
-        socket.handshake.auth.peerId
+        socket.handshake.auth.peerId,
+        socket.handshake.auth.nConnectedDevice
       );
       const {peerId, nConnectedDevice} = socket.handshake.auth;
       PeersDevicesManager.addNumberOfPeerDevices(peerId, nConnectedDevice);
 
       socket.on('disconnect', reason => {
-        logger.debug(
+        logger.info(
           _socketDebugStr + 'disconnect = %s',
           socket.id,
           socket.handshake.auth.peerId,
@@ -48,7 +49,7 @@ export default function handlerSocket(socketServer: Server): void {
       });
 
       socket.on(DiscoveryPeerEvent.PEER_DEVICES, (nClients, ack) => {
-        logger.debug(
+        logger.info(
           _socketDebugStr + '# connected clients = %s',
           socket.id,
           socket.handshake.auth.peerId,

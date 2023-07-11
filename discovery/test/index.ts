@@ -1,4 +1,4 @@
 import './manager.spec';
-import './rest.api.spec';
+import './routes.spec/rest.api.spec';
 import './socket.api.spec';
-import './discovery-endpoint.spec';
+import './routes.spec/discovery-endpoint.spec';

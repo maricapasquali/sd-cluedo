@@ -7,10 +7,13 @@ import {createAxiosInstance} from '@utils/axios';
 import {logger} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
-import {RestAPIRouteName} from '../../src/routes';
+import {RestAPIRouteName} from '../../../src/routes';
 import {Server} from 'https';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {handlerResponseErrorCheck, createAndUpDiscoveryServer} from '../helper';
+import {
+  handlerResponseErrorCheck,
+  createAndUpDiscoveryServer,
+} from '../../helper';
 
 describe('Rest API', () => {
   const port: number = Number(process.env.PORT) || 3000;
@@ -29,10 +32,12 @@ describe('Rest API', () => {
 
   before(done => {
     server = createAndUpDiscoveryServer(port);
-    server.listen(port, () => {
-      logger.debug('Listen on ' + port);
-      done();
-    });
+    server
+      .listen(port, () => {
+        logger.debug('Listen on ' + port);
+        done();
+      })
+      .on('error', done);
   });
 
   describe('POST ' + RestAPIRouteName.PEERS, () =>
