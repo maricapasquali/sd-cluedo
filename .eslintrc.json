@@ -5,7 +5,7 @@
     "@typescript-eslint/no-namespace": ["off"],
     "@typescript-eslint/no-explicit-any": ["off"],
     "node/no-extraneous-import": ["error", {
-      "allowModules": ["chai", "uuid", "axios", "express", "runtypes", "jsonwebtoken", "socket.io", "socket.io-client"]
+      "allowModules": ["chai", "uuid", "axios", "express", "runtypes", "jsonwebtoken", "socket.io", "socket.io-client", "mongoose"]
     }],
     "@typescript-eslint/no-unused-vars": ["warn", {
       "argsIgnorePattern": "(?:next)",
