@@ -4,6 +4,6 @@
     "ts"
   ],
   "spec": [
-    "test/**/*.spec.ts"
+    "test/index.ts"
   ]
 }

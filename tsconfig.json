@@ -18,6 +18,9 @@
       ],
       "@model" : [
         "./libs/model"
+      ],
+      "@model/checker" : [
+        "./libs/model/checker"
       ]
     }
   },

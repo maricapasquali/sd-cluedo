@@ -4,7 +4,7 @@
   "description": "This represents a discovery server.",
   "main": "src/index.ts",
   "scripts": {
-    "start": "cross-env NODE_ENV=production node -r ts-node/register/transpile-only -r tsconfig-paths/register ../build/discovery/src/index.js",
+    "start": "cross-env NODE_ENV=production node -r ts-node/register/transpile-only -r tsconfig-paths/register ../build/discovery/src/index.js | pino-pretty",
     "dev": "nodemon src/index.ts --config ../nodemon.json | pino-pretty",
     "test": "mocha",
     "coverage": "nyc npm test"

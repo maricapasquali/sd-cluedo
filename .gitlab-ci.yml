@@ -1,5 +1,9 @@
 image: node:latest
 
+variables:
+  ENV_CI: "CI/CD"
+  ENV_TEST: "test"
+
 before_script:
   - echo 'Install dependencies'
   - npm install
@@ -24,7 +28,7 @@ deploy-discovery:
       artifacts: true
   script:
   - echo 'Run discovery server'
-  - npm start -w discovery
+  - ENV_CI=$ENV_CI npm start -w discovery
 
 deploy-peer:
   stage: deploy
@@ -33,21 +37,21 @@ deploy-peer:
       artifacts: true
   script:
   - echo 'Run discovery server'
-  - npm start -w peer
+  - ENV_CI=$ENV_CI npm start -w peer
 
 test-discovery:
   stage: test
   allow_failure: true
   script:
     - echo 'Run tests of discovery server'
-    - npm test -w discovery
+    - NODE_ENV=$ENV_TEST npm test -w discovery
 
 test-peer:
   stage: test
   allow_failure: true
   script:
     - echo 'Run tests of peer'
-    - npm test -w peer
+    - NODE_ENV=$ENV_TEST npm test -w peer
 
 lint:
   stage: test
