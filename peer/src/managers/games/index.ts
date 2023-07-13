@@ -1,24 +1,29 @@
+import {Gamers} from '@model';
 export interface GameManager {
-  game: CluedoGame;
-  addGamer(gamer: Gamer): void;
-  startGame(): void;
-  stopGame(): void;
-  rollDie(gamer: Gamer): HousePart;
-  moveCharacterTokenIn(character: Character, housePart: HousePart): void;
-  makeAssumption(gamer: Gamer, suggestion: Suggestion): void;
-  showCardTo(card: Card, gamer: Gamer): void;
-  takeNote(gamer: Gamer, notes: string | StructuedNoteItem): void;
-  makeAccusation(gamer: Gamer, suggestion: Suggestion): void;
-  showSolutionCardTo(gamer: Gamer): void;
-  silentGamer(gamer: Gamer): void;
-  removeGamer(gamer: Gamer): void;
-  reDealCardsTo(cards: Card[], gamers: Gamer[]): void;
-  passRoundToNext(gamer: Gamer): void;
+  gameId: string;
+  findGamer(gamerId: string): Promise<Gamer | undefined>;
+  isInRound(gamerId: string): Promise<boolean>;
+  addGamer(gamer: Gamer): Promise<Gamer>;
+  removeGamer(gamer: string): Promise<boolean>;
+  startGame(): Promise<CluedoGame>;
+
+  rollDie(): Promise<HousePart>;
+  moveCharacterTokenIn(
+    housePart?: string,
+    character?: string
+  ): Promise<boolean>;
+  makeAssumption(suggestion: Suggestion): Promise<boolean>;
+  takeNote(gamer: string, notes: string | StructuedNoteItem): Promise<boolean>;
+  makeAccusation(suggestion: Suggestion): Promise<Suggestion>;
+  silentGamerInRound(): Promise<Gamers.Role[]>;
+  reDealCardsTo(): Promise<Gamer[]>;
+  passRoundToNext(): Promise<string | undefined>;
+  stopGame(): Promise<boolean>;
 }
 
 export interface GamesManager {
-  gameManagers: GameManager[];
-  createGame(): void;
-  filterGame(status?: string): CluedoGame[];
-  deleteGame(identifier: string): void;
+  gameManagers(identifier: string): GameManager;
+  createGame(game: CluedoGame): Promise<CluedoGame>;
+  getGames(status?: string): Promise<CluedoGame[]>;
+  deleteGame(identifier: string): Promise<boolean>;
 }

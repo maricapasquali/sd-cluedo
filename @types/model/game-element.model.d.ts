@@ -36,4 +36,6 @@ declare namespace GamerElements {
   enum WeaponName {}
 
   enum RoomName {}
+
+  enum SuspectState {}
 }

@@ -1,9 +1,9 @@
 declare interface Gamer {
   identifier: string;
-  username?: string;
+  username: string;
   role?: string[];
   device?: Device;
-  characterToken?: Character;
+  characterToken: Character;
   assumptions?: Suggestion[];
   accusation?: Suggestion;
   cards?: Card[];
@@ -22,5 +22,4 @@ declare interface Notes {
 
 declare namespace Gamers {
   enum Role {}
-  enum SuspectState {}
 }

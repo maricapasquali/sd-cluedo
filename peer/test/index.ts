@@ -1,0 +1,1 @@
+import './games-manager.spec';

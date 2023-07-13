@@ -33,4 +33,10 @@ export namespace GamerElements {
     LIVING_ROOM = 'living room',
     STUDY = 'study',
   }
+
+  export enum SuspectState {
+    EXCLUDED = 'excluded',
+    MAYBE = 'maybe',
+    SURE = 'sure',
+  }
 }
