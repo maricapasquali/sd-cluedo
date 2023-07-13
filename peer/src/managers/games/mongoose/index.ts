@@ -1,5 +1,7 @@
-import {Gamers} from '@model';
+import {CluedoGames, GamerElements, Gamers} from '@model';
+import {CluedoGameModel} from './schemas';
 import {GameManager, GamesManager} from '../index';
+import * as _ from 'lodash';
 
 export class MongoDBGameManager implements GameManager {
   private readonly _gameId: string;
@@ -12,63 +14,268 @@ export class MongoDBGameManager implements GameManager {
     return this._gameId;
   }
 
+  private createErrorNotFound(): Error {
+    return new Error(
+      JSON.stringify({
+        name: 'NOT_FOUND_GAME',
+        message: `Game ${this._gameId} is not found`,
+      })
+    );
+  }
+
   findGamer(gamerId: string): Promise<Gamer | undefined> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.findOne(
+      {identifier: this._gameId, 'gamers.identifier': gamerId},
+      {gamers: 1}
+    ).then(game => game?.toObject().gamers.find(g => g.identifier === gamerId));
   }
 
   isInRound(gamerId: string): Promise<boolean> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.findOne({
+      identifier: this._gameId,
+      roundGamer: gamerId,
+    }).then(game => !!game);
   }
 
   addGamer(gamer: Gamer): Promise<Gamer> {
-    return Promise.reject(new Error('not implemented'));
+    gamer.role = [Gamers.Role.PARTICIPANT];
+    return CluedoGameModel.findOneAndUpdate(
+      {identifier: this._gameId},
+      {$push: {gamers: gamer}},
+      {new: true}
+    ).then(game => {
+      const nGamers: number = game?.gamers.length || 0;
+      return game?.toObject().gamers[nGamers - 1] as Gamer;
+    });
   }
 
   removeGamer(gamer: string): Promise<boolean> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.updateOne(
+      {identifier: this._gameId},
+      {$pull: {gamers: {identifier: gamer}}}
+    ).then(result => result.modifiedCount === 1);
   }
 
   startGame(): Promise<CluedoGame> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.findOne({identifier: this._gameId})
+      .then(game => {
+        if (!game) throw this.createErrorNotFound();
+
+        const weapons: Weapon[] = Object.values(GamerElements.WeaponName).map(
+          wn => ({name: wn} as Weapon)
+        );
+        const rooms: Room[] = Object.values(GamerElements.RoomName).map(rn => {
+          let secretPassage: string | undefined;
+          if (rn === GamerElements.RoomName.BILLIARD_ROOM)
+            secretPassage = GamerElements.RoomName.DINING_ROOM;
+          else if (rn === GamerElements.RoomName.DINING_ROOM)
+            secretPassage = GamerElements.RoomName.BILLIARD_ROOM;
+          if (rn === GamerElements.RoomName.BALLROOM)
+            secretPassage = GamerElements.RoomName.STUDY;
+          else if (rn === GamerElements.RoomName.STUDY)
+            secretPassage = GamerElements.RoomName.BALLROOM;
+          return {name: rn, secretPassage} as Room;
+        });
+        const characters: Character[] = Object.values(
+          GamerElements.CharacterName
+        ).map(
+          cn =>
+            ({
+              name: cn,
+              place: GamerElements.LobbyName.MAIN_LOBBY,
+            } as Character)
+        );
+
+        game.status = CluedoGames.Status.STARTED;
+        game.weapons = weapons;
+        game.characters = characters;
+        game.rooms = rooms;
+        const _solution: Suggestion = {
+          character: characters[this.randIndex(characters.length)].name,
+          room: rooms[this.randIndex(rooms.length)].name,
+          weapon: weapons[this.randIndex(weapons.length)].name,
+        };
+        game.solution = _solution;
+        game.roundGamer = game.gamers[0].identifier;
+        const _cardsDeck = [
+          ...Object.values(GamerElements.RoomName),
+          ...Object.values(GamerElements.WeaponName),
+          ...Object.values(GamerElements.CharacterName),
+        ].filter(c => !Object.values(_solution).includes(c));
+        this.dealCards(_.shuffle(_cardsDeck), game.gamers);
+        return game.save();
+      })
+      .then(newGame => newGame.toObject());
   }
 
   rollDie(): Promise<HousePart> {
-    return Promise.reject(new Error('not implemented'));
+    const _housePartsNames: string[] = [
+      ...Object.values(GamerElements.RoomName),
+      ...Object.values(GamerElements.LobbyName),
+    ];
+    const _randHousePart: string =
+      _housePartsNames[this.randIndex(_housePartsNames.length)];
+    return CluedoGameModel.findOne({identifier: this._gameId})
+      .then(game => {
+        if (!game) throw this.createErrorNotFound();
+        const _gamerRound = this.getRoundGamer(game);
+        const _character: Character =
+          game.characters?.find(c => c.name === _gamerRound?.characterToken) ||
+          ({} as Character);
+        _character.place = _randHousePart;
+        return game.save();
+      })
+      .then(() => {
+        return {name: _randHousePart} as HousePart;
+      });
   }
 
-  moveCharacterTokenIn(
-    housePart?: string,
-    character?: string
-  ): Promise<boolean> {
-    return Promise.reject(new Error('not implemented'));
+  useSecretPassage(): Promise<Room> {
+    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
+      if (!game) throw this.createErrorNotFound();
+      const _gamerRound = this.getRoundGamer(game);
+      const _character: Character = this.getCharacter(
+        game,
+        _gamerRound?.characterToken
+      );
+      const actualRoom =
+        game.rooms?.find(c => c.name === _character?.place) || ({} as Room);
+      if (actualRoom?.secretPassage) {
+        _character.place = actualRoom?.secretPassage;
+      }
+      return game
+        .save()
+        .then(() => ({name: actualRoom?.secretPassage} as Room));
+    });
   }
 
   makeAssumption(suggestion: Suggestion): Promise<boolean> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
+      if (!game) throw this.createErrorNotFound();
+      const _gameObj = game.toObject();
+      const _gamerRound = this.getRoundGamer(game);
+      _gamerRound.assumptions?.push(suggestion);
+      const weapon: Weapon =
+        game.weapons?.find(w => w.name === suggestion.weapon) || ({} as Weapon);
+      const character: Character = this.getCharacter(
+        game,
+        suggestion.character
+      );
+      weapon.place = suggestion.room;
+      character.place = suggestion.room;
+      return game
+        .save()
+        .then(newGame => !_.isEqual(newGame.toObject(), _gameObj));
+    });
   }
 
   takeNote(gamer: string, notes: string | StructuedNoteItem): Promise<boolean> {
-    return Promise.reject(new Error('not implemented'));
+    let updated;
+    if (typeof notes === 'string') {
+      updated = {
+        'gamers.$.notes.text': notes,
+      };
+    } else {
+      updated = {
+        $push: {'gamers.$.notes.structuredNotes': notes},
+      };
+    }
+    return CluedoGameModel.updateOne(
+      {
+        identifier: this._gameId,
+        'gamers.identifier': gamer,
+      },
+      updated
+    ).then(res => res.modifiedCount === 1);
   }
 
   makeAccusation(suggestion: Suggestion): Promise<Suggestion> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
+      if (!game) throw this.createErrorNotFound();
+      const _gameObj = game.toObject();
+      const _gamerRound = this.getRoundGamer(game);
+      _gamerRound.accusation = suggestion;
+      return game.save().then(() => _gameObj.solution || ({} as Suggestion));
+    });
   }
 
-  silentGamerInRound(): Promise<Gamers.Role[]> {
-    return Promise.reject(new Error('not implemented'));
+  silentGamerInRound(): Promise<string[]> {
+    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
+      if (!game) throw this.createErrorNotFound();
+      const _gamerRound = this.getRoundGamer(game);
+      const index =
+        _gamerRound?.role?.findIndex(r => r === Gamers.Role.PARTICIPANT) || -1;
+      if (index > 0 && _gamerRound.role) {
+        _gamerRound.role[index] = Gamers.Role.SILENT;
+      }
+      return game.save().then(() => _gamerRound.role || []);
+    });
   }
 
-  reDealCardsTo(): Promise<Gamer[]> {
-    return Promise.reject(new Error('not implemented'));
+  leave(): Promise<Gamer[]> {
+    return CluedoGameModel.findOne({}).then(game => {
+      if (!game) throw this.createErrorNotFound();
+      const cardsGamerInRound =
+        game.gamers?.find(g => g.identifier === game.roundGamer)?.cards || [];
+      const _gamers = game.gamers?.filter(
+        g => g.identifier !== game.roundGamer
+      );
+      this.dealCards(cardsGamerInRound, _gamers);
+      game.gamers = _gamers;
+      return game.save().then(() => _gamers);
+    });
   }
 
   passRoundToNext(): Promise<string | undefined> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
+      if (!game) throw this.createErrorNotFound();
+      const _gameObj = game.toObject();
+      const gamerRoundId = game.roundGamer;
+      const _actualPosition = game.gamers?.findIndex(
+        g => g.identifier === gamerRoundId
+      );
+      const _nextPosition: number = (_actualPosition + 1) % game.gamers.length;
+      const _nextRoundGamer: string = game.gamers[_nextPosition].identifier;
+      game.roundGamer = _nextRoundGamer;
+      return game
+        .save()
+        .then(newGame =>
+          _.isEqual(newGame.toObject(), _gameObj) ? undefined : _nextRoundGamer
+        );
+    });
   }
 
   stopGame(): Promise<boolean> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.updateOne(
+      {identifier: this._gameId},
+      {$set: {status: CluedoGames.Status.FINISHED}}
+    ).then(result => result.modifiedCount === 1);
+  }
+
+  private randIndex(lengthOfArray: number): number {
+    return Math.floor(Math.random() * (lengthOfArray - 1));
+  }
+
+  private dealCards(cardsDeck: string[], gamers: Gamer[]): void {
+    while (cardsDeck.length > 0) {
+      for (let i = 0; i < gamers.length; i++) {
+        const card = cardsDeck.shift();
+        if (!card) break;
+        gamers[i].cards?.push(card);
+      }
+    }
+  }
+
+  private getRoundGamer(game: CluedoGame): Gamer {
+    return (
+      game.gamers.find(g => g.identifier === game.roundGamer) || ({} as Gamer)
+    );
+  }
+
+  private getCharacter(game: CluedoGame, characterName: string): Character {
+    return (
+      game.characters?.find(c => c.name === characterName) || ({} as Character)
+    );
   }
 }
 
@@ -80,14 +287,27 @@ export const MongoDBGamesManager = new (class implements GamesManager {
   }
 
   createGame(game: CluedoGame): Promise<CluedoGame> {
-    return Promise.reject(new Error('not implemented'));
+    game.gamers.forEach(
+      g => (g.role = [Gamers.Role.CREATOR, Gamers.Role.PARTICIPANT])
+    );
+    return new CluedoGameModel(game).save().then(gameDoc => {
+      const game: CluedoGame = gameDoc.toObject();
+      this._gameManagers[game.identifier] = new MongoDBGameManager(
+        game.identifier
+      );
+      return game;
+    });
   }
 
   deleteGame(identifier: string): Promise<boolean> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.deleteOne({identifier}).then(
+      result => result.deletedCount === 1
+    );
   }
 
   getGames(status?: string): Promise<CluedoGame[]> {
-    return Promise.reject(new Error('not implemented'));
+    return CluedoGameModel.find(status ? {status} : {}).then(
+      games => games.map(gs => gs.toObject()) as CluedoGame[]
+    );
   }
 })();

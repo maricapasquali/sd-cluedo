@@ -18,8 +18,11 @@ describe('Games Manager', function () {
   const creator: Gamer = {
     identifier: uuid(),
     username: 'mario03',
-    characterToken: {
-      name: GamerElements.CharacterName.COLONEL_MUSTARD,
+    characterToken: GamerElements.CharacterName.COLONEL_MUSTARD,
+    device: {
+      identifier: uuid(),
+      hostname: 'pc mario',
+      address: '192.168.1.3',
     },
   };
 
@@ -43,7 +46,6 @@ describe('Games Manager', function () {
         cluedoGame.should.have
           .property('identifier')
           .deep.equal(game.identifier);
-        // cluedoGame.should.have.property('gamers').deep.equal(game.gamers);
         cluedoGame.gamers[0].should.have
           .property('role')
           .deep.equal([Gamers.Role.CREATOR, Gamers.Role.PARTICIPANT]);
@@ -81,7 +83,7 @@ describe('Games Manager', function () {
     gameManagerSpec({game});
   });
 
-  describe.skip('#deleteGame(..)', () => {
+  describe('#deleteGame(..)', () => {
     it('delete an existing cluedo game', done => {
       MongoDBGamesManager.deleteGame(game.identifier)
         .then(deleted => {

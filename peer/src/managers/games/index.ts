@@ -1,4 +1,3 @@
-import {Gamers} from '@model';
 export interface GameManager {
   gameId: string;
   findGamer(gamerId: string): Promise<Gamer | undefined>;
@@ -8,15 +7,12 @@ export interface GameManager {
   startGame(): Promise<CluedoGame>;
 
   rollDie(): Promise<HousePart>;
-  moveCharacterTokenIn(
-    housePart?: string,
-    character?: string
-  ): Promise<boolean>;
+  useSecretPassage(): Promise<Room>;
   makeAssumption(suggestion: Suggestion): Promise<boolean>;
   takeNote(gamer: string, notes: string | StructuedNoteItem): Promise<boolean>;
   makeAccusation(suggestion: Suggestion): Promise<Suggestion>;
-  silentGamerInRound(): Promise<Gamers.Role[]>;
-  reDealCardsTo(): Promise<Gamer[]>;
+  silentGamerInRound(): Promise<string[]>;
+  leave(): Promise<Gamer[]>;
   passRoundToNext(): Promise<string | undefined>;
   stopGame(): Promise<boolean>;
 }

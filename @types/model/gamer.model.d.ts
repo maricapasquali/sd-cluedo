@@ -1,12 +1,12 @@
 declare interface Gamer {
   identifier: string;
   username: string;
+  characterToken: string;
   role?: string[];
   device?: Device;
-  characterToken: Character;
   assumptions?: Suggestion[];
   accusation?: Suggestion;
-  cards?: Card[];
+  cards?: string[];
   notes?: Notes;
 }
 
@@ -17,9 +17,11 @@ declare interface StructuedNoteItem {
 
 declare interface Notes {
   text?: string;
-  structuedNotes?: StructuedNoteItem[];
+  structuredNotes?: StructuedNoteItem[];
 }
 
 declare namespace Gamers {
+  const MIN: number;
+  const MAX: number;
   enum Role {}
 }

@@ -31,7 +31,7 @@ declare interface AccusationMessage {
 declare interface ConfutationMessage {
   refuterGamer: string;
   roundGamer: string;
-  card: Card;
+  card: string;
 }
 
 declare interface StayGamerMessage {
@@ -41,7 +41,7 @@ declare interface StayGamerMessage {
 
 declare type LeaveMessageItem = {
   gamer: string;
-  cards: Card[];
+  cards: string[];
 };
 
 declare const LeaveMessage: LeaveMessageItem[];

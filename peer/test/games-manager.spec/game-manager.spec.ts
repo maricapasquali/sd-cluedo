@@ -4,18 +4,23 @@ import {should as shouldFunc} from 'chai';
 import {logger} from '@utils/logger';
 import {Gamers, CluedoGames, GamerElements} from '@model';
 import {GameManager} from '../../src/managers/games';
+import {CluedoGameModel} from '../../src/managers/games/mongoose/schemas';
+import * as _ from 'lodash';
 const should = shouldFunc();
 
 type GameManagerOptions = {
   game: CluedoGame;
 };
 export default function ({game}: GameManagerOptions): void {
-  const gamer: Gamer = {
+  const gamer1: Gamer = {
     identifier: uuid(),
     username: 'antonio01',
-    characterToken: {
-      name: GamerElements.CharacterName.MISS_SCARLET,
-    },
+    characterToken: GamerElements.CharacterName.MISS_SCARLET,
+  };
+  const gamer2: Gamer = {
+    identifier: uuid(),
+    username: 'anna',
+    characterToken: GamerElements.CharacterName.MRS_PEACOCK,
   };
 
   let gameManager: GameManager;
@@ -30,10 +35,10 @@ export default function ({game}: GameManagerOptions): void {
 
   it('#addGamer(..)', done => {
     gameManager
-      .addGamer(gamer)
+      .addGamer(gamer1)
       .then(newGamer => {
         logger.debug(newGamer);
-        newGamer.should.have.property('identifier').equal(gamer.identifier);
+        newGamer.should.have.property('identifier').equal(gamer1.identifier);
         newGamer.should.have
           .property('role')
           .deep.equal([Gamers.Role.PARTICIPANT]);
@@ -44,11 +49,11 @@ export default function ({game}: GameManagerOptions): void {
 
   it('#findGamer(..)', done => {
     gameManager
-      .findGamer(gamer.identifier)
+      .findGamer(gamer1.identifier)
       .then(fGamer => {
         logger.debug(fGamer);
         should.exist(fGamer);
-        fGamer?.should.deep.equal(gamer);
+        fGamer?.should.have.property('identifier').equal(gamer1.identifier);
         done();
       })
       .catch(done);
@@ -56,7 +61,7 @@ export default function ({game}: GameManagerOptions): void {
 
   it('#removeGamer(..)', done => {
     gameManager
-      .removeGamer(gamer.identifier)
+      .removeGamer(gamer1.identifier)
       .then(deleted => {
         logger.debug(deleted);
         deleted.should.be.true;
@@ -66,16 +71,9 @@ export default function ({game}: GameManagerOptions): void {
   });
 
   it('#startGame(..)', done => {
-    Promise.all([
-      gameManager.addGamer(gamer),
-      gameManager.addGamer({
-        identifier: uuid(),
-        username: 'anna',
-        characterToken: {
-          name: GamerElements.CharacterName.MRS_PEACOCK,
-        },
-      }),
-    ])
+    gameManager
+      .addGamer(gamer1)
+      .then(() => gameManager.addGamer(gamer2))
       .then(() => gameManager.startGame())
       .then(startedGame => {
         logger.debug(startedGame);
@@ -84,7 +82,12 @@ export default function ({game}: GameManagerOptions): void {
           .property('status')
           .equal(CluedoGames.Status.STARTED);
         startedGame.should.have.property('solution').not.undefined;
-        startedGame.gamers.map(g => g.cards).should.not.contains(undefined);
+        const dealCard = _.flatten(startedGame.gamers.map(g => g.cards));
+        dealCard.should.not.empty;
+        dealCard.should.have.lengthOf(18);
+        dealCard.should.have.not.members(
+          Object.values(startedGame.solution || {})
+        );
         game = startedGame;
         gamerInRound =
           game.gamers.find(g => g.identifier === game.roundGamer) ||
@@ -114,49 +117,32 @@ export default function ({game}: GameManagerOptions): void {
       .rollDie()
       .then(housePart => {
         logger.debug(housePart);
-        housePart.should.have.property('name').be.deep.members(houseparts);
+        housePart.should.have.property('name').be.oneOf(houseparts);
         done();
       })
       .catch(done);
   });
 
-  describe('#moveCharacterTokenIn(..)', () => {
-    it('when roll die', done => {
-      const housePart = GamerElements.RoomName.BALLROOM;
-      gameManager
-        .moveCharacterTokenIn(housePart)
-        .then(moved => {
-          logger.debug(moved);
-          moved.should.be.true;
-          done();
-        })
-        .catch(done);
-    });
-    it('when gamer in round uses secret passage', done => {
-      gameManager
-        .moveCharacterTokenIn()
-        .then(moved => {
-          logger.debug(moved);
-          moved.should.be.true;
-          done();
-        })
-        .catch(done);
-    });
-    it('when gamer in round makes assumption that named character in room', done => {
-      const assumption: Suggestion = {
-        character: GamerElements.CharacterName.MISS_SCARLET,
-        room: GamerElements.RoomName.DINING_ROOM,
-        weapon: GamerElements.WeaponName.DAGGER,
-      };
-      gameManager
-        .moveCharacterTokenIn(assumption.room, assumption.character)
-        .then(moved => {
-          logger.debug(moved);
-          moved.should.be.true;
-          done();
-        })
-        .catch(done);
-    });
+  it('#useSecretPassage(..)', done => {
+    CluedoGameModel.updateOne(
+      {
+        identifier: game.identifier,
+        'characters.name': gamerInRound.characterToken,
+      },
+      {
+        $set: {
+          'characters.$.place': GamerElements.RoomName.DINING_ROOM,
+        },
+      }
+    )
+      .then(() => gameManager.useSecretPassage())
+      .then(room => {
+        room.should.have
+          .property('name')
+          .equal(GamerElements.RoomName.BILLIARD_ROOM);
+        done();
+      })
+      .catch(done);
   });
 
   it('#makeAssumption(..)', done => {
@@ -180,7 +166,7 @@ export default function ({game}: GameManagerOptions): void {
       const text =
         'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua';
       gameManager
-        .takeNote(gamer.identifier, text)
+        .takeNote(gamer2.identifier, text)
         .then(added => {
           logger.debug(added);
           added.should.be.true;
@@ -194,7 +180,7 @@ export default function ({game}: GameManagerOptions): void {
         suspectState: GamerElements.SuspectState.MAYBE,
       };
       gameManager
-        .takeNote(gamer.identifier, notes)
+        .takeNote(gamer2.identifier, notes)
         .then(added => {
           logger.debug(added);
           added.should.be.true;
@@ -214,22 +200,25 @@ export default function ({game}: GameManagerOptions): void {
           ) || '',
         weapon: GamerElements.WeaponName.DAGGER,
       };
+      logger.debug(suggestion);
       gameManager
         .makeAccusation(suggestion)
-        .then(sol => {
-          logger.debug(sol);
-          sol.should.be.not.deep.equal(suggestion);
+        .then(solution => {
+          logger.debug(solution);
+          logger.debug(solution);
+          solution.should.be.not.deep.equal(suggestion);
           done();
         })
         .catch(done);
     });
     it('right accusation', done => {
       const gameSol = game.solution || ({} as Suggestion);
+      logger.debug(gameSol);
       gameManager
         .makeAccusation(gameSol)
-        .then(sol => {
-          logger.debug(sol);
-          sol.should.be.deep.equal(gameSol);
+        .then(solution => {
+          logger.debug(solution);
+          solution.should.be.deep.equal(gameSol);
           done();
         })
         .catch(done);
@@ -242,34 +231,44 @@ export default function ({game}: GameManagerOptions): void {
       .then(newRole => {
         logger.debug(newRole);
         newRole.should.have.contains(Gamers.Role.SILENT);
-        done();
-      })
-      .catch(done);
-  });
-
-  it('#reDealCardsTo(..)', done => {
-    gameManager
-      .reDealCardsTo()
-      .then(newGamersDisposition => {
-        logger.debug(newGamersDisposition);
-        should.exist(newGamersDisposition);
-        [...newGamersDisposition.map(g => g.cards)].should.have.members(
-          gamerInRound.cards || []
-        );
+        newRole.should.have.not.contains(Gamers.Role.PARTICIPANT);
         done();
       })
       .catch(done);
   });
 
   it('#passRoundToNext(..)', done => {
-    const nextToGamer = gamer.identifier;
+    const nextToGamer = gamer1.identifier;
     gameManager
       .passRoundToNext()
       .then(newRoundGamer => {
         logger.debug(newRoundGamer);
         should.exist(newRoundGamer);
         newRoundGamer?.should.equals(nextToGamer);
+        gamerInRound = gamer1;
         done();
+      })
+      .catch(done);
+  });
+
+  it('#leave(..)', done => {
+    gameManager
+      .leave()
+      .then(newGamersDisposition => {
+        logger.debug(newGamersDisposition);
+        should.exist(newGamersDisposition);
+        _.flatten(
+          newGamersDisposition.map(g => g.cards)
+        ).should.to.include.members(gamerInRound.cards || []);
+
+        return CluedoGameModel.findOne({
+          identifier: game.identifier,
+          'gamers.identifier': gamerInRound.identifier,
+        });
+      })
+      .then(game => {
+        if (!game) done();
+        else done(new Error('#leave(..) does not delete the leaving player'));
       })
       .catch(done);
   });
