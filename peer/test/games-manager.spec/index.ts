@@ -10,7 +10,7 @@ import {GamerElements} from '@model';
 const should = shouldFunc();
 
 describe('Games Manager', function () {
-  this.timeout(10000);
+  this.timeout(process.env.ENV_CI === 'CI/CD' ? 300000 : 10000); // 5 minutes for db connection in gitlab-ci
 
   const mongodbURI: string =
     process.env.MONGODB_ADDRESS || 'mongodb://localhost:27017/cluedo-test';
