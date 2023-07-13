@@ -52,9 +52,11 @@ test-discovery:
 test-peer:
   stage: test
   allow_failure: true
+  services:
+    - mongo:latest
   script:
     - echo 'Run tests of peer'
-    - MONGODB_ADDRESS=$MONGO_DB_TEST NODE_ENV=$ENV_TEST npm test -w peer
+    - MONGODB_ADDRESS=$MONGO_DB_TEST NODE_ENV=$ENV_TEST ENV_CI=$ENV_CI npm test -w peer
 
 lint:
   stage: test
