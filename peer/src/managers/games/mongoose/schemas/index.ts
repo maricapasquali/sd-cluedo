@@ -130,10 +130,6 @@ const CluedoGameSchema: Schema<ICluedoGame> = new Schema<ICluedoGame>({
     },
     required: false,
   },
-  winner: {
-    type: String,
-    required: false,
-  },
   weapons: {
     type: [
       {

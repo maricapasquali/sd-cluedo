@@ -1,10 +1,9 @@
 declare interface CluedoGame {
   identifier: string;
-  status?: string;
   gamers: Gamer[];
+  status?: string;
   solution?: Suggestion;
   roundGamer?: string;
-  winner?: string;
   weapons?: Weapon[];
   characters?: Character[];
   rooms?: Room[];
