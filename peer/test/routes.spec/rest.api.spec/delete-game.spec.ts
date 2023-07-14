@@ -1,40 +1,34 @@
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
-import {RestAPIRouteName} from 'discovery/src/routes';
-import {v4 as uuid} from 'uuid';
+import {RestAPIRouteName} from '../../../src/routes';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
+import {v4 as uuid} from 'uuid';
+import {tokensManager} from '../../helper';
 
 const should = shouldFunc();
 
-export default function (
-  axiosInstance: AxiosInstance,
-  args: {peer: Peer}
-): void {
-  const {peer} = args;
-
-  it('400 error', done => {
-    axiosInstance
-      .delete(RestAPIRouteName.PEER, {
-        urlParams: {
-          id: peer.identifier,
-        },
-      })
-      .then(done)
-      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST))
-      .then(done)
-      .catch(done);
-  });
+type DeleteGameConfig = {
+  axiosInstance: AxiosInstance;
+  game: CluedoGame;
+  gamerInRound: string;
+};
+export default function ({
+  axiosInstance,
+  game,
+  gamerInRound,
+}: DeleteGameConfig): void {
+  const forbiddenToken =
+    'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
 
   it('401 error', done => {
     axiosInstance
-      .delete(RestAPIRouteName.PEER, {
+      .delete(RestAPIRouteName.GAME, {
         headers: {
-          'X-Forwarded-For': peer.address,
           authorization: undefined,
         },
         urlParams: {
-          id: peer.identifier,
+          id: uuid(),
         },
       })
       .then(done)
@@ -42,15 +36,14 @@ export default function (
       .then(done)
       .catch(done);
   });
-
   it('403 error', done => {
     axiosInstance
-      .delete(RestAPIRouteName.PEER, {
+      .delete(RestAPIRouteName.GAME, {
         headers: {
-          'X-Forwarded-For': '192.168.1.2',
+          authorization: forbiddenToken,
         },
         urlParams: {
-          id: peer.identifier,
+          id: uuid(),
         },
       })
       .then(done)
@@ -58,12 +51,11 @@ export default function (
       .then(done)
       .catch(done);
   });
-
   it('404 error', done => {
     axiosInstance
-      .delete(RestAPIRouteName.PEER, {
+      .delete(RestAPIRouteName.GAME, {
         headers: {
-          'X-Forwarded-For': peer.address,
+          authorization: tokensManager[gamerInRound],
         },
         urlParams: {
           id: uuid(),
@@ -74,21 +66,20 @@ export default function (
       .then(done)
       .catch(done);
   });
-
-  it('200 deleted peer', done => {
+  it('200 delete cluedo game', done => {
     axiosInstance
-      .delete(RestAPIRouteName.PEER, {
+      .delete(RestAPIRouteName.GAME, {
         headers: {
-          'X-Forwarded-For': peer.address,
+          authorization: tokensManager[gamerInRound],
         },
         urlParams: {
-          id: peer.identifier,
+          id: game.identifier,
         },
       })
-      .then(res => {
-        res?.status?.should.equal(ResponseStatus.OK);
-        const _peer: Peer = res.data;
-        _peer.should.deep.equals(peer);
+      .then(response => {
+        response.status.should.equal(ResponseStatus.OK);
+        const dGame = response.data;
+        dGame.should.have.property('identifier').equal(game.identifier);
         done();
       })
       .catch(done);

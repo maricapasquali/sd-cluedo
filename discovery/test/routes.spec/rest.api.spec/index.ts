@@ -10,10 +10,8 @@ import {Peers} from '@model';
 import {RestAPIRouteName} from '../../../src/routes';
 import {Server} from 'https';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {
-  handlerResponseErrorCheck,
-  createAndUpDiscoveryServer,
-} from '../../helper';
+import {createAndUpDiscoveryServer} from '../../helper';
+import {handlerResponseErrorCheck} from '@utils/test-helper';
 
 describe('Rest API', () => {
   const port: number = Number(process.env.PORT) || 3000;

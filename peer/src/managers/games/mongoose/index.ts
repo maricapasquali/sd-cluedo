@@ -61,18 +61,14 @@ export class MongoDBGameManager implements GameManager {
         const weapons: Weapon[] = Object.values(GamerElements.WeaponName).map(
           wn => ({name: wn} as Weapon)
         );
-        const rooms: Room[] = Object.values(GamerElements.RoomName).map(rn => {
-          let secretPassage: string | undefined;
-          if (rn === GamerElements.RoomName.BILLIARD_ROOM)
-            secretPassage = GamerElements.RoomName.DINING_ROOM;
-          else if (rn === GamerElements.RoomName.DINING_ROOM)
-            secretPassage = GamerElements.RoomName.BILLIARD_ROOM;
-          if (rn === GamerElements.RoomName.BALLROOM)
-            secretPassage = GamerElements.RoomName.STUDY;
-          else if (rn === GamerElements.RoomName.STUDY)
-            secretPassage = GamerElements.RoomName.BALLROOM;
-          return {name: rn, secretPassage} as Room;
-        });
+
+        const rooms: Room[] = Object.values(GamerElements.RoomName).map(
+          rn =>
+            ({
+              name: rn,
+              secretPassage: GamerElements.RoomWithSecretPassage[rn],
+            } as Room)
+        );
         const characters: Character[] = Object.values(
           GamerElements.CharacterName
         ).map(

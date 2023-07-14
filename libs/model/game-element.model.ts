@@ -39,4 +39,11 @@ export namespace GamerElements {
     MAYBE = 'maybe',
     SURE = 'sure',
   }
+
+  export const RoomWithSecretPassage: {[key: string]: RoomName} = {
+    [RoomName.BILLIARD_ROOM]: RoomName.DINING_ROOM,
+    [RoomName.BALLROOM]: RoomName.STUDY,
+    [RoomName.DINING_ROOM]: RoomName.BILLIARD_ROOM,
+    [RoomName.STUDY]: RoomName.BALLROOM,
+  };
 }

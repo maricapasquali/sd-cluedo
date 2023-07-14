@@ -13,7 +13,6 @@ import {
 import routes, {RestAPIRouteName} from '../src/routes';
 import createTokenManager from '../src/managers/tokens';
 import handlerSocket from '../src/socket';
-import {ResponseStatus} from '@utils/rest-api/responses';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
 import {io as Client, Socket} from 'socket.io-client';
@@ -31,19 +30,6 @@ function getHttpsConfig(port: number): HTTPSServerConfig {
       tokensManager: createTokenManager('https://localhost:' + port),
     },
   };
-}
-
-export function handlerResponseErrorCheck(
-  err: any,
-  status: ResponseStatus
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if ((err?.response?.status as ResponseStatus) === status) {
-      resolve();
-    } else {
-      reject(err);
-    }
-  });
 }
 
 type PromiseHandler = (resolve: any, reject: any) => any;

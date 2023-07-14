@@ -38,7 +38,6 @@ export default function (app: express.Application): void {
       controller.restApi.patchGame
     )
     .delete(
-      middleware.games.handlerBadRequest,
       middleware.games.handlerNotFoundRequest,
       middleware.games.handlerUnauthorizedRequest,
       middleware.games.handlerForbiddenRequest,
@@ -57,7 +56,6 @@ export default function (app: express.Application): void {
   app
     .route(RestAPIRouteName.GAMER)
     .delete(
-      middleware.games.handlerBadRequest,
       middleware.gamers.handlerNotFoundRequest,
       controller.restApi.deleteGamer
     );
