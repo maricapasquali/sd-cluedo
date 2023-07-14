@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "This is a digital and distributed version of the well-known board game Cluedo",
   "scripts": {
-    "build": "copyfiles -E discovery/sslcert/* build && tsc --build",
+    "build": "copyfiles -E **/sslcert/* build && tsc --build",
     "test": "npm test -ws",
     "coverage": "npm run coverage -ws",
     "lint": "gts lint",

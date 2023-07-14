@@ -31,7 +31,7 @@ const CluedoGameSchema: Schema<ICluedoGame> = new Schema<ICluedoGame>({
         role: {
           type: [String],
           required: false,
-          default: [],
+          default: [Gamers.Role.PARTICIPANT],
           enum: Object.values(Gamers.Role),
         },
         assumptions: {

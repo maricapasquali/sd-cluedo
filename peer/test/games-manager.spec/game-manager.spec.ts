@@ -29,8 +29,14 @@ export default function ({game}: GameManagerOptions): void {
     gameManager = MongoDBGamesManager.gameManagers(game.identifier);
   });
 
-  it('after create game, a game manager should have been generated for the created game', () => {
-    gameManager.gameId.should.equal(game.identifier);
+  it('after create game, a game manager should have been generated for the created game', done => {
+    gameManager.game
+      .then(storedGame => {
+        should.exist(storedGame);
+        storedGame.should.have.property('identifier').equal(game.identifier);
+        done();
+      })
+      .catch(done);
   });
 
   it('#addGamer(..)', done => {
@@ -109,7 +115,7 @@ export default function ({game}: GameManagerOptions): void {
   });
 
   it('#rollDie(..)', done => {
-    const houseparts = [
+    const houseParts = [
       ...Object.values(GamerElements.RoomName),
       ...Object.values(GamerElements.LobbyName),
     ];
@@ -117,7 +123,7 @@ export default function ({game}: GameManagerOptions): void {
       .rollDie()
       .then(housePart => {
         logger.debug(housePart);
-        housePart.should.have.property('name').be.oneOf(houseparts);
+        housePart.should.be.oneOf(houseParts);
         done();
       })
       .catch(done);
@@ -137,9 +143,8 @@ export default function ({game}: GameManagerOptions): void {
     )
       .then(() => gameManager.useSecretPassage())
       .then(room => {
-        room.should.have
-          .property('name')
-          .equal(GamerElements.RoomName.BILLIARD_ROOM);
+        should.exist(room);
+        room.should.equal(GamerElements.RoomName.BILLIARD_ROOM);
         done();
       })
       .catch(done);
@@ -204,7 +209,6 @@ export default function ({game}: GameManagerOptions): void {
       gameManager
         .makeAccusation(suggestion)
         .then(solution => {
-          logger.debug(solution);
           logger.debug(solution);
           solution.should.be.not.deep.equal(suggestion);
           done();

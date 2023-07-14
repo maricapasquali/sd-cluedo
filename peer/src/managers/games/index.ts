@@ -1,13 +1,15 @@
+import {ICluedoGame} from './mongoose/schemas';
+
 export interface GameManager {
-  gameId: string;
+  game: Promise<ICluedoGame>;
   findGamer(gamerId: string): Promise<Gamer | undefined>;
   isInRound(gamerId: string): Promise<boolean>;
   addGamer(gamer: Gamer): Promise<Gamer>;
   removeGamer(gamer: string): Promise<boolean>;
   startGame(): Promise<CluedoGame>;
 
-  rollDie(): Promise<HousePart>;
-  useSecretPassage(): Promise<Room>;
+  rollDie(): Promise<string>;
+  useSecretPassage(): Promise<string>;
   makeAssumption(suggestion: Suggestion): Promise<boolean>;
   takeNote(gamer: string, notes: string | StructuedNoteItem): Promise<boolean>;
   makeAccusation(suggestion: Suggestion): Promise<Suggestion>;

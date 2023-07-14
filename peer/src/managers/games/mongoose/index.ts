@@ -1,7 +1,8 @@
 import {CluedoGames, GamerElements, Gamers} from '@model';
-import {CluedoGameModel} from './schemas';
+import {CluedoGameModel, ICluedoGame} from './schemas';
 import {GameManager, GamesManager} from '../index';
 import * as _ from 'lodash';
+import {NotFoundError} from './errors';
 
 export class MongoDBGameManager implements GameManager {
   private readonly _gameId: string;
@@ -10,17 +11,16 @@ export class MongoDBGameManager implements GameManager {
     this._gameId = gameId;
   }
 
-  get gameId(): string {
-    return this._gameId;
-  }
-
-  private createErrorNotFound(): Error {
-    return new Error(
-      JSON.stringify({
-        name: 'NOT_FOUND_GAME',
-        message: `Game ${this._gameId} is not found`,
-      })
-    );
+  get game(): Promise<ICluedoGame> {
+    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
+      if (!game) {
+        throw new NotFoundError({
+          code: NotFoundError.NOT_FOUND_GAME,
+          message: `Game ${this._gameId} is not found`,
+        });
+      }
+      return game;
+    });
   }
 
   findGamer(gamerId: string): Promise<Gamer | undefined> {
@@ -38,7 +38,6 @@ export class MongoDBGameManager implements GameManager {
   }
 
   addGamer(gamer: Gamer): Promise<Gamer> {
-    gamer.role = [Gamers.Role.PARTICIPANT];
     return CluedoGameModel.findOneAndUpdate(
       {identifier: this._gameId},
       {$push: {gamers: gamer}},
@@ -57,10 +56,8 @@ export class MongoDBGameManager implements GameManager {
   }
 
   startGame(): Promise<CluedoGame> {
-    return CluedoGameModel.findOne({identifier: this._gameId})
+    return this.game
       .then(game => {
-        if (!game) throw this.createErrorNotFound();
-
         const weapons: Weapon[] = Object.values(GamerElements.WeaponName).map(
           wn => ({name: wn} as Weapon)
         );
@@ -108,16 +105,15 @@ export class MongoDBGameManager implements GameManager {
       .then(newGame => newGame.toObject());
   }
 
-  rollDie(): Promise<HousePart> {
-    const _housePartsNames: string[] = [
+  rollDie(): Promise<string> {
+    const _housePartsNames: string[] = _.shuffle([
       ...Object.values(GamerElements.RoomName),
       ...Object.values(GamerElements.LobbyName),
-    ];
+    ]);
     const _randHousePart: string =
       _housePartsNames[this.randIndex(_housePartsNames.length)];
-    return CluedoGameModel.findOne({identifier: this._gameId})
+    return this.game
       .then(game => {
-        if (!game) throw this.createErrorNotFound();
         const _gamerRound = this.getRoundGamer(game);
         const _character: Character =
           game.characters?.find(c => c.name === _gamerRound?.characterToken) ||
@@ -125,14 +121,11 @@ export class MongoDBGameManager implements GameManager {
         _character.place = _randHousePart;
         return game.save();
       })
-      .then(() => {
-        return {name: _randHousePart} as HousePart;
-      });
+      .then(() => _randHousePart);
   }
 
-  useSecretPassage(): Promise<Room> {
-    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
-      if (!game) throw this.createErrorNotFound();
+  useSecretPassage(): Promise<string> {
+    return this.game.then(game => {
       const _gamerRound = this.getRoundGamer(game);
       const _character: Character = this.getCharacter(
         game,
@@ -143,15 +136,20 @@ export class MongoDBGameManager implements GameManager {
       if (actualRoom?.secretPassage) {
         _character.place = actualRoom?.secretPassage;
       }
-      return game
-        .save()
-        .then(() => ({name: actualRoom?.secretPassage} as Room));
+      return game.save().then(() => {
+        if (!actualRoom?.secretPassage) {
+          throw new NotFoundError({
+            code: NotFoundError.NOT_FOUND_SECRET_PASSAGE,
+            message: `Room '${actualRoom.name}' does not have a secret passage`,
+          });
+        }
+        return actualRoom?.secretPassage;
+      });
     });
   }
 
   makeAssumption(suggestion: Suggestion): Promise<boolean> {
-    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
-      if (!game) throw this.createErrorNotFound();
+    return this.game.then(game => {
       const _gameObj = game.toObject();
       const _gamerRound = this.getRoundGamer(game);
       _gamerRound.assumptions?.push(suggestion);
@@ -190,8 +188,7 @@ export class MongoDBGameManager implements GameManager {
   }
 
   makeAccusation(suggestion: Suggestion): Promise<Suggestion> {
-    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
-      if (!game) throw this.createErrorNotFound();
+    return this.game.then(game => {
       const _gameObj = game.toObject();
       const _gamerRound = this.getRoundGamer(game);
       _gamerRound.accusation = suggestion;
@@ -200,8 +197,7 @@ export class MongoDBGameManager implements GameManager {
   }
 
   silentGamerInRound(): Promise<string[]> {
-    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
-      if (!game) throw this.createErrorNotFound();
+    return this.game.then(game => {
       const _gamerRound = this.getRoundGamer(game);
       const index =
         _gamerRound?.role?.findIndex(r => r === Gamers.Role.PARTICIPANT) || -1;
@@ -213,8 +209,7 @@ export class MongoDBGameManager implements GameManager {
   }
 
   leave(): Promise<Gamer[]> {
-    return CluedoGameModel.findOne({}).then(game => {
-      if (!game) throw this.createErrorNotFound();
+    return this.game.then(game => {
       const cardsGamerInRound =
         game.gamers?.find(g => g.identifier === game.roundGamer)?.cards || [];
       const _gamers = game.gamers?.filter(
@@ -227,8 +222,7 @@ export class MongoDBGameManager implements GameManager {
   }
 
   passRoundToNext(): Promise<string | undefined> {
-    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
-      if (!game) throw this.createErrorNotFound();
+    return this.game.then(game => {
       const _gameObj = game.toObject();
       const gamerRoundId = game.roundGamer;
       const _actualPosition = game.gamers?.findIndex(
