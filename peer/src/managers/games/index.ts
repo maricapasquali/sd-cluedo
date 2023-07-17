@@ -23,5 +23,4 @@ export interface GamesManager {
   gameManagers(identifier: string): GameManager;
   createGame(game: CluedoGame): Promise<CluedoGame>;
   getGames(status?: string): Promise<CluedoGame[]>;
-  deleteGame(identifier: string): Promise<boolean>;
 }

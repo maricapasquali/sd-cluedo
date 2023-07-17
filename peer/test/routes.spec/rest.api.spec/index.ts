@@ -22,7 +22,7 @@ import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {CluedoGames, GamerElements} from '@model';
-import {tokensManager} from '../../helper';
+import {gamersAuthenticationTokens} from '../../helper';
 import {MongoDBGamesManager} from '../../../src/managers/games/mongoose';
 
 const should = shouldFunc();
@@ -38,12 +38,7 @@ describe('Rest API', function () {
   const axiosInstance: AxiosInstance = createAxiosInstance({
     baseURL: peerServerAddress,
   });
-
   let httpsServer: Server;
-  const cluedoGame: CluedoGame = {
-    identifier: uuid(),
-    gamers: [],
-  };
 
   before(done => {
     mongoose
@@ -79,24 +74,22 @@ describe('Rest API', function () {
   });
 
   describe('POST ' + RestAPIRouteName.GAMES, () =>
-    postGameSpec({axiosInstance, game: cluedoGame})
+    postGameSpec({axiosInstance})
   );
 
   describe('GET ' + RestAPIRouteName.GAMES, () =>
-    getGamesSpec({axiosInstance, game: cluedoGame})
+    getGamesSpec({axiosInstance})
   );
 
   describe('POST ' + RestAPIRouteName.GAMERS, () =>
-    postGamerSpec({axiosInstance, game: cluedoGame})
+    postGamerSpec({axiosInstance})
   );
 
   describe('DELETE ' + RestAPIRouteName.GAMER, () =>
-    deleteGamerSpec({axiosInstance, game: cluedoGame})
+    deleteGamerSpec({axiosInstance})
   );
 
-  describe('GET ' + RestAPIRouteName.GAME, () =>
-    getGameSpec({axiosInstance, game: cluedoGame})
-  );
+  describe('GET ' + RestAPIRouteName.GAME, () => getGameSpec({axiosInstance}));
 
   describe('PATCH ' + RestAPIRouteName.GAME, () =>
     patchGameSpec({axiosInstance})
@@ -141,11 +134,11 @@ describe('Rest API', function () {
       'DELETE ' + RestAPIRouteName.GAMER + ' on a started/finished game',
       done => {
         const deletedGamer =
-          startedGame.gamers[cluedoGame.gamers.length - 1].identifier;
+          startedGame.gamers[startedGame.gamers.length - 1].identifier;
         axiosInstance
           .delete(RestAPIRouteName.GAMER, {
             headers: {
-              authorization: tokensManager[deletedGamer],
+              authorization: gamersAuthenticationTokens[deletedGamer],
             },
             urlParams: {
               id: startedGame.identifier,

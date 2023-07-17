@@ -4,13 +4,18 @@ import {CluedoGames} from '@model';
 import {should as shouldFunc} from 'chai';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
+import {games} from '../../helper';
 const should = shouldFunc();
 
 type GetGameConfig = {
   axiosInstance: AxiosInstance;
-  game: CluedoGame;
 };
-export default function ({axiosInstance, game}: GetGameConfig): void {
+export default function ({axiosInstance}: GetGameConfig): void {
+  let game: CluedoGame;
+  before(() => {
+    game = games[0];
+  });
+
   it('200 cluedo game', done => {
     axiosInstance
       .get(RestAPIRouteName.GAME, {

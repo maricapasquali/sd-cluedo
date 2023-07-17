@@ -3,6 +3,15 @@ import {CluedoGameModel, DocCluedoGame} from './schemas';
 import {GameManager, GamesManager} from '../index';
 import * as _ from 'lodash';
 import {NotFoundError, NotInRoundError} from './errors';
+import HousePart = GamerElements.HousePart;
+import RoomName = GamerElements.RoomName;
+import CharacterName = GamerElements.CharacterName;
+import WeaponName = GamerElements.WeaponName;
+import LobbyName = GamerElements.LobbyName;
+import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
+import CardsDeck = GamerElements.CardsDeck;
+import GameStatus = CluedoGames.Status;
+import GamerRole = Gamers.Role;
 
 export class MongoDBGameManager implements GameManager {
   private readonly _gameId: string;
@@ -67,10 +76,8 @@ export class MongoDBGameManager implements GameManager {
   startGame(): Promise<CluedoGame> {
     return this.game()
       .then(game => {
-        const _roomNames: string[] = _.shuffle(
-          Object.values(GamerElements.RoomName)
-        );
-        const _weaponNames: string[] = Object.values(GamerElements.WeaponName);
+        const _roomNames: string[] = _.shuffle(Object.values(RoomName));
+        const _weaponNames: string[] = Object.values(WeaponName);
 
         const weapons: Weapon[] = [];
         while (_roomNames.length > 0) {
@@ -81,27 +88,28 @@ export class MongoDBGameManager implements GameManager {
           }
         }
 
-        const rooms: Room[] = Object.values(GamerElements.RoomName).map(
+        const rooms: Room[] = Object.values(RoomName).map(
           rn =>
             ({
               name: rn,
-              secretPassage: GamerElements.RoomWithSecretPassage[rn],
+              secretPassage: RoomWithSecretPassage[rn],
             } as Room)
         );
-        const characters: Character[] = Object.values(
-          GamerElements.CharacterName
-        ).map(
+        const characters: Character[] = Object.values(CharacterName).map(
           cn =>
             ({
               name: cn,
-              place: GamerElements.LobbyName.MAIN_LOBBY,
+              place: LobbyName.MAIN_LOBBY,
             } as Character)
         );
 
-        game.status = CluedoGames.Status.STARTED;
+        game.status = GameStatus.STARTED;
         game.weapons = weapons;
         game.characters = characters;
         game.rooms = rooms;
+        game.lobbies = Object.values(LobbyName).map(l => ({
+          name: l,
+        }));
         const _solution: Suggestion = {
           character: characters[this.randIndex(characters.length)].name,
           room: rooms[this.randIndex(rooms.length)].name,
@@ -109,11 +117,9 @@ export class MongoDBGameManager implements GameManager {
         };
         game.solution = _solution;
         game.roundGamer = game.gamers[0].identifier;
-        const _cardsDeck = [
-          ...Object.values(GamerElements.RoomName),
-          ...Object.values(GamerElements.WeaponName),
-          ...Object.values(GamerElements.CharacterName),
-        ].filter(c => !Object.values(_solution).includes(c));
+        const _cardsDeck: string[] = CardsDeck.filter(
+          c => !Object.values(_solution).includes(c)
+        );
         this.dealCards(_.shuffle(_cardsDeck), game.gamers);
         return game.save();
       })
@@ -121,10 +127,7 @@ export class MongoDBGameManager implements GameManager {
   }
 
   rollDie(): Promise<string> {
-    const _housePartsNames: string[] = _.shuffle([
-      ...Object.values(GamerElements.RoomName),
-      ...Object.values(GamerElements.LobbyName),
-    ]);
+    const _housePartsNames: string[] = _.shuffle(HousePart);
     const _randHousePart: string =
       _housePartsNames[this.randIndex(_housePartsNames.length)];
     return this.game()
@@ -215,9 +218,9 @@ export class MongoDBGameManager implements GameManager {
     return this.game().then(game => {
       const _gamerRound = this.getRoundGamer(game);
       const index =
-        _gamerRound.role?.findIndex(r => r === Gamers.Role.PARTICIPANT) || -1;
+        _gamerRound.role?.findIndex(r => r === GamerRole.PARTICIPANT) || -1;
       if (index > 0 && _gamerRound.role) {
-        _gamerRound.role[index] = Gamers.Role.SILENT;
+        _gamerRound.role[index] = GamerRole.SILENT;
       }
       return game.save().then(() => _gamerRound);
     });
@@ -249,7 +252,7 @@ export class MongoDBGameManager implements GameManager {
       );
       do {
         _nextPosition = (_nextPosition + 1) % game.gamers.length;
-      } while (game.gamers[_nextPosition].role?.includes(Gamers.Role.SILENT));
+      } while (game.gamers[_nextPosition].role?.includes(GamerRole.SILENT));
       game.roundGamer = game.gamers[_nextPosition].identifier;
       return game
         .save()
@@ -264,7 +267,7 @@ export class MongoDBGameManager implements GameManager {
   stopGame(): Promise<boolean> {
     return CluedoGameModel.updateOne(
       {identifier: this._gameId},
-      {$set: {status: CluedoGames.Status.FINISHED.toString()}}
+      {$set: {status: GameStatus.FINISHED}}
     ).then(result => result.modifiedCount === 1);
   }
 
@@ -311,7 +314,7 @@ export const MongoDBGamesManager = new (class implements GamesManager {
 
   createGame(game: CluedoGame): Promise<CluedoGame> {
     game.gamers.forEach(
-      g => (g.role = [Gamers.Role.CREATOR, Gamers.Role.PARTICIPANT])
+      g => (g.role = [GamerRole.CREATOR, GamerRole.PARTICIPANT])
     );
     return new CluedoGameModel(game).save().then(gameDoc => {
       const game: CluedoGame = gameDoc.toObject();
@@ -320,12 +323,6 @@ export const MongoDBGamesManager = new (class implements GamesManager {
       );
       return game;
     });
-  }
-
-  deleteGame(identifier: string): Promise<boolean> {
-    return CluedoGameModel.deleteOne({identifier}).then(
-      result => result.deletedCount === 1
-    );
   }
 
   getGames(status?: string): Promise<CluedoGame[]> {

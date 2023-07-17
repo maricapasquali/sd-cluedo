@@ -48,4 +48,15 @@ export namespace GamerElements {
   };
 
   export type Card = RoomName | WeaponName | CharacterName;
+
+  export const HousePart: string[] = [
+    ...Object.values(GamerElements.RoomName),
+    ...Object.values(GamerElements.LobbyName),
+  ];
+
+  export const CardsDeck: string[] = [
+    ...Object.values(GamerElements.RoomName),
+    ...Object.values(GamerElements.WeaponName),
+    ...Object.values(GamerElements.CharacterName),
+  ];
 }

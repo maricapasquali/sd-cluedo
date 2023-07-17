@@ -4,20 +4,21 @@ import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {v4 as uuid} from 'uuid';
 import {should as shouldFunc} from 'chai';
-import {tokensManager} from '../../helper';
+import {gamersAuthenticationTokens, games} from '../../helper';
 
 const should = shouldFunc();
 
 type DeleteGamerConfig = {
   axiosInstance: AxiosInstance;
-  game: CluedoGame;
 };
-export default function ({axiosInstance, game}: DeleteGamerConfig): void {
-  let index: number;
+export default function ({axiosInstance}: DeleteGamerConfig): void {
+  const indexDeletedGamer = 0;
+  let game: CluedoGame;
   let deletedGamer: Gamer;
+
   before(() => {
-    index = 0; //game.gamers.length - 1;
-    deletedGamer = game.gamers[index];
+    game = games[0];
+    deletedGamer = game.gamers[indexDeletedGamer];
   });
 
   it('401 error', done => {
@@ -38,7 +39,7 @@ export default function ({axiosInstance, game}: DeleteGamerConfig): void {
   });
 
   it('403 error', done => {
-    const tokenForbidden = Object.entries(tokensManager).find(
+    const tokenForbidden = Object.entries(gamersAuthenticationTokens).find(
       ([k]) => k !== deletedGamer.identifier
     );
     axiosInstance
@@ -75,7 +76,7 @@ export default function ({axiosInstance, game}: DeleteGamerConfig): void {
     axiosInstance
       .delete(RestAPIRouteName.GAMER, {
         headers: {
-          authorization: tokensManager[deletedGamer.identifier],
+          authorization: gamersAuthenticationTokens[deletedGamer.identifier],
         },
         urlParams: {
           id: game.identifier,
@@ -87,7 +88,7 @@ export default function ({axiosInstance, game}: DeleteGamerConfig): void {
         response.headers['content-type'].should.contain('text/plain');
         const dGamer = response.data;
         dGamer.should.be.a('string').and.equal(deletedGamer.identifier);
-        game.gamers.splice(index, 1);
+        game.gamers.splice(indexDeletedGamer, 1);
         done();
       })
       .catch(done);

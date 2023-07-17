@@ -7,4 +7,5 @@ declare interface CluedoGame {
   weapons?: Weapon[];
   characters?: Character[];
   rooms?: Room[];
+  lobbies?: Lobby[];
 }

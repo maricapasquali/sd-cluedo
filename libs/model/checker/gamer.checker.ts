@@ -1,40 +1,34 @@
 import {Array, Record, String} from 'runtypes';
-import {identifierConstraint} from './constraints';
+import {characterConstraint, identifierConstraint} from './constraints';
 import {GamerElements} from '../game-element.model';
 import {Gamers} from '../gamer.model';
 import {CDevice} from './device.checker';
-import CharacterName = GamerElements.CharacterName;
-import WeaponName = GamerElements.WeaponName;
-import RoomName = GamerElements.RoomName;
 import SuspectState = GamerElements.SuspectState;
 import {CSuggestion} from './game-element.checker';
 import Card = GamerElements.Card;
+import CardsDeck = GamerElements.CardsDeck;
 
-export const CStructuedNoteItem = Record({
-  name: String.withConstraint(s =>
-    [
-      ...Object.values(CharacterName),
-      ...Object.values(RoomName),
-      ...Object.values(WeaponName),
-    ].includes(s as CharacterName | RoomName | WeaponName)
-  ),
-  suspectState: String.withConstraint(s =>
-    Object.values(SuspectState).includes(s as SuspectState)
+export const CStructuredNoteItem = Record({
+  name: String.withConstraint(s => CardsDeck.includes(s as Card), {
+    name: 'StructuredNoteItem name available ' + CardsDeck,
+  }),
+  suspectState: String.withConstraint(
+    s => Object.values(SuspectState).includes(s as SuspectState),
+    {
+      name: 'Suspect States available ' + Object.values(SuspectState),
+    }
   ),
 });
 
 export const CNotes = Record({
   text: String.optional(),
-  structuredNotes: CStructuedNoteItem.optional(),
+  structuredNotes: CStructuredNoteItem.optional(),
 });
 
 export const CGamer = Record({
   identifier: identifierConstraint,
   username: String,
-  characterToken: String.withConstraint(
-    s => Object.values(CharacterName).includes(s as CharacterName),
-    {name: 'Character token available ' + Object.values(CharacterName)}
-  ),
+  characterToken: characterConstraint,
   role: Array(String)
     .withConstraint(
       roles => {
@@ -53,22 +47,10 @@ export const CGamer = Record({
     .withConstraint(
       cards => {
         if (!cards) return true;
-        return cards?.every(c =>
-          [
-            ...Object.values(CharacterName),
-            ...Object.values(RoomName),
-            ...Object.values(WeaponName),
-          ].includes(c as Card)
-        );
+        return cards?.every(c => CardsDeck.includes(c as Card));
       },
       {
-        name:
-          'Cards name available ' +
-          [
-            ...Object.values(CharacterName),
-            ...Object.values(RoomName),
-            ...Object.values(WeaponName),
-          ],
+        name: 'Cards available ' + CardsDeck,
       }
     )
     .optional(),

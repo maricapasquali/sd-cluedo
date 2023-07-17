@@ -83,27 +83,6 @@ describe('Games Manager', function () {
     gameManagerSpec({game});
   });
 
-  describe('#deleteGame(..)', () => {
-    it('delete an existing cluedo game', done => {
-      MongoDBGamesManager.deleteGame(game.identifier)
-        .then(deleted => {
-          logger.debug(deleted);
-          deleted.should.be.true;
-          done();
-        })
-        .catch(done);
-    });
-    it('no found cluedo game', done => {
-      MongoDBGamesManager.deleteGame(uuid())
-        .then(deleted => {
-          logger.debug(deleted);
-          deleted.should.be.false;
-          done();
-        })
-        .catch(done);
-    });
-  });
-
   after(done => {
     mongoose.disconnect().then(done).catch(done);
   });

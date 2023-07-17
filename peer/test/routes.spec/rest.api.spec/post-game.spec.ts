@@ -4,7 +4,7 @@ import {logger} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
 import {GamerElements, CluedoGames} from '@model';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
-import {tokensManager} from '../../helper';
+import {gamersAuthenticationTokens, games} from '../../helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {should as shouldFunc} from 'chai';
 
@@ -12,9 +12,8 @@ const should = shouldFunc();
 
 type PostGameConfig = {
   axiosInstance: AxiosInstance;
-  game: CluedoGame;
 };
-export default function ({axiosInstance, game}: PostGameConfig): void {
+export default function ({axiosInstance}: PostGameConfig): void {
   const creator: Gamer = {
     identifier: uuid(),
     username: 'mario03',
@@ -49,8 +48,8 @@ export default function ({axiosInstance, game}: PostGameConfig): void {
           .map((g: Gamer) => g.identifier)
           .should.contain(creator.identifier);
 
-        game = Object.assign(game, waitingGame);
-        tokensManager[creator.identifier] = accessToken;
+        games.push(waitingGame);
+        gamersAuthenticationTokens[creator.identifier] = accessToken;
         done();
       })
       .catch(done);

@@ -6,6 +6,12 @@ import {Gamers, CluedoGames, GamerElements} from '@model';
 import {GameManager} from '../../src/managers/games';
 import {CluedoGameModel} from '../../src/managers/games/mongoose/schemas';
 import * as _ from 'lodash';
+import GamerRole = Gamers.Role;
+import CharacterName = GamerElements.CharacterName;
+import RoomName = GamerElements.RoomName;
+import WeaponName = GamerElements.WeaponName;
+import HousePart = GamerElements.HousePart;
+
 const should = shouldFunc();
 
 type GameManagerOptions = {
@@ -15,16 +21,16 @@ export default function ({game}: GameManagerOptions): void {
   const gamer1: Gamer = {
     identifier: uuid(),
     username: 'antonio01',
-    characterToken: GamerElements.CharacterName.MISS_SCARLET,
+    characterToken: CharacterName.MISS_SCARLET,
   };
   const gamer2: Gamer = {
     identifier: uuid(),
     username: 'anna',
-    characterToken: GamerElements.CharacterName.MRS_PEACOCK,
+    characterToken: CharacterName.MRS_PEACOCK,
   };
-
   let gameManager: GameManager;
   let gamerInRound: Gamer;
+
   before(() => {
     gameManager = MongoDBGamesManager.gameManagers(game.identifier);
   });
@@ -48,7 +54,7 @@ export default function ({game}: GameManagerOptions): void {
         newGamer.should.have.property('identifier').equal(gamer1.identifier);
         newGamer.should.have
           .property('role')
-          .deep.equal([Gamers.Role.PARTICIPANT]);
+          .deep.equal([GamerRole.PARTICIPANT]);
         done();
       })
       .catch(done);
@@ -116,15 +122,11 @@ export default function ({game}: GameManagerOptions): void {
   });
 
   it('#rollDie(..)', done => {
-    const houseParts = [
-      ...Object.values(GamerElements.RoomName),
-      ...Object.values(GamerElements.LobbyName),
-    ];
     gameManager
       .rollDie()
       .then(housePart => {
         logger.debug(housePart);
-        housePart.should.be.oneOf(houseParts);
+        housePart.should.be.oneOf(HousePart);
         done();
       })
       .catch(done);
@@ -138,14 +140,14 @@ export default function ({game}: GameManagerOptions): void {
       },
       {
         $set: {
-          'characters.$.place': GamerElements.RoomName.DINING_ROOM,
+          'characters.$.place': RoomName.DINING_ROOM,
         },
       }
     )
       .then(() => gameManager.useSecretPassage())
       .then(room => {
         should.exist(room);
-        room.should.equal(GamerElements.RoomName.BILLIARD_ROOM);
+        room.should.equal(RoomName.BILLIARD_ROOM);
         done();
       })
       .catch(done);
@@ -153,9 +155,9 @@ export default function ({game}: GameManagerOptions): void {
 
   it('#makeAssumption(..)', done => {
     const suggestion: Suggestion = {
-      character: GamerElements.CharacterName.MISS_SCARLET,
-      room: GamerElements.RoomName.DINING_ROOM,
-      weapon: GamerElements.WeaponName.DAGGER,
+      character: CharacterName.MISS_SCARLET,
+      room: RoomName.DINING_ROOM,
+      weapon: WeaponName.DAGGER,
     };
     gameManager
       .makeAssumption(suggestion)
@@ -169,12 +171,9 @@ export default function ({game}: GameManagerOptions): void {
 
   it('#makeAccusation(..): wrong accusation', done => {
     const suggestion: Suggestion = {
-      character: GamerElements.CharacterName.MISS_SCARLET,
-      room:
-        Object.values(GamerElements.RoomName).find(
-          r => game.solution?.room !== r
-        ) || '',
-      weapon: GamerElements.WeaponName.DAGGER,
+      character: CharacterName.MISS_SCARLET,
+      room: Object.values(RoomName).find(r => game.solution?.room !== r) || '',
+      weapon: WeaponName.DAGGER,
     };
     logger.debug(suggestion);
     gameManager
@@ -214,7 +213,7 @@ export default function ({game}: GameManagerOptions): void {
     });
     it('structured note', done => {
       const notes: StructuedNoteItem = {
-        name: GamerElements.RoomName.STUDY,
+        name: RoomName.STUDY,
         suspectState: GamerElements.SuspectState.MAYBE,
       };
       gameManager
@@ -235,8 +234,8 @@ export default function ({game}: GameManagerOptions): void {
         logger.debug(gamer.role);
         gamer.should.have
           .property('role')
-          .that.contains(Gamers.Role.SILENT)
-          .and.not.contains(Gamers.Role.PARTICIPANT);
+          .that.contains(GamerRole.SILENT)
+          .and.not.contains(GamerRole.PARTICIPANT);
         done();
       })
       .catch(done);

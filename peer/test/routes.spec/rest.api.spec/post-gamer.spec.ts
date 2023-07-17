@@ -5,21 +5,25 @@ import {GamerElements} from '@model';
 import {should as shouldFunc} from 'chai';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {tokensManager} from '../../helper';
+import {gamersAuthenticationTokens, games} from '../../helper';
 import {logger} from '@utils/logger';
 
 const should = shouldFunc();
 
 type PostGamerConfig = {
   axiosInstance: AxiosInstance;
-  game: CluedoGame;
 };
-export default function ({axiosInstance, game}: PostGamerConfig): void {
+export default function ({axiosInstance}: PostGamerConfig): void {
   const gamer: Gamer = {
     identifier: uuid(),
     username: 'jake-green',
     characterToken: GamerElements.CharacterName.COLONEL_MUSTARD,
   };
+  let game: CluedoGame;
+
+  before(() => {
+    game = games[0];
+  });
 
   it('404 error (game not found)', done => {
     axiosInstance
@@ -55,7 +59,7 @@ export default function ({axiosInstance, game}: PostGamerConfig): void {
           .property('characterToken')
           .equal(gamer.characterToken);
         game.gamers.push(newGamer);
-        tokensManager[gamer.identifier] = accessToken;
+        gamersAuthenticationTokens[gamer.identifier] = accessToken;
         done();
       })
       .catch(done);

@@ -190,6 +190,20 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>({
     default: [],
     required: false,
   },
+  lobbies: {
+    type: [
+      {
+        _id: false,
+        name: {
+          type: String,
+          required: true,
+          enum: Object.values(GamerElements.LobbyName),
+        },
+      },
+    ],
+    default: [],
+    required: false,
+  },
 });
 
 CluedoGameSchema.set('toObject', {

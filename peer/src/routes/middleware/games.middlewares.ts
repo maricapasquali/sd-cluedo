@@ -24,6 +24,7 @@ import Action = QueryParameters.Action;
 import RoomName = GamerElements.RoomName;
 import CharacterName = GamerElements.CharacterName;
 import WeaponName = GamerElements.WeaponName;
+import GameStatus = CluedoGames.Status;
 
 export function handlerBadRequest(
   req: Request,
@@ -49,15 +50,11 @@ export function handlerBadRequest(
       req.query.status
     ) {
       logger.debug('[handlerBadRequest]: retrieve games with status');
-      if (
-        !Object.values(CluedoGames.Status).includes(
-          req.query.status as CluedoGames.Status
-        )
-      ) {
+      if (!Object.values(GameStatus).includes(req.query.status as GameStatus)) {
         return BadRequestSender.json(res, {
           message:
             'Game status is not valid. Available are ' +
-            Object.values(CluedoGames.Status),
+            Object.values(GameStatus),
         });
       }
     } else if (
@@ -65,15 +62,11 @@ export function handlerBadRequest(
       new RegExp(RestAPIRouteName.GAMES + '/.*').test(req.path)
     ) {
       logger.debug('[handlerBadRequest]: retrieve game');
-      if (
-        !Object.values(CluedoGames.Status).includes(
-          req.query.status as CluedoGames.Status
-        )
-      ) {
+      if (!Object.values(GameStatus).includes(req.query.status as GameStatus)) {
         return BadRequestSender.json(res, {
           message:
             'Game status is not valid. Available are ' +
-            Object.values(CluedoGames.Status),
+            Object.values(GameStatus),
         });
       }
     } else if (
@@ -228,7 +221,7 @@ export function handlerForbiddenRequest(
         .then(game => {
           if (action !== Action.START_GAME) {
             MongoDBGamesManager.gameManagers(gameId)
-              .game({status: CluedoGames.Status.STARTED})
+              .game({status: GameStatus.STARTED})
               .then(() =>
                 MongoDBGamesManager.gameManagers(gameId).isInRound(gamerId)
               )
@@ -272,9 +265,7 @@ export function handlerGoneRequest(
   const action = req.query.action as Action;
   const filters = {
     status:
-      action === Action.START_GAME
-        ? CluedoGames.Status.WAITING
-        : CluedoGames.Status.STARTED,
+      action === Action.START_GAME ? GameStatus.WAITING : GameStatus.STARTED,
   };
   MongoDBGamesManager.gameManagers(req.params.id)
     .game(filters)
