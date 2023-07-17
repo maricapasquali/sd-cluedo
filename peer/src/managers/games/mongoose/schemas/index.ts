@@ -2,9 +2,9 @@ import {Document, model, Model, Schema} from 'mongoose';
 import {CluedoGames, Gamers, GamerElements} from '@model';
 import * as net from 'net';
 
-export type ICluedoGame = CluedoGame & Document;
+export type DocCluedoGame = CluedoGame & Document;
 
-const CluedoGameSchema: Schema<ICluedoGame> = new Schema<ICluedoGame>({
+const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>({
   identifier: {type: String, required: true},
   status: {
     type: String,
@@ -114,8 +114,8 @@ const CluedoGameSchema: Schema<ICluedoGame> = new Schema<ICluedoGame>({
       },
     ],
     required: true,
-    min: Gamers.MIN,
-    max: Gamers.MAX,
+    min: CluedoGames.MIN_GAMERS,
+    max: CluedoGames.MAX_GAMERS,
   },
   roundGamer: {
     type: String,
@@ -199,7 +199,7 @@ CluedoGameSchema.set('toObject', {
   },
 });
 
-export const CluedoGameModel: Model<ICluedoGame> = model<ICluedoGame>(
+export const CluedoGameModel: Model<DocCluedoGame> = model<DocCluedoGame>(
   'CluedoGame',
   CluedoGameSchema
 );

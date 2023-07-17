@@ -63,7 +63,7 @@ describe('Games Manager', function () {
       MongoDBGamesManager.getGames()
         .then(cluedoGames => {
           logger.debug(cluedoGames);
-          cluedoGames.map(g => g.identifier).should.contains(game.identifier);
+          cluedoGames.map(g => g.identifier).should.contain(game.identifier);
           done();
         })
         .catch(done);

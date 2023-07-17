@@ -23,15 +23,3 @@ declare interface Suggestion {
   weapon: string;
   room: string;
 }
-
-declare namespace GamerElements {
-  enum LobbyName {}
-
-  enum CharacterName {}
-
-  enum WeaponName {}
-
-  enum RoomName {}
-
-  enum SuspectState {}
-}

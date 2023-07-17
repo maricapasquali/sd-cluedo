@@ -11,7 +11,7 @@ import {
   SocketServerConfig,
 } from '@utils/https-server';
 import routes, {RestAPIRouteName} from '../src/routes';
-import createTokenManager from '../src/managers/tokens';
+import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import handlerSocket from '../src/socket';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
@@ -19,15 +19,20 @@ import {io as Client, Socket} from 'socket.io-client';
 import {createAxiosInstance} from '@utils/axios';
 
 function getHttpsConfig(port: number): HTTPSServerConfig {
+  const httpsOptions = {
+    key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
+    cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
+  };
   return {
-    options: {
-      key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
-      cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
-    },
+    options: httpsOptions,
     uses: [express.json(), loggerHttp],
     routes,
     sets: {
-      tokensManager: createTokenManager('https://localhost:' + port),
+      tokensManager: BasicTokenManager.create({
+        issuer: 'https://localhost:' + port,
+        publicKey: httpsOptions.cert,
+        privateKey: httpsOptions.key,
+      }),
     },
   };
 }

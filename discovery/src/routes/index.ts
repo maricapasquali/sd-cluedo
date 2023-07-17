@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as controller from './controller';
 import * as middleware from './middleware';
+import {serverError, pathNotFound} from '@utils/rest-api/middlewares';
 
 export enum RestAPIRouteName {
   PEERS = '/api/v1/peers',
@@ -41,7 +42,7 @@ export default function (app: express.Application): void {
       controller.restApi.deletePeer
     );
 
-  app.use(controller.serverError);
+  app.use(serverError);
 
-  app.use(controller.pathNotFound);
+  app.use(pathNotFound);
 }

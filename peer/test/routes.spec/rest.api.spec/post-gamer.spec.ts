@@ -6,6 +6,7 @@ import {should as shouldFunc} from 'chai';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {tokensManager} from '../../helper';
+import {logger} from '@utils/logger';
 
 const should = shouldFunc();
 
@@ -17,27 +18,10 @@ export default function ({axiosInstance, game}: PostGamerConfig): void {
   const gamer: Gamer = {
     identifier: uuid(),
     username: 'jake-green',
-    characterToken: GamerElements.CharacterName.MISS_SCARLET,
+    characterToken: GamerElements.CharacterName.COLONEL_MUSTARD,
   };
 
-  it('400 error', done => {
-    axiosInstance
-      .post(
-        RestAPIRouteName.GAMERS,
-        {...gamer, characterToken: 'mr. smith'},
-        {
-          urlParams: {
-            id: game.identifier,
-          },
-        }
-      )
-      .then(done)
-      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST))
-      .then(done)
-      .catch(done);
-  });
-
-  it('404 error', done => {
+  it('404 error (game not found)', done => {
     axiosInstance
       .post(RestAPIRouteName.GAMERS, gamer, {
         urlParams: {
@@ -46,19 +30,6 @@ export default function ({axiosInstance, game}: PostGamerConfig): void {
       })
       .then(done)
       .catch(err => handlerResponseErrorCheck(err, ResponseStatus.NOT_FOUND))
-      .then(done)
-      .catch(done);
-  });
-
-  it('409 error', done => {
-    axiosInstance
-      .post(RestAPIRouteName.GAMERS, gamer, {
-        urlParams: {
-          id: game.identifier,
-        },
-      })
-      .then(done)
-      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.CONFLICT))
       .then(done)
       .catch(done);
   });
@@ -74,14 +45,62 @@ export default function ({axiosInstance, game}: PostGamerConfig): void {
         response.status.should.equal(ResponseStatus.CREATED);
         const accessToken = response.headers['x-access-token'] as string;
         should.exist(accessToken);
-        accessToken.should.be.contains('Bearer');
+        accessToken.should.contain('Bearer');
         const newGamer = response.data;
+        logger.debug(newGamer);
         should.exist(newGamer);
         newGamer.should.have.property('identifier').equal(gamer.identifier);
+        newGamer.should.have.property('username').equal(gamer.username);
+        newGamer.should.have
+          .property('characterToken')
+          .equal(gamer.characterToken);
         game.gamers.push(newGamer);
-        tokensManager[newGamer.identifier] = response.headers['x-access-token'];
+        tokensManager[gamer.identifier] = accessToken;
         done();
       })
       .catch(done);
+  });
+
+  describe('400 error', () => {
+    it('No conform body', done => {
+      axiosInstance
+        .post(
+          RestAPIRouteName.GAMERS,
+          {...gamer, characterToken: 'mr. smith'},
+          {
+            urlParams: {
+              id: game.identifier,
+            },
+          }
+        )
+        .then(done)
+        .catch(err =>
+          handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST)
+        )
+        .then(done)
+        .catch(done);
+    });
+    it('Character token already taken', done => {
+      axiosInstance
+        .post(
+          RestAPIRouteName.GAMERS,
+          {
+            identifier: uuid(),
+            username: 'antony-yellow',
+            characterToken: GamerElements.CharacterName.MISS_SCARLET,
+          },
+          {
+            urlParams: {
+              id: game.identifier,
+            },
+          }
+        )
+        .then(done)
+        .catch(err =>
+          handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST)
+        )
+        .then(done)
+        .catch(done);
+    });
   });
 }

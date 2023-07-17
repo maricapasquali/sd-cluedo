@@ -3,7 +3,7 @@ import {ITokensManager} from '@utils/tokens-manager';
 import {Server} from 'socket.io';
 
 export function catchableHandlerRequestPromise(
-  fun: () => number | void
+  fun: () => number | void | any
 ): Promise<void> {
   return new Promise((resolve, reject) => {
     try {

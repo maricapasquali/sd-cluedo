@@ -4,7 +4,6 @@ import {CluedoGames} from '@model';
 import {should as shouldFunc} from 'chai';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
-
 const should = shouldFunc();
 
 type GetGameConfig = {
@@ -33,6 +32,7 @@ export default function ({axiosInstance, game}: GetGameConfig): void {
       })
       .catch(done);
   });
+
   it('400 error', done => {
     axiosInstance
       .get(RestAPIRouteName.GAME, {
@@ -48,6 +48,7 @@ export default function ({axiosInstance, game}: GetGameConfig): void {
       .then(done)
       .catch(done);
   });
+
   it('404 error', done => {
     axiosInstance
       .get(RestAPIRouteName.GAME, {

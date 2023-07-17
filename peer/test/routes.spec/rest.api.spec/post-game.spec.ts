@@ -23,39 +23,34 @@ export default function ({axiosInstance, game}: PostGameConfig): void {
 
   it('400 error', done => {
     axiosInstance
-      .post(RestAPIRouteName.GAMES, creator)
+      .post(RestAPIRouteName.GAMES, {identifier: uuid(), username: 'gina'})
       .then(done)
       .catch(err => handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST))
       .then(done)
       .catch(done);
   });
 
-  it('409 error', done => {
-    axiosInstance
-      .post(RestAPIRouteName.GAMES, [creator])
-      .then(done)
-      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.CONFLICT))
-      .then(done)
-      .catch(done);
-  });
-
   it('201 create cluedo game (in waiting state)', done => {
     axiosInstance
-      .post(RestAPIRouteName.GAMES, [creator])
+      .post(RestAPIRouteName.GAMES, creator)
       .then(response => {
         response.status.should.equal(ResponseStatus.CREATED);
         const accessToken = response.headers['x-access-token'] as string;
         should.exist(accessToken);
-        accessToken.should.be.contains('Bearer');
+        accessToken.should.contain('Bearer');
         const waitingGame = response.data;
         logger.debug(waitingGame);
         should.exist(waitingGame);
         waitingGame.should.have
           .property('status')
           .equal(CluedoGames.Status.WAITING);
-        waitingGame.should.have.property('gamers').contains(creator);
-        game = waitingGame;
-        tokensManager[creator.identifier] = response.headers['x-access-token'];
+        waitingGame.gamers.should.a('array').not.empty;
+        waitingGame.gamers
+          .map((g: Gamer) => g.identifier)
+          .should.contain(creator.identifier);
+
+        game = Object.assign(game, waitingGame);
+        tokensManager[creator.identifier] = accessToken;
         done();
       })
       .catch(done);

@@ -10,7 +10,14 @@ export class NotFoundError extends MongooseError {
   }
 }
 
+export class NotInRoundError extends MongooseError {
+  constructor(gamerId: string) {
+    super(`Gamer ${gamerId} is not in round.`);
+  }
+}
+
 export namespace NotFoundError {
   export const NOT_FOUND_GAME = 'NOT_FOUND_GAME';
+  export const NOT_FOUND_GAMER = 'NOT_FOUND_GAMER';
   export const NOT_FOUND_SECRET_PASSAGE = 'NOT_FOUND_SECRET_PASSAGE';
 }

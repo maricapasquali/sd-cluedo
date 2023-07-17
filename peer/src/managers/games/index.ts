@@ -1,7 +1,7 @@
-import {ICluedoGame} from './mongoose/schemas';
+import {DocCluedoGame} from './mongoose/schemas';
 
 export interface GameManager {
-  game: Promise<ICluedoGame>;
+  game(filters?: {status?: string; gamer?: string}): Promise<DocCluedoGame>;
   findGamer(gamerId: string): Promise<Gamer | undefined>;
   isInRound(gamerId: string): Promise<boolean>;
   addGamer(gamer: Gamer): Promise<Gamer>;
@@ -13,9 +13,9 @@ export interface GameManager {
   makeAssumption(suggestion: Suggestion): Promise<boolean>;
   takeNote(gamer: string, notes: string | StructuedNoteItem): Promise<boolean>;
   makeAccusation(suggestion: Suggestion): Promise<Suggestion>;
-  silentGamerInRound(): Promise<string[]>;
-  leave(): Promise<Gamer[]>;
-  passRoundToNext(): Promise<string | undefined>;
+  silentGamerInRound(): Promise<Gamer>;
+  leave(gamerId?: string): Promise<Gamer[]>;
+  passRoundToNext(gamerId?: string): Promise<string | undefined>;
   stopGame(): Promise<boolean>;
 }
 

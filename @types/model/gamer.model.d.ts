@@ -19,9 +19,3 @@ declare interface Notes {
   text?: string;
   structuredNotes?: StructuedNoteItem[];
 }
-
-declare namespace Gamers {
-  const MIN: number;
-  const MAX: number;
-  enum Role {}
-}

@@ -11,6 +11,8 @@ import {
 import routes from './routes';
 import sockets from './socket';
 import mongoose from 'mongoose';
+import {BasicTokenManager} from '@utils/tokens-manager/basic';
+import * as os from 'os';
 
 const internalPort: number = Number(process.env.PORT) || 3001;
 const externalPort: number = Number(process.env.EXTERNAL_PORT) || internalPort;
@@ -30,15 +32,21 @@ mongoose.connect(mongodbAddress).then(
   err => logger.error(err, 'Connection database fail.\n')
 );
 
+const httpsOptions = {
+  key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
+  cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
+};
+
 const serverConfig: HTTPSServerConfig = {
-  options: {
-    key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
-    cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
-  },
-  uses: [express.json(), loggerHttp],
+  options: httpsOptions,
+  uses: [express.json(), express.query({}), loggerHttp],
   routes,
   sets: {
-    tokensManager: null,
+    tokensManager: BasicTokenManager.create({
+      issuer: 'https://' + os.hostname() + ':' + externalPort,
+      publicKey: httpsOptions.cert,
+      privateKey: httpsOptions.key,
+    }),
   },
 };
 

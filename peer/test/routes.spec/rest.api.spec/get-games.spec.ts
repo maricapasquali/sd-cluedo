@@ -17,7 +17,7 @@ export default function ({axiosInstance, game}: GetGamesConfig): void {
       .then(response => {
         response.status.should.equal(ResponseStatus.OK);
         const games = response.data;
-        games.should.contains(game);
+        games.should.be.a('array').and.deep.contains(game);
         done();
       })
       .catch(done);

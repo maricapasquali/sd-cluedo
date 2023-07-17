@@ -46,4 +46,6 @@ export namespace GamerElements {
     [RoomName.DINING_ROOM]: RoomName.BILLIARD_ROOM,
     [RoomName.STUDY]: RoomName.BALLROOM,
   };
+
+  export type Card = RoomName | WeaponName | CharacterName;
 }

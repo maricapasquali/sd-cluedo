@@ -2,7 +2,6 @@ import postGameSpec from './post-game.spec';
 import getGamesSpec from './get-games.spec';
 import getGameSpec from './get-game.spec';
 import patchGameSpec from './patch-games.spec';
-import deleteGameSpec from './delete-game.spec';
 import postGamerSpec from './post-gamer.spec';
 import deleteGamerSpec from './delete-gamer.spec';
 
@@ -18,10 +17,22 @@ import {logger, loggerHttp} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
 
 import {should as shouldFunc} from 'chai';
+import mongoose from 'mongoose';
+import {BasicTokenManager} from '@utils/tokens-manager/basic';
+import {handlerResponseErrorCheck} from '@utils/test-helper';
+import {ResponseStatus} from '@utils/rest-api/responses';
+import {CluedoGames, GamerElements} from '@model';
+import {tokensManager} from '../../helper';
+import {MongoDBGamesManager} from '../../../src/managers/games/mongoose';
 
 const should = shouldFunc();
 
-describe('Rest API', () => {
+describe('Rest API', function () {
+  this.timeout(process.env.ENV_CI === 'CI/CD' ? 300000 : 10000); // 5 minutes for db connection in gitlab-ci
+
+  const mongodbURI: string =
+    process.env.MONGODB_ADDRESS || 'mongodb://localhost:27017/cluedo-test';
+
   const port: number = Number(process.env.PORT) || 3001;
   const peerServerAddress: string = 'https://localhost:' + port;
   const axiosInstance: AxiosInstance = createAxiosInstance({
@@ -33,22 +44,38 @@ describe('Rest API', () => {
     identifier: uuid(),
     gamers: [],
   };
-  const gamerInRound: string = cluedoGame.gamers[0]?.identifier || uuid();
 
   before(done => {
-    httpsServer = createHTTPSServer({
-      options: {
-        key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
-        cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
-      },
-      uses: [express.json(), loggerHttp],
-      routes,
-    })
-      .listen(port, () => {
-        logger.debug('Listening on ' + peerServerAddress);
-        done();
+    mongoose
+      .connect(mongodbURI)
+      .then(iMongoose => iMongoose.connection.db?.dropDatabase())
+      .then(() => {
+        const httpsOptions = {
+          key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
+          cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
+        };
+        httpsServer = createHTTPSServer({
+          options: httpsOptions,
+          uses: [express.json(), express.text(), loggerHttp],
+          routes,
+          sets: {
+            tokensManager: BasicTokenManager.create({
+              issuer: peerServerAddress,
+              publicKey: httpsOptions.cert,
+              privateKey: httpsOptions.key,
+            }),
+          },
+        })
+          .listen(port, () => {
+            logger.debug('Listening on ' + peerServerAddress);
+            done();
+          })
+          .on('error', err => {
+            mongoose.disconnect();
+            done(err);
+          });
       })
-      .on('error', done);
+      .catch(done);
   });
 
   describe('POST ' + RestAPIRouteName.GAMES, () =>
@@ -59,7 +86,7 @@ describe('Rest API', () => {
     getGamesSpec({axiosInstance, game: cluedoGame})
   );
 
-  describe('POST ' + RestAPIRouteName.GAMER, () =>
+  describe('POST ' + RestAPIRouteName.GAMERS, () =>
     postGamerSpec({axiosInstance, game: cluedoGame})
   );
 
@@ -72,17 +99,76 @@ describe('Rest API', () => {
   );
 
   describe('PATCH ' + RestAPIRouteName.GAME, () =>
-    patchGameSpec({axiosInstance, game: cluedoGame, gamerInRound})
+    patchGameSpec({axiosInstance})
   );
 
-  describe('DELETE ' + RestAPIRouteName.GAME, () =>
-    deleteGameSpec({axiosInstance, game: cluedoGame, gamerInRound})
-  );
+  describe('410 error', () => {
+    let startedGame: CluedoGame;
+    before(done => {
+      MongoDBGamesManager.getGames()
+        .then(games => {
+          startedGame =
+            games.find(g => g.status !== CluedoGames.Status.WAITING) ||
+            ({} as CluedoGame);
+          done();
+        })
+        .catch(done);
+    });
+    it(
+      'POST ' + RestAPIRouteName.GAMERS + ' on a started/finished game',
+      done => {
+        axiosInstance
+          .post(
+            RestAPIRouteName.GAMERS,
+            {
+              identifier: uuid(),
+              username: 'hiro',
+              characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+            },
+            {
+              urlParams: {
+                id: startedGame.identifier,
+              },
+            }
+          )
+          .then(done)
+          .catch(err => handlerResponseErrorCheck(err, ResponseStatus.GONE))
+          .then(done)
+          .catch(done);
+      }
+    );
+    it(
+      'DELETE ' + RestAPIRouteName.GAMER + ' on a started/finished game',
+      done => {
+        const deletedGamer =
+          startedGame.gamers[cluedoGame.gamers.length - 1].identifier;
+        axiosInstance
+          .delete(RestAPIRouteName.GAMER, {
+            headers: {
+              authorization: tokensManager[deletedGamer],
+            },
+            urlParams: {
+              id: startedGame.identifier,
+              gamerId: deletedGamer,
+            },
+          })
+          .then(done)
+          .catch(err => handlerResponseErrorCheck(err, ResponseStatus.GONE))
+          .then(done)
+          .catch(done);
+      }
+    );
+  });
 
   after(done => {
-    httpsServer.close(() => {
-      logger.debug('Close peer');
-      done();
-    });
+    mongoose
+      .disconnect()
+      .then(() => {
+        httpsServer.close(() => {
+          logger.debug('Close peer');
+          done();
+        });
+      })
+      .catch(done);
   });
 });

@@ -1,8 +1,8 @@
 import {CluedoGames, GamerElements, Gamers} from '@model';
-import {CluedoGameModel, ICluedoGame} from './schemas';
+import {CluedoGameModel, DocCluedoGame} from './schemas';
 import {GameManager, GamesManager} from '../index';
 import * as _ from 'lodash';
-import {NotFoundError} from './errors';
+import {NotFoundError, NotInRoundError} from './errors';
 
 export class MongoDBGameManager implements GameManager {
   private readonly _gameId: string;
@@ -11,8 +11,17 @@ export class MongoDBGameManager implements GameManager {
     this._gameId = gameId;
   }
 
-  get game(): Promise<ICluedoGame> {
-    return CluedoGameModel.findOne({identifier: this._gameId}).then(game => {
+  game(filters?: {status?: string; gamer?: string}): Promise<DocCluedoGame> {
+    const _filters: {
+      identifier: string;
+      status?: string;
+      ['gamer.identifier']?: string;
+    } = {
+      identifier: this._gameId,
+    };
+    if (filters?.status) _filters.status = filters.status;
+    if (filters?.gamer) _filters['gamer.identifier'] = filters.gamer;
+    return CluedoGameModel.findOne(_filters).then(game => {
       if (!game) {
         throw new NotFoundError({
           code: NotFoundError.NOT_FOUND_GAME,
@@ -56,11 +65,21 @@ export class MongoDBGameManager implements GameManager {
   }
 
   startGame(): Promise<CluedoGame> {
-    return this.game
+    return this.game()
       .then(game => {
-        const weapons: Weapon[] = Object.values(GamerElements.WeaponName).map(
-          wn => ({name: wn} as Weapon)
+        const _roomNames: string[] = _.shuffle(
+          Object.values(GamerElements.RoomName)
         );
+        const _weaponNames: string[] = Object.values(GamerElements.WeaponName);
+
+        const weapons: Weapon[] = [];
+        while (_roomNames.length > 0) {
+          for (let w = 0; w < _weaponNames.length; w++) {
+            const place = _roomNames.shift();
+            if (!place) break;
+            weapons[w] = {name: _weaponNames[w], place};
+          }
+        }
 
         const rooms: Room[] = Object.values(GamerElements.RoomName).map(
           rn =>
@@ -108,7 +127,7 @@ export class MongoDBGameManager implements GameManager {
     ]);
     const _randHousePart: string =
       _housePartsNames[this.randIndex(_housePartsNames.length)];
-    return this.game
+    return this.game()
       .then(game => {
         const _gamerRound = this.getRoundGamer(game);
         const _character: Character =
@@ -121,7 +140,7 @@ export class MongoDBGameManager implements GameManager {
   }
 
   useSecretPassage(): Promise<string> {
-    return this.game.then(game => {
+    return this.game().then(game => {
       const _gamerRound = this.getRoundGamer(game);
       const _character: Character = this.getCharacter(
         game,
@@ -145,7 +164,7 @@ export class MongoDBGameManager implements GameManager {
   }
 
   makeAssumption(suggestion: Suggestion): Promise<boolean> {
-    return this.game.then(game => {
+    return this.game().then(game => {
       const _gameObj = game.toObject();
       const _gamerRound = this.getRoundGamer(game);
       _gamerRound.assumptions?.push(suggestion);
@@ -184,30 +203,31 @@ export class MongoDBGameManager implements GameManager {
   }
 
   makeAccusation(suggestion: Suggestion): Promise<Suggestion> {
-    return this.game.then(game => {
+    return this.game().then(game => {
       const _gameObj = game.toObject();
       const _gamerRound = this.getRoundGamer(game);
       _gamerRound.accusation = suggestion;
-      return game.save().then(() => _gameObj.solution || ({} as Suggestion));
+      return game.save().then(() => _gameObj.solution);
     });
   }
 
-  silentGamerInRound(): Promise<string[]> {
-    return this.game.then(game => {
+  silentGamerInRound(): Promise<Gamer> {
+    return this.game().then(game => {
       const _gamerRound = this.getRoundGamer(game);
       const index =
-        _gamerRound?.role?.findIndex(r => r === Gamers.Role.PARTICIPANT) || -1;
+        _gamerRound.role?.findIndex(r => r === Gamers.Role.PARTICIPANT) || -1;
       if (index > 0 && _gamerRound.role) {
         _gamerRound.role[index] = Gamers.Role.SILENT;
       }
-      return game.save().then(() => _gamerRound.role || []);
+      return game.save().then(() => _gamerRound);
     });
   }
 
-  leave(): Promise<Gamer[]> {
-    return this.game.then(game => {
+  leave(gamerId?: string): Promise<Gamer[]> {
+    return this.game().then(game => {
+      const _gamerId = gamerId || game.roundGamer;
       const cardsGamerInRound =
-        game.gamers?.find(g => g.identifier === game.roundGamer)?.cards || [];
+        game.gamers?.find(g => g.identifier === _gamerId)?.cards || [];
       const _gamers = game.gamers?.filter(
         g => g.identifier !== game.roundGamer
       );
@@ -217,20 +237,26 @@ export class MongoDBGameManager implements GameManager {
     });
   }
 
-  passRoundToNext(): Promise<string | undefined> {
-    return this.game.then(game => {
+  passRoundToNext(gamerId?: string): Promise<string | undefined> {
+    return this.game().then(game => {
       const _gameObj = game.toObject();
       const gamerRoundId = game.roundGamer;
-      const _actualPosition = game.gamers?.findIndex(
+      if (gamerId && gamerId !== gamerRoundId) {
+        throw new NotInRoundError(gamerId);
+      }
+      let _nextPosition = game.gamers?.findIndex(
         g => g.identifier === gamerRoundId
       );
-      const _nextPosition: number = (_actualPosition + 1) % game.gamers.length;
-      const _nextRoundGamer: string = game.gamers[_nextPosition].identifier;
-      game.roundGamer = _nextRoundGamer;
+      do {
+        _nextPosition = (_nextPosition + 1) % game.gamers.length;
+      } while (game.gamers[_nextPosition].role?.includes(Gamers.Role.SILENT));
+      game.roundGamer = game.gamers[_nextPosition].identifier;
       return game
         .save()
         .then(newGame =>
-          _.isEqual(newGame.toObject(), _gameObj) ? undefined : _nextRoundGamer
+          _.isEqual(newGame.toObject(), _gameObj)
+            ? undefined
+            : newGame.roundGamer
         );
     });
   }
@@ -238,7 +264,7 @@ export class MongoDBGameManager implements GameManager {
   stopGame(): Promise<boolean> {
     return CluedoGameModel.updateOne(
       {identifier: this._gameId},
-      {$set: {status: CluedoGames.Status.FINISHED}}
+      {$set: {status: CluedoGames.Status.FINISHED.toString()}}
     ).then(result => result.modifiedCount === 1);
   }
 
@@ -257,9 +283,13 @@ export class MongoDBGameManager implements GameManager {
   }
 
   private getRoundGamer(game: CluedoGame): Gamer {
-    return (
-      game.gamers.find(g => g.identifier === game.roundGamer) || ({} as Gamer)
-    );
+    const gamer = game.gamers.find(g => g.identifier === game.roundGamer);
+    if (!gamer)
+      throw new NotFoundError({
+        code: NotFoundError.NOT_FOUND_GAMER,
+        message: `Gamer ${game.roundGamer} is not found`,
+      });
+    return gamer || ({} as Gamer);
   }
 
   private getCharacter(game: CluedoGame, characterName: string): Character {
@@ -273,6 +303,9 @@ export const MongoDBGamesManager = new (class implements GamesManager {
   readonly _gameManagers: {[gameId: string]: GameManager} = {};
 
   gameManagers(identifier: string): GameManager {
+    if (!this._gameManagers[identifier]) {
+      this._gameManagers[identifier] = new MongoDBGameManager(identifier);
+    }
     return this._gameManagers[identifier];
   }
 

@@ -30,7 +30,8 @@ export default function ({game}: GameManagerOptions): void {
   });
 
   it('after create game, a game manager should have been generated for the created game', done => {
-    gameManager.game
+    gameManager
+      .game()
       .then(storedGame => {
         should.exist(storedGame);
         storedGame.should.have.property('identifier').equal(game.identifier);
@@ -166,6 +167,38 @@ export default function ({game}: GameManagerOptions): void {
       .catch(done);
   });
 
+  it('#makeAccusation(..): wrong accusation', done => {
+    const suggestion: Suggestion = {
+      character: GamerElements.CharacterName.MISS_SCARLET,
+      room:
+        Object.values(GamerElements.RoomName).find(
+          r => game.solution?.room !== r
+        ) || '',
+      weapon: GamerElements.WeaponName.DAGGER,
+    };
+    logger.debug(suggestion);
+    gameManager
+      .makeAccusation(suggestion)
+      .then(solution => {
+        logger.debug(solution);
+        solution.should.be.not.deep.equal(suggestion);
+        done();
+      })
+      .catch(done);
+  });
+  it('#makeAccusation(..): right accusation', done => {
+    const gameSol = game.solution || ({} as Suggestion);
+    logger.debug(gameSol);
+    gameManager
+      .makeAccusation(gameSol)
+      .then(solution => {
+        logger.debug(solution);
+        solution.should.be.deep.equal(gameSol);
+        done();
+      })
+      .catch(done);
+  });
+
   describe('#takeNote(..)', () => {
     it('string note', done => {
       const text =
@@ -195,47 +228,15 @@ export default function ({game}: GameManagerOptions): void {
     });
   });
 
-  describe('#makeAccusation(..)', () => {
-    it('wrong accusation', done => {
-      const suggestion: Suggestion = {
-        character: GamerElements.CharacterName.MISS_SCARLET,
-        room:
-          Object.values(GamerElements.RoomName).find(
-            r => game.solution?.room !== r
-          ) || '',
-        weapon: GamerElements.WeaponName.DAGGER,
-      };
-      logger.debug(suggestion);
-      gameManager
-        .makeAccusation(suggestion)
-        .then(solution => {
-          logger.debug(solution);
-          solution.should.be.not.deep.equal(suggestion);
-          done();
-        })
-        .catch(done);
-    });
-    it('right accusation', done => {
-      const gameSol = game.solution || ({} as Suggestion);
-      logger.debug(gameSol);
-      gameManager
-        .makeAccusation(gameSol)
-        .then(solution => {
-          logger.debug(solution);
-          solution.should.be.deep.equal(gameSol);
-          done();
-        })
-        .catch(done);
-    });
-  });
-
   it('#silentGamer(..)', done => {
     gameManager
       .silentGamerInRound()
-      .then(newRole => {
-        logger.debug(newRole);
-        newRole.should.have.contains(Gamers.Role.SILENT);
-        newRole.should.have.not.contains(Gamers.Role.PARTICIPANT);
+      .then(gamer => {
+        logger.debug(gamer.role);
+        gamer.should.have
+          .property('role')
+          .that.contains(Gamers.Role.SILENT)
+          .and.not.contains(Gamers.Role.PARTICIPANT);
         done();
       })
       .catch(done);

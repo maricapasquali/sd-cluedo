@@ -1,6 +1,7 @@
 import * as express from 'express';
 import * as controller from './controller';
 import * as middleware from './middleware';
+import {pathNotFound, serverError} from '@utils/rest-api/middlewares';
 export enum RestAPIRouteName {
   GAMES = '/api/v1/games',
   GAME = '/api/v1/games/:id',
@@ -16,11 +17,7 @@ export default function (app: express.Application): void {
 
   app
     .route(RestAPIRouteName.GAMES)
-    .post(
-      middleware.games.handlerBadRequest,
-      middleware.games.handlerConflictRequest,
-      controller.restApi.postGames
-    )
+    .post(middleware.games.handlerBadRequest, controller.restApi.postGames)
     .get(middleware.games.handlerBadRequest, controller.restApi.getGames);
 
   app
@@ -35,21 +32,16 @@ export default function (app: express.Application): void {
       middleware.games.handlerNotFoundRequest,
       middleware.games.handlerUnauthorizedRequest,
       middleware.games.handlerForbiddenRequest,
+      middleware.games.handlerGoneRequest,
       controller.restApi.patchGame
-    )
-    .delete(
-      middleware.games.handlerNotFoundRequest,
-      middleware.games.handlerUnauthorizedRequest,
-      middleware.games.handlerForbiddenRequest,
-      controller.restApi.deleteGame
     );
 
   app
     .route(RestAPIRouteName.GAMERS)
     .post(
+      middleware.games.handlerNotFoundRequest,
       middleware.gamers.handlerBadRequest,
-      middleware.gamers.handlerNotFoundRequest,
-      middleware.gamers.handlerConflictRequest,
+      middleware.gamers.handlerGoneRequest,
       controller.restApi.postGamers
     );
 
@@ -57,6 +49,13 @@ export default function (app: express.Application): void {
     .route(RestAPIRouteName.GAMER)
     .delete(
       middleware.gamers.handlerNotFoundRequest,
+      middleware.gamers.handlerUnauthorizedRequest,
+      middleware.gamers.handlerForbiddenRequest,
+      middleware.gamers.handlerGoneRequest,
       controller.restApi.deleteGamer
     );
+
+  app.use(serverError);
+
+  app.use(pathNotFound);
 }

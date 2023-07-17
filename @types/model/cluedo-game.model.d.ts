@@ -8,7 +8,3 @@ declare interface CluedoGame {
   characters?: Character[];
   rooms?: Room[];
 }
-
-declare namespace CluedoGames {
-  enum Status {}
-}
