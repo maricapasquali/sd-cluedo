@@ -224,8 +224,8 @@ export function handlerForbiddenRequest(
   })
     .then(() => {
       return MongoDBGamesManager.gameManagers(gameId)
-        .findGamer(gamerId)
-        .then(() => {
+        .game({gamer: gamerId})
+        .then(game => {
           if (action !== Action.START_GAME) {
             MongoDBGamesManager.gameManagers(gameId)
               .game({status: CluedoGames.Status.STARTED})
@@ -248,14 +248,17 @@ export function handlerForbiddenRequest(
                   });
                 } else next(err);
               });
-          } else next();
+          } else {
+            if (!CluedoGames.checkNumberOfGamers(game)) {
+              ForbiddenSender.json(res, {
+                message: `You can't perform this operation because number of gamers are not in [${CluedoGames.MIN_GAMERS}, ${CluedoGames.MAX_GAMERS}] for game ${gameId}`,
+              });
+            } else next();
+          }
         })
         .catch(err => {
-          if (err instanceof NotFoundError) {
-            ForbiddenSender.json(res, {
-              message: `You can't perform this operation because you (${gamerId}) are not a gamer in this game (${gameId})`,
-            });
-          } else next(err);
+          if (err instanceof NotFoundError) next();
+          else next(err);
         });
     })
     .catch(next);

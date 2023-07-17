@@ -15,12 +15,12 @@ export class MongoDBGameManager implements GameManager {
     const _filters: {
       identifier: string;
       status?: string;
-      ['gamer.identifier']?: string;
+      ['gamers.identifier']?: string;
     } = {
       identifier: this._gameId,
     };
     if (filters?.status) _filters.status = filters.status;
-    if (filters?.gamer) _filters['gamer.identifier'] = filters.gamer;
+    if (filters?.gamer) _filters['gamers.identifier'] = filters.gamer;
     return CluedoGameModel.findOne(_filters).then(game => {
       if (!game) {
         throw new NotFoundError({

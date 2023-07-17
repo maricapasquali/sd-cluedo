@@ -6,7 +6,6 @@ export namespace CluedoGames {
     WAITING = 'waiting',
     STARTED = 'started',
     FINISHED = 'finished',
-    DELETED = 'deleted',
   }
 
   export function checkNumberOfGamers(game: CluedoGame): boolean {

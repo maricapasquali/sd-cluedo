@@ -452,9 +452,7 @@ export default function ({axiosInstance}: PatchGameConfig): void {
           gamerInRound = response.data;
           done();
         })
-        .catch(err => {
-          done(err);
-        });
+        .catch(done);
     });
     it(QueryParameters.Action.STOP_GAME + ' action', done => {
       performActionInRound(QueryParameters.Action.STOP_GAME)
