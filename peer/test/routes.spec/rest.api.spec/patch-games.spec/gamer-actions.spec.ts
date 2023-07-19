@@ -3,7 +3,7 @@ import {QueryParameters} from '../../../../src/routes/parameters';
 import {logger} from '@utils/logger';
 import {MongoDBGamesManager} from '../../../../src/managers/games/mongoose';
 import {RestAPIRouteName} from '../../../../src/routes';
-import {gamersAuthenticationTokens, games} from '../../../helper';
+import {gamersAuthenticationTokens, games, nextGamer} from '../../../helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {NotFoundError} from '../../../../src/managers/games/mongoose/errors';
 import {AxiosInstance} from 'axios';
@@ -36,13 +36,6 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
         response.status.should.equal(ResponseStatus.OK);
         return response;
       });
-  }
-  function nextGamer(): string {
-    const positionActualGamer = game.gamers.findIndex(
-      g => g.identifier === gamerInRound
-    );
-    const positionNextGamer = (positionActualGamer + 1) % game.gamers.length;
-    return game.gamers[positionNextGamer].identifier;
   }
 
   const assumption: Suggestion = {
@@ -100,7 +93,7 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
       .catch(done);
   });
   it(QueryParameters.Action.CONFUTATION_ASSUMPTION + ' action', done => {
-    const _nextGamerId = nextGamer();
+    const _nextGamerId = nextGamer(game, gamerInRound);
     MongoDBGamesManager.gameManagers(game.identifier)
       .findGamer(_nextGamerId)
       .then(nextGamer => {
@@ -219,7 +212,9 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
       .then(response => {
         logger.debug(response.data);
         response.headers['content-type'].should.contain('text/plain');
-        response.data.should.be.a('string').and.equal(nextGamer());
+        response.data.should.be
+          .a('string')
+          .and.equal(nextGamer(game, gamerInRound));
         gamerInRound = response.data;
         done();
       })

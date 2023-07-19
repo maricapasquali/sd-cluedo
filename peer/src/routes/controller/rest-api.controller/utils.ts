@@ -47,15 +47,17 @@ export function catchMongooseNotFoundError(
 
 export function getStartedCluedoGame(
   cluedoGame: CluedoGame,
-  gamerInRound: string
+  gamer?: string
 ): CluedoGame {
   const _clonedGame = _.cloneDeep(cluedoGame);
   delete _clonedGame.solution;
-  _clonedGame.gamers
-    .filter(g => g.identifier !== gamerInRound)
-    .forEach(g => {
-      delete g.cards;
-      delete g.notes;
-    });
+  const _gamers = gamer
+    ? _clonedGame.gamers.filter(g => g.identifier !== gamer)
+    : _clonedGame.gamers;
+
+  _gamers.forEach(g => {
+    delete g.cards;
+    delete g.notes;
+  });
   return _clonedGame;
 }

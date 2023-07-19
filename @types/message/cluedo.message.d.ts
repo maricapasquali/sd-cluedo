@@ -15,16 +15,14 @@ declare interface RollDiceMessage {
   housePart: string;
 }
 
-declare const NextGamerMessage: string;
+declare type NextGamerMessage = string;
 
 declare interface SuggestionMessage {
   gamer: string;
   suggestion: Suggestion;
 }
 
-declare interface AccusationMessage {
-  gamer: string;
-  accusation: Suggestion;
+declare interface AccusationMessage extends SuggestionMessage {
   win: boolean;
 }
 
@@ -39,12 +37,10 @@ declare interface StayGamerMessage {
   roles: string[];
 }
 
-declare type LeaveMessageItem = {
+declare type LeaveMessage = {
   gamer: string;
   cards: string[];
-};
-
-declare const LeaveMessage: LeaveMessageItem[];
+}[];
 
 declare interface ToRoomMessage {
   gamer: string;
@@ -55,3 +51,5 @@ declare interface TakeNotesMessage {
   gamer: string;
   note: Notes;
 }
+
+declare type StopGameMessage = string;

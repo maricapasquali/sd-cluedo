@@ -37,19 +37,6 @@ function getHttpsConfig(port: number): HTTPSServerConfig {
   };
 }
 
-type PromiseHandler = (resolve: any, reject: any) => any;
-
-export function promises<T>(
-  array: any[],
-  handler: (item: any, index: number) => PromiseHandler
-): Promise<T>[] {
-  const _promises: Promise<T>[] = [];
-  array.forEach((item, index) =>
-    _promises.push(new Promise<T>(handler(item, index)))
-  );
-  return _promises;
-}
-
 export function createAndUpDiscoveryServer(port: number): Server {
   return createHTTPSServer(getHttpsConfig(port));
 }

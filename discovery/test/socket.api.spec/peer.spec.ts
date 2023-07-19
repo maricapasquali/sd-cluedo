@@ -1,6 +1,6 @@
 import {io as Client, Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
-import {promises} from '../helper';
+import {promises} from '@utils/test-helper';
 import {DiscoveryPeerEvent} from '../../src/socket';
 import {RestAPIRouteName} from '../../src/routes';
 import {Peers} from '@model';

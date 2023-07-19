@@ -1,4 +1,4 @@
-import {promises} from '../helper';
+import {promises} from '@utils/test-helper';
 import {DiscoveryPeerEvent} from '../../src/socket';
 import {logger} from '@utils/logger';
 import {RestAPIRouteName} from '../../src/routes';

@@ -1,6 +1,6 @@
 import {DiscoveryPeerEvent} from '../../src/socket';
 import {logger} from '@utils/logger';
-import {promises} from '../helper';
+import {promises} from '@utils/test-helper';
 import {Peers} from '@model';
 import {Socket} from 'socket.io-client';
 
