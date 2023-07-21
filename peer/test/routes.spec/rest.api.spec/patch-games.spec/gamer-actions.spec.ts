@@ -84,6 +84,17 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
       })
       .catch(done);
   });
+  it(QueryParameters.Action.TAKE_NOTES + ' action', done => {
+    performActionInRound(QueryParameters.Action.TAKE_NOTES, {
+      text: 'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua.',
+    })
+      .then(response => {
+        response.headers['content-type'].should.contain('text/plain');
+        response.data.should.be.a('string');
+        done();
+      })
+      .catch(done);
+  });
   it(QueryParameters.Action.MAKE_ASSUMPTION + ' action', done => {
     performActionInRound(QueryParameters.Action.MAKE_ASSUMPTION, assumption)
       .then(response => {

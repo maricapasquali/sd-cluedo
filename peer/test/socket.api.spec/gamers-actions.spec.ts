@@ -274,6 +274,54 @@ export default function ({
       .catch(done);
   });
 
+  it('when a game take notes, other peers should receive it (for backup purpose)', done => {
+    const message: TakeNotesMessage = {
+      gamer: game.gamers[1].identifier,
+      note: {
+        text: 'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua.',
+      } as Notes,
+    };
+
+    const receivers = promises(othersSocketPeers, client => {
+      return (resolve, reject) => {
+        client.once(
+          GameActionEvent.CLUEDO_TAKE_NOTES.action(game.identifier),
+          (message: TakeNotesMessage) => {
+            try {
+              logger.debug(
+                getReceiverInfo(client) + ' receive take notes message'
+              );
+              message.should.deep.equal(message);
+              resolve();
+            } catch (err) {
+              reject(err);
+            }
+          }
+        );
+      };
+    });
+
+    const takeNotes = axiosInstance.patch(RestAPIRouteName.GAME, message.note, {
+      headers: {
+        authorization: gamersAuthenticationTokens[message.gamer],
+      },
+      urlParams: {
+        id: game.identifier,
+      },
+      params: {
+        gamer: message.gamer,
+        action: Action.TAKE_NOTES,
+      },
+    });
+    Promise.all([...receivers, takeNotes])
+      .then((res: any[]) => {
+        if (res.length !== receivers.length + 1)
+          throw new Error('Some promise has not been resolved');
+        done();
+      })
+      .catch(done);
+  });
+
   describe('when a gamer in round', () => {
     it('rolls die, other gamers and peers should receive it', done => {
       const receivers = promises(

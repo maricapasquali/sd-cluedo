@@ -1,13 +1,15 @@
-import {ServerErrorSender} from '@utils/rest-api/responses';
+import {
+  CreatedSender,
+  OkSender,
+  ServerErrorSender,
+} from '@utils/rest-api/responses';
 import {NextFunction, Request, Response} from 'express';
 import {MongoDBGamesManager} from '../../../managers/games/mongoose';
 import {v4 as uuid} from 'uuid';
-import {CreatedSender, OkSender} from '@utils/rest-api/responses';
 import {AppGetter, catchableHandlerRequestPromise} from '@utils/rest-api';
 import {MongooseError} from 'mongoose';
 import {QueryParameters} from '../../parameters';
-import Action = QueryParameters.Action;
-import {createTokenOf, catchMongooseNotFoundError} from './utils';
+import {catchMongooseNotFoundError, createTokenOf} from './utils';
 import {
   ConfutationRequest,
   EndRoundRequest,
@@ -18,11 +20,13 @@ import {
   StartGameRequest,
   StayRequest,
   StopGameRequest,
+  TakeNotes,
   UseSecretPassageRequest,
 } from './game.controller';
 import {CluedoGameEvent} from '../../../socket/events';
 import {Clients} from '../../../socket/server/clients';
 import {PeerServerManager} from '../../../managers/peers-servers';
+import Action = QueryParameters.Action;
 
 export function postGames(
   req: Request,
@@ -122,6 +126,9 @@ export function patchGame(
       break;
     case Action.USE_SECRET_PASSAGE:
       UseSecretPassageRequest.performAction(req, res, next);
+      break;
+    case Action.TAKE_NOTES:
+      TakeNotes.performAction(req, res, next);
       break;
     case Action.STOP_GAME:
       StopGameRequest.performAction(req, res, next);

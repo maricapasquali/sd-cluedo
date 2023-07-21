@@ -9,6 +9,7 @@ export namespace QueryParameters {
     LEAVE = 'leave',
     STAY = 'stay',
     USE_SECRET_PASSAGE = 'use_secret_passage',
+    TAKE_NOTES = 'take_notes',
     STOP_GAME = 'stop_game',
   }
 }

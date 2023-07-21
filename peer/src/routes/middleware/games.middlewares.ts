@@ -86,10 +86,7 @@ export function handlerBadRequest(
             'Action is not valid. Available are ' + Object.values(Action),
         });
       }
-      if (
-        action === Action.MAKE_ACCUSATION ||
-        action === Action.MAKE_ASSUMPTION
-      ) {
+      if ([Action.MAKE_ACCUSATION, Action.MAKE_ASSUMPTION].includes(action)) {
         const suggestion = req.body;
         try {
           Checkers.CSuggestion.check(suggestion);
@@ -114,6 +111,17 @@ export function handlerBadRequest(
         if (!possibleCards.includes(req.body)) {
           return BadRequestSender.json(res, {
             message: 'body is not an available string : ' + possibleCards,
+          });
+        }
+      } else if (action === Action.TAKE_NOTES) {
+        const notes = req.body;
+        try {
+          if (!Object.keys(notes).length) throw new Error();
+          Checkers.CNotes.check(notes);
+        } catch (err: any) {
+          return BadRequestSender.json(res, {
+            message: 'body is not a take notes instance',
+            cause: (err as ValidationError).details,
           });
         }
       }
@@ -201,6 +209,7 @@ export function handlerForbiddenRequest(
         Action.CONFUTATION_ASSUMPTION,
         Action.LEAVE,
         Action.END_ROUND,
+        Action.TAKE_NOTES,
       ];
       if (
         payload.role.includes(Gamers.Role.SILENT) &&

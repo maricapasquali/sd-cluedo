@@ -59,7 +59,7 @@ export function upPeer(peer: Peer): Promise<HTTPSServerWithSocket> {
   return new Promise((resolve, reject) => {
     const httpsServerWithSocket = createPeerServer(peer);
     httpsServerWithSocket.httpsServer
-      .listen(peer.port, () => {
+      .listen(peer.port, peer.address, () => {
         logger.debug('Peer up on ' + Peers.url(peer));
         resolve(httpsServerWithSocket);
       })
@@ -95,17 +95,37 @@ export function getReceiverInfo(socket: Socket): string {
 
 export const othersPeers: Peer[] = [];
 
-export function connectionToPeerServer(
-  peers: Peer[],
-  {
-    myPeer,
-    myServer,
-    nAttachedClientsForOtherPeer = 1,
-  }: {myPeer: Peer; myServer: Server; nAttachedClientsForOtherPeer?: number}
-): Promise<{
+export function connectionToPeerServer({
+  myPeer,
+  myServer,
+  nAttachedClientsForOtherPeer = 1,
+}: {
+  myPeer: Peer;
+  myServer: Server;
+  nAttachedClientsForOtherPeer?: number;
+}): Promise<{
   httpsWithSocket: HTTPSServerWithSocket[];
   sockets: Socket[];
 }> {
+  const peers = [
+    {
+      identifier: uuid(),
+      hostname: 'localhost',
+      address: '127.0.0.2',
+      protocol: Peers.Protocol.HTTPS,
+      status: Peers.Status.ONLINE,
+      port: myPeer.port + 1,
+    },
+    {
+      identifier: uuid(),
+      hostname: 'localhost',
+      address: '127.0.0.3',
+      protocol: Peers.Protocol.HTTPS,
+      status: Peers.Status.ONLINE,
+      port: myPeer.port + 2,
+    },
+  ];
+
   othersPeers.push(...peers);
   const servers: HTTPSServerWithSocket[] = [];
   const socketsClients: Socket[] = [];
@@ -169,7 +189,7 @@ export function upSomePeersLikeClientsToMe(
       address: '127.0.0.' + (i + 4),
       protocol: Peers.Protocol.HTTPS,
       status: Peers.Status.ONLINE,
-      port: myPeer.port + (i + 4),
+      port: myPeer.port + (i + 3),
     };
     peers.push(peer);
     _httpsSocket.push(upPeer(peer));

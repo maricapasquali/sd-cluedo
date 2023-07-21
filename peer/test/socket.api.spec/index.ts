@@ -17,6 +17,7 @@ import {
   connectSomeClientToMe,
   createPeerServer,
   getReceiverInfo,
+  othersPeers,
   peerServerManager,
   upSomePeersLikeClientsToMe,
 } from '../helper';
@@ -28,11 +29,6 @@ describe('Socket API', function () {
   this.timeout(process.env.ENV_CI === 'CI/CD' ? 300000 : 10000); // 5 minutes for db connection in gitlab-ci
 
   const port: number = Number(process.env.PORT) || 3001;
-  const peerServerAddress: string = 'https://localhost:' + port;
-  const axiosInstance: AxiosInstance = createAxiosInstance({
-    baseURL: peerServerAddress,
-  });
-
   const mePeer: Peer = {
     identifier: uuid(),
     hostname: 'localhost',
@@ -41,27 +37,14 @@ describe('Socket API', function () {
     status: Peers.Status.ONLINE,
     port: port,
   };
-  const otherPeers = [
-    {
-      identifier: uuid(),
-      hostname: 'localhost',
-      address: '127.0.0.2',
-      protocol: Peers.Protocol.HTTPS,
-      status: Peers.Status.ONLINE,
-      port: port + 1,
-    },
-    {
-      identifier: uuid(),
-      hostname: 'localhost',
-      address: '127.0.0.3',
-      protocol: Peers.Protocol.HTTPS,
-      status: Peers.Status.ONLINE,
-      port: port + 2,
-    },
-  ];
+  const peerServerAddress: string = Peers.url(mePeer);
+  const axiosInstance: AxiosInstance = createAxiosInstance({
+    baseURL: peerServerAddress,
+  });
 
   const nClients = 2;
   const nPeers = 2;
+  const nOtherPeersClients = 1;
 
   const socketClients: Socket[] = [];
   let socketServer: Server;
@@ -82,16 +65,20 @@ describe('Socket API', function () {
         const httpsWithSocket = createPeerServer(mePeer);
         socketServer = httpsWithSocket.socketServer;
         httpsWithSocket.httpsServer
-          .listen(port, () => {
+          .listen(port, mePeer.address, () => {
             logger.debug('Listening on ' + peerServerAddress);
-            connectionToPeerServer(otherPeers, {
+            connectionToPeerServer({
               myPeer: mePeer,
               myServer: socketServer,
+              nAttachedClientsForOtherPeer: nOtherPeersClients,
             }) //I act like a client
               .then(httpsWithSocket => {
                 myPeerServers.push(...httpsWithSocket.httpsWithSocket);
                 socketClients.push(...httpsWithSocket.sockets);
-                return upSomePeersLikeClientsToMe(nPeers, {myPeer: mePeer}); // I  act like a server
+                return upSomePeersLikeClientsToMe(nPeers, {
+                  myPeer: mePeer,
+                  nAttachedClientsForOtherPeer: nOtherPeersClients,
+                }); // I  act like a server
               })
               .then(httpsWithSocket => {
                 myPeerServers.push(...httpsWithSocket.httpsWithSocket);
@@ -102,6 +89,9 @@ describe('Socket API', function () {
               })
               .then(res => {
                 socketClients.push(...res);
+                socketClients.should.have.length(
+                  nPeers + nClients + othersPeers.length * nOtherPeersClients
+                );
                 done();
               })
               .catch(done);

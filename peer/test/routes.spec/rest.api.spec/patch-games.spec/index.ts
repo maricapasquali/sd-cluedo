@@ -146,6 +146,27 @@ export default function ({axiosInstance}: PatchGameConfig): void {
           .then(done)
           .catch(done);
       });
+      it(Action.TAKE_NOTES + ' action', done => {
+        axiosInstance
+          .patch(RestAPIRouteName.GAME, null, {
+            headers: {
+              authorization: gamersAuthenticationTokens[gamerInRound],
+            },
+            urlParams: {
+              id: game.identifier,
+            },
+            params: {
+              gamer: gamerInRound,
+              action: Action.TAKE_NOTES,
+            },
+          })
+          .then(done)
+          .catch(err =>
+            handlerResponseErrorCheck(err, ResponseStatus.BAD_REQUEST)
+          )
+          .then(done)
+          .catch(done);
+      });
     });
   });
 

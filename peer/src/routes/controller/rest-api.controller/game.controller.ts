@@ -126,6 +126,46 @@ export const RollDieRequest: GamerManagerRequest =
     }
   })();
 
+export const TakeNotes: GamerManagerRequest =
+  new (class extends AGamerManagerRequest {
+    protected performRealAction({
+      req,
+      res,
+      next,
+      gameManager,
+      gameId,
+      gamer,
+    }: ActionOptions): void {
+      const notes: Notes = req.body;
+      gameManager
+        .takeNote(gamer, notes)
+        .then(added => {
+          if (added) {
+            const serverIo = AppGetter.socketServer(req);
+            if (serverIo) {
+              [
+                ...PeerServerManager.from(req).sockets(),
+                ...Clients.peer(serverIo),
+              ].forEach(s => {
+                s.emit(
+                  CluedoGameEvent.GameActionEvent.CLUEDO_TAKE_NOTES.action(
+                    gameId
+                  ),
+                  {gamer: gamer, note: notes} as TakeNotesMessage
+                );
+              });
+            }
+            return OkSender.text(res, 'Take notes performed');
+          } else {
+            return ServerErrorSender.json(res, {
+              message: 'Take notes not performed',
+            });
+          }
+        })
+        .catch(next);
+    }
+  })();
+
 export const EndRoundRequest: GamerManagerRequest =
   new (class extends AGamerManagerRequest {
     protected performRealAction({

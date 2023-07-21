@@ -9,40 +9,38 @@ import {getStartedCluedoGame} from '../../utils';
 import {Peers} from '@model';
 import {MongooseError} from 'mongoose';
 
+function receiverName(
+  server: Server,
+  socket: PeerClient | PeerServer,
+  peer: Peer
+): string {
+  if (socket instanceof PeerClient) {
+    const auth = socket.handshake.auth as any;
+    if (Clients.isGamer(socket))
+      return `Peer (${Peers.url(peer)}) (like server for GAMER) `;
+    return `Peer (${Peers.url(peer)}) (like server for ${auth?.address}:${
+      auth?.port
+    }) `;
+  } else if (socket instanceof PeerServer) {
+    const {hostname, port} = socket.io.opts;
+    return `Peer (${Peers.url(peer)}) (like client on ${hostname}:${port}) `;
+  }
+  return 'Peer';
+}
+
 type AdditionalArgs = {
   peer: Peer;
 };
-function registerGameActionEvent(
+function registerStartedGameActionEvent(
   server: Server,
   socket: PeerClient | PeerServer,
   gameId: string,
   {peer}: AdditionalArgs
-) {
+): void {
   const receiver = receiverName(server, socket, peer);
   const gameManager = MongoDBGamesManager.gameManagers(gameId);
+
   socket
-    .on(
-      GameActionEvent.CLUEDO_START.action(gameId),
-      (startedGame: CluedoGameMessage) => {
-        logger.info(
-          receiver + 'receive STARTED game' + JSON.stringify(startedGame)
-        );
-        MongoDBGamesManager.createGame(startedGame)
-          .then(() => {
-            Clients.real(server).forEach(s => {
-              const _startedGamed = getStartedCluedoGame(
-                startedGame,
-                s.handshake.auth.gamerId
-              );
-              s.emit(
-                CluedoGameEvent.GameActionEvent.CLUEDO_START.action(gameId),
-                _startedGamed as CluedoGameMessage
-              );
-            });
-          })
-          .catch(err => logger.error(err));
-      }
-    )
     .on(
       GameActionEvent.CLUEDO_ROLL_DIE.action(gameId),
       (message: RollDiceMessage) => {
@@ -55,6 +53,20 @@ function registerGameActionEvent(
             server
               .to(sids(Clients.gamer(server, gameId)))
               .emit(GameActionEvent.CLUEDO_ROLL_DIE.action(gameId), message);
+          })
+          .catch(err => logger.error(err));
+      }
+    )
+    .on(
+      GameActionEvent.CLUEDO_TAKE_NOTES.action(gameId),
+      (message: TakeNotesMessage) => {
+        logger.info(
+          receiver + 'receive TAKE NOTES game' + JSON.stringify(message)
+        );
+        gameManager
+          .takeNote(message.gamer, message.note)
+          .then(() => {
+            logger.debug(`${receiver}: Save notes of gamer ${message.gamer}`);
           })
           .catch(err => logger.error(err));
       }
@@ -207,26 +219,46 @@ function registerGameActionEvent(
             server
               .to(sids(Clients.gamer(server, gameId)))
               .emit(GameActionEvent.CLUEDO_STOP_GAME.action(gameId), message);
+
+            //TODO: unregister all event for actions game and started game
           })
           .catch(err => logger.error(err));
       }
     );
 }
-function receiverName(
+function registerStartGameAction(
   server: Server,
   socket: PeerClient | PeerServer,
-  peer: Peer
-): string {
-  if (socket instanceof PeerClient) {
-    const auth = socket.handshake.auth as any;
-    return `Peer (${Peers.url(peer)}) (like server for ${auth?.address}:${
-      auth?.port
-    }) `;
-  } else if (socket instanceof PeerServer) {
-    const {hostname, port} = socket.io.opts;
-    return `Peer (${Peers.url(peer)}) (like client on ${hostname}:${port}) `;
-  }
-  return 'Peer';
+  gameId: string,
+  {peer}: AdditionalArgs
+) {
+  socket.on(
+    GameActionEvent.CLUEDO_START.action(gameId),
+    (startedGame: CluedoGameMessage) => {
+      logger.info(
+        receiverName(server, socket, peer) +
+          'receive STARTED game' +
+          JSON.stringify(startedGame)
+      );
+      MongoDBGamesManager.createGame(startedGame)
+        .then(() => {
+          Clients.real(server).forEach(s => {
+            const _startedGamed = getStartedCluedoGame(
+              startedGame,
+              s.handshake.auth.gamerId
+            );
+
+            registerStartedGameActionEvent(server, socket, gameId, {peer});
+
+            s.emit(
+              CluedoGameEvent.GameActionEvent.CLUEDO_START.action(gameId),
+              _startedGamed as CluedoGameMessage
+            );
+          });
+        })
+        .catch(err => logger.error(err));
+    }
+  );
 }
 
 export function registerGameEventHandlers(
@@ -243,7 +275,7 @@ export function registerGameEventHandlers(
           server
             .to(sids(Clients.real(server)))
             .emit(CluedoGameEvent.CLUEDO_NEW_GAME, game);
-          registerGameActionEvent(server, socket, game.identifier, {peer});
+          registerStartGameAction(server, socket, game.identifier, {peer});
         })
         .catch(err => logger.error(err, 'ADD NEW GAME'));
     })
@@ -255,7 +287,6 @@ export function registerGameEventHandlers(
           server
             .to(sids(Clients.real(server)))
             .emit(CluedoGameEvent.CLUEDO_NEW_GAMER, message);
-          registerGameActionEvent(server, socket, message.game, {peer});
         })
         .catch(err => logger.error(err, 'ADD NEW GAMER'));
     })
