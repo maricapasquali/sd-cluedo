@@ -1,20 +1,17 @@
 import {NextFunction, Request, Response} from 'express';
 import {OkSender, ServerErrorSender} from '@utils/rest-api/responses';
-import {
-  catchMongooseNotFoundError,
-  createTokenOf,
-  getStartedCluedoGame,
-} from './utils';
+import {catchMongooseNotFoundError, createTokenOf} from './utils';
+import {getStartedCluedoGame} from '../../../utils';
 import {GameManager} from '../../../managers/games';
 import * as _ from 'lodash';
 import {logger} from '@utils/logger';
 import {MongoDBGamesManager} from '../../../managers/games/mongoose';
 import {AppGetter} from '@utils/rest-api';
-import {CluedoGameEvent} from '../../../socket/server';
-import {Clients} from '../../../socket/server';
-import peersSockets = Clients.peer;
+import {CluedoGameEvent} from '../../../socket/events';
+import {Clients} from '../../../socket/server/clients';
 import clientsSockets = Clients.real;
 import gamersSockets = Clients.gamer;
+import {PeerServerManager} from '../../../managers/peers-servers';
 
 type ActionOptions = {
   req: Request;
@@ -61,7 +58,10 @@ export const StartGameRequest: GamerManagerRequest =
         .then(startedGame => {
           const serverIo = AppGetter.socketServer(req);
           if (serverIo) {
-            peersSockets(serverIo).forEach(s => {
+            [
+              ...PeerServerManager.from(req).sockets(),
+              ...Clients.peer(serverIo),
+            ].forEach(s => {
               s.emit(
                 CluedoGameEvent.GameActionEvent.CLUEDO_START.action(
                   startedGame.identifier
@@ -105,13 +105,14 @@ export const RollDieRequest: GamerManagerRequest =
           const serverIo = AppGetter.socketServer(req);
           if (serverIo) {
             [
-              ...peersSockets(serverIo),
+              ...PeerServerManager.from(req).sockets(),
+              ...Clients.peer(serverIo),
               ...gamersSockets(serverIo, gameId).filter(
                 s => s.handshake.auth.gamerId !== gamer
               ),
             ].forEach(s => {
               s.emit(
-                CluedoGameEvent.GameActionEvent.CLUEDO_ROLL_DICE.action(gameId),
+                CluedoGameEvent.GameActionEvent.CLUEDO_ROLL_DIE.action(gameId),
                 {
                   gamer,
                   housePart,
@@ -142,7 +143,8 @@ export const EndRoundRequest: GamerManagerRequest =
             const serverIo = AppGetter.socketServer(req);
             if (serverIo) {
               [
-                ...peersSockets(serverIo),
+                ...PeerServerManager.from(req).sockets(),
+                ...Clients.peer(serverIo),
                 ...gamersSockets(serverIo, gameId).filter(
                   s => s.handshake.auth.gamerId !== gamer
                 ),
@@ -184,7 +186,8 @@ export const MakeAssumptionRequest: GamerManagerRequest =
             const serverIo = AppGetter.socketServer(req);
             if (serverIo) {
               [
-                ...peersSockets(serverIo),
+                ...PeerServerManager.from(req).sockets(),
+                ...Clients.peer(serverIo),
                 ...gamersSockets(serverIo, gameId).filter(
                   s => s.handshake.auth.gamerId !== gamer
                 ),
@@ -227,6 +230,21 @@ export const ConfutationRequest: GamerManagerRequest =
         MongoDBGamesManager.gameManagers(gameId)
           .game()
           .then(game => {
+            [
+              ...PeerServerManager.from(req).sockets(),
+              ...Clients.peer(serverIo),
+            ].forEach(s => {
+              s.emit(
+                CluedoGameEvent.GameActionEvent.CLUEDO_CONFUTATION_ASSUMPTION.action(
+                  gameId
+                ),
+                {
+                  refuterGamer: gamer,
+                  roundGamer: game.roundGamer,
+                  card,
+                } as ConfutationMessage
+              );
+            });
             gamersSockets(serverIo, gameId)
               .filter(s => s.handshake.auth.gamerId !== gamer)
               .forEach(s => {
@@ -269,7 +287,8 @@ export const MakeAccusationRequest: GamerManagerRequest =
           const serverIo = AppGetter.socketServer(req);
           if (serverIo) {
             [
-              ...peersSockets(serverIo),
+              ...PeerServerManager.from(req).sockets(),
+              ...Clients.peer(serverIo),
               ...gamersSockets(serverIo, gameId).filter(
                 s => s.handshake.auth.gamerId !== gamer
               ),
@@ -313,17 +332,21 @@ export const LeaveRequest: GamerManagerRequest =
           const serverIo = AppGetter.socketServer(req);
           if (serverIo) {
             [
-              ...peersSockets(serverIo),
+              ...PeerServerManager.from(req).sockets(),
+              ...Clients.peer(serverIo),
               ...gamersSockets(serverIo, gameId).filter(
                 s => s.handshake.auth.gamerId !== gamer
               ),
             ].forEach(s => {
               s.emit(
                 CluedoGameEvent.GameActionEvent.CLUEDO_LEAVE.action(gameId),
-                gamers.map(g => ({
-                  gamer: g.identifier,
-                  cards: g.cards || [],
-                })) as LeaveMessage
+                {
+                  gamer,
+                  newDisposition: gamers.map(g => ({
+                    gamer: g.identifier,
+                    cards: g.cards || [],
+                  })),
+                } as LeaveMessage
               );
             });
           }
@@ -350,7 +373,8 @@ export const StayRequest: GamerManagerRequest =
           const serverIo = AppGetter.socketServer(req);
           if (serverIo) {
             [
-              ...peersSockets(serverIo),
+              ...PeerServerManager.from(req).sockets(),
+              ...Clients.peer(serverIo),
               ...gamersSockets(serverIo, gameId).filter(
                 s => s.handshake.auth.gamerId !== gamer
               ),
@@ -391,7 +415,8 @@ export const UseSecretPassageRequest: GamerManagerRequest =
           const serverIo = AppGetter.socketServer(req);
           if (serverIo) {
             [
-              ...peersSockets(serverIo),
+              ...PeerServerManager.from(req).sockets(),
+              ...Clients.peer(serverIo),
               ...gamersSockets(serverIo, gameId).filter(
                 s => s.handshake.auth.gamerId !== gamer
               ),
@@ -430,8 +455,9 @@ export const StopGameRequest: GamerManagerRequest =
             const serverIo = AppGetter.socketServer(req);
             if (serverIo) {
               [
-                ...peersSockets(serverIo),
-                ...gamersSockets(serverIo, gameId).filter(
+                ...PeerServerManager.from(req).sockets(),
+                ...Clients.peer(serverIo),
+                ...Clients.gamer(serverIo, gameId).filter(
                   s => s.handshake.auth.gamerId !== gamer
                 ),
               ].forEach(s => {
@@ -443,7 +469,6 @@ export const StopGameRequest: GamerManagerRequest =
                 );
               });
             }
-
             return OkSender.text(res, gameId);
           } else {
             return ServerErrorSender.json(res, {

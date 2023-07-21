@@ -1,18 +1,20 @@
 import {io as Client, Socket} from 'socket.io-client';
-import {RestAPIRouteName} from '../../../src/routes';
+import {RestAPIRouteName} from '../../src/routes';
 import {
   clientSocketConnect,
   gamersAuthenticationTokens,
+  getReceiverInfo,
   nextGamer,
-} from '../../helper';
+  othersPeers,
+} from '../helper';
 import {promises} from '@utils/test-helper';
 import {logger} from '@utils/logger';
-import {QueryParameters} from '../../../src/routes/parameters';
+import {QueryParameters} from '../../src/routes/parameters';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {NotFoundError} from '../../../src/managers/games/mongoose/errors';
-import {CluedoGameEvent} from '../../../src/socket/server';
-import {MongoDBGamesManager} from '../../../src/managers/games/mongoose';
-import {GamerElements, Gamers} from '@model';
+import {NotFoundError} from '../../src/managers/games/mongoose/errors';
+import {CluedoGameEvent} from '../../src/socket/events';
+import {MongoDBGamesManager} from '../../src/managers/games/mongoose';
+import {GamerElements, Gamers, Peers} from '@model';
 import * as _ from 'lodash';
 import CharacterName = GamerElements.CharacterName;
 import RoomName = GamerElements.RoomName;
@@ -59,7 +61,7 @@ export default function ({
   const gamersSocket: Socket[] = [];
   const othersSocketGamers: Socket[] = [];
   const othersSocketPeers: Socket[] = [];
-  const othersSocketRealClientNoGamer: Socket[] = [];
+  const othersSocketNoGamers: Socket[] = [];
   const assumption: Suggestion = {
     character: CharacterName.REVEREND_GREEN,
     room: RoomName.DINING_ROOM,
@@ -95,9 +97,15 @@ export default function ({
         game.gamers.push(response.data);
         gamersAuthenticationTokens[response.data.identifier] =
           response.headers['x-access-token'];
-        game.gamers.forEach(g => {
+
+        game.gamers.forEach((g, i) => {
+          const _indexRand = Math.floor(
+            Math.random() * (othersPeers.length - 1)
+          );
+          const _attachOnPeer =
+            i === 0 ? peerServerAddress : Peers.url(othersPeers[_indexRand]);
           gamersSocket.push(
-            Client(peerServerAddress, {
+            Client(_attachOnPeer, {
               secure: true,
               autoConnect: false,
               rejectUnauthorized: false,
@@ -110,15 +118,22 @@ export default function ({
         });
         return Promise.all(clientSocketConnect(gamersSocket));
       })
-      .then(() => {
+      .then(gamerSockets => {
+        socketClients.push(...gamerSockets);
         othersSocketGamers.push(
-          ...gamersSocket.filter(s => (s.auth as any).gamerId !== gamerInRound)
+          ...gamersSocket.filter(
+            s =>
+              (s.auth as any).gamerId !== gamerInRound &&
+              (s.auth as any).gameId === game.identifier
+          )
         );
         othersSocketPeers.push(
           ...socketClients.filter(s => (s.auth as any)?.peerId)
         );
-        othersSocketRealClientNoGamer.push(
-          ...socketClients.filter(s => !othersSocketPeers.includes(s))
+        othersSocketNoGamers.push(
+          ...socketClients.filter(
+            s => !othersSocketPeers.includes(s) && !gamerSockets.includes(s)
+          )
         );
         done();
       })
@@ -132,7 +147,9 @@ export default function ({
           GameActionEvent.CLUEDO_START.action(game.identifier),
           (message: CluedoGameMessage) => {
             try {
-              logger.debug('GAMER CLIENT: receive started cluedo game');
+              logger.debug(
+                getReceiverInfo(client) + ' receive started cluedo game'
+              );
               should.exist(message);
               should.exist(message.gamers);
               should.not.exist(message.solution);
@@ -162,7 +179,9 @@ export default function ({
           GameActionEvent.CLUEDO_START.action(game.identifier),
           (message: CluedoGameMessage) => {
             try {
-              logger.debug('PEER CLIENT: receive started cluedo game');
+              logger.debug(
+                getReceiverInfo(client) + ' receive started cluedo game'
+              );
               should.exist(message);
               should.exist(message.gamers);
               should.exist(message.solution);
@@ -180,14 +199,16 @@ export default function ({
     });
 
     const othersSocketRealClientNoGamerReceivers = promises(
-      othersSocketRealClientNoGamer,
+      othersSocketNoGamers,
       client => {
         return (resolve, reject) => {
           client.once(
             GameActionEvent.CLUEDO_START.action(game.identifier),
             (message: CluedoGameMessage) => {
               try {
-                logger.debug('NO GAMERS CLIENT: receive started cluedo game');
+                logger.debug(
+                  getReceiverInfo(client) + ' receive started cluedo game'
+                );
                 should.exist(message);
                 should.exist(message.gamers);
                 should.not.exist(message.solution);
@@ -254,18 +275,17 @@ export default function ({
   });
 
   describe('when a gamer in round', () => {
-    it('rolls die, other gamers and peers (clients) should receive it', done => {
+    it('rolls die, other gamers and peers should receive it', done => {
       const receivers = promises(
         [...othersSocketGamers, ...othersSocketPeers],
         client => {
           return (resolve, reject) => {
             client.once(
-              GameActionEvent.CLUEDO_ROLL_DICE.action(game.identifier),
+              GameActionEvent.CLUEDO_ROLL_DIE.action(game.identifier),
               (message: RollDiceMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
-                      ' receive roll dice message'
+                    getReceiverInfo(client) + ' receive roll dice message'
                   );
                   message.gamer.should.equal(gamerInRound);
                   message.housePart.should.oneOf(HousePart);
@@ -300,7 +320,7 @@ export default function ({
         })
         .catch(done);
     });
-    it('makes assumption, other gamers and peers (clients) should receive it', done => {
+    it('makes assumption, other gamers and peers should receive it', done => {
       const receivers = promises(
         [...othersSocketGamers, ...othersSocketPeers],
         client => {
@@ -310,8 +330,7 @@ export default function ({
               (message: SuggestionMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
-                      ' receive make assumption message'
+                    getReceiverInfo(client) + ' receive make assumption message'
                   );
                   message.gamer.should.equal(gamerInRound);
                   message.suggestion.should.deep.equal(assumption);
@@ -350,7 +369,7 @@ export default function ({
         })
         .catch(done);
     });
-    it('makes accusation, other gamers and peers (clients) should receive it', done => {
+    it('makes accusation, other gamers and peers should receive it', done => {
       const accusation: Suggestion = {
         character: CharacterName.MRS_WHITE,
         room: RoomName.BILLIARD_ROOM,
@@ -366,8 +385,7 @@ export default function ({
               (message: AccusationMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
-                      ' receive make accusation message'
+                    getReceiverInfo(client) + ' receive make accusation message'
                   );
                   message.gamer.should.equal(gamerInRound);
                   message.suggestion.should.deep.equal(accusation);
@@ -417,7 +435,7 @@ export default function ({
               (message: ToRoomMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
+                    getReceiverInfo(client) +
                       ' receive to room message : room = %s',
                     message.room
                   );
@@ -464,7 +482,7 @@ export default function ({
             response.data?.code === NotFoundError.NOT_FOUND_SECRET_PASSAGE
           ) {
             // gamer in round is not in room with secret passage
-            logger.debug(' gamer in round is not in room with secret passage');
+            logger.debug('gamer in round is not in room with secret passage');
             done();
           } else {
             done(err);
@@ -474,14 +492,19 @@ export default function ({
   });
 
   describe('when a no in round gamer', () => {
-    it('refutes an assumption, others gamers should receive it', done => {
+    it('refutes an assumption, others gamers and peers should receive it', done => {
       const _nextGamerId = nextGamer(game, gamerInRound);
       const othersGamersReceiver = promises(
-        socketClients.filter(
-          s =>
-            (s.auth as any)?.gamerId &&
-            (s.auth as any)?.gamerId !== _nextGamerId
-        ),
+        [
+          ...othersSocketPeers,
+          ...gamersSocket.filter(s => {
+            const _auth = s.auth as any;
+            return (
+              _auth?.gameId === game.identifier &&
+              _auth?.gamerId !== _nextGamerId
+            );
+          }),
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -492,15 +515,21 @@ export default function ({
                 try {
                   message.roundGamer.should.equals(gamerInRound);
                   message.refuterGamer.should.equals(_nextGamerId);
-                  if ((client.auth as any)?.gamerId === gamerInRound) {
+                  const _auth = client.auth as any;
+                  const isGamer = _auth?.gamerId === gamerInRound;
+                  const isPeer = _auth?.peerId;
+                  if (isGamer || isPeer) {
                     logger.debug(
-                      'GAMER IN ROUND receive confutation message %s',
+                      getReceiverInfo(client) +
+                        (isGamer ? ' IN ROUND' : '') +
+                        ' receive confutation message %s',
                       JSON.stringify(message)
                     );
                     message.card.should.be.oneOf(['', ...CardsDeck]);
                   } else {
                     logger.debug(
-                      'other GAMERS receive confutation message %s',
+                      getReceiverInfo(client) +
+                        ' OTHERS receive confutation message %s',
                       JSON.stringify(message)
                     );
                     message.card.should.be.a('boolean');
@@ -561,8 +590,7 @@ export default function ({
               (message: StayGamerMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
-                      ' receive stay message message'
+                    getReceiverInfo(client) + ' receive stay message message'
                   );
                   message.gamer.should.equal(gamerInRound);
                   message.roles.should
@@ -609,12 +637,12 @@ export default function ({
               (message: LeaveMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
-                      ' receive leave message'
+                    getReceiverInfo(client) + ' receive leave message'
                   );
                   should.exist(message);
+                  message.gamer.should.equal(gamerInRound);
                   _.flatten(
-                    message.map(g => g.cards)
+                    message.newDisposition.map(g => g.cards)
                   ).should.to.include.members(gInRound.cards || []);
                   resolve();
                 } catch (err) {
@@ -657,8 +685,7 @@ export default function ({
               (message: NextGamerMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
-                      ' receive end round message'
+                    getReceiverInfo(client) + ' receive end round message'
                   );
                   message.should.be
                     .a('string')
@@ -704,8 +731,7 @@ export default function ({
               (message: StopGameMessage) => {
                 try {
                   logger.debug(
-                    (client.auth.peerId ? 'PEER CLIENT' : 'GAMER CLIENT') +
-                      ' receive stop message'
+                    getReceiverInfo(client) + ' receive stop message'
                   );
                   message.should.be.a('string').and.be.equal(game.identifier);
                   resolve();

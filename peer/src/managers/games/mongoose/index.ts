@@ -56,13 +56,14 @@ export class MongoDBGameManager implements GameManager {
   }
 
   addGamer(gamer: Gamer): Promise<Gamer> {
-    return CluedoGameModel.findOneAndUpdate(
-      {identifier: this._gameId},
-      {$push: {gamers: gamer}},
-      {new: true}
-    ).then(game => {
-      const nGamers: number = game?.gamers.length || 0;
-      return game?.toObject().gamers[nGamers - 1] as Gamer;
+    return this.game().then(game => {
+      const _gamer = game.gamers.find(g => g.identifier === gamer.identifier);
+      if (_gamer) return _gamer;
+      game.gamers.push(gamer);
+      return game.save().then(newGame => {
+        const nGamers: number = newGame.gamers.length || 0;
+        return game?.toObject().gamers[nGamers - 1] as Gamer;
+      });
     });
   }
 
@@ -185,23 +186,15 @@ export class MongoDBGameManager implements GameManager {
     });
   }
 
-  takeNote(gamer: string, notes: string | StructuedNoteItem): Promise<boolean> {
-    let updated;
-    if (typeof notes === 'string') {
-      updated = {
-        'gamers.$.notes.text': notes,
-      };
-    } else {
-      updated = {
-        $push: {'gamers.$.notes.structuredNotes': notes},
-      };
-    }
+  takeNote(gamer: string, notes: Notes): Promise<boolean> {
     return CluedoGameModel.updateOne(
       {
         identifier: this._gameId,
         'gamers.identifier': gamer,
       },
-      updated
+      {
+        $set: {'gamers.$.notes': notes},
+      }
     ).then(res => res.modifiedCount === 1);
   }
 
@@ -316,7 +309,14 @@ export const MongoDBGamesManager = new (class implements GamesManager {
     game.gamers.forEach(
       g => (g.role = [GamerRole.CREATOR, GamerRole.PARTICIPANT])
     );
-    return new CluedoGameModel(game).save().then(gameDoc => {
+    return CluedoGameModel.findOneAndReplace(
+      {identifier: game.identifier},
+      game,
+      {
+        upsert: true,
+        returnDocument: 'after',
+      }
+    ).then(gameDoc => {
       const game: CluedoGame = gameDoc.toObject();
       this._gameManagers[game.identifier] = new MongoDBGameManager(
         game.identifier

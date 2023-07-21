@@ -20,7 +20,9 @@ import {
   StopGameRequest,
   UseSecretPassageRequest,
 } from './game.controller';
-import {CluedoGameEvent} from '../../../socket/server';
+import {CluedoGameEvent} from '../../../socket/events';
+import {Clients} from '../../../socket/server/clients';
+import {PeerServerManager} from '../../../managers/peers-servers';
 
 export function postGames(
   req: Request,
@@ -32,10 +34,18 @@ export function postGames(
     gamers: [req.body],
   } as CluedoGame)
     .then(waitingGame => {
-      AppGetter.socketServer(req)?.emit(
-        CluedoGameEvent.CLUEDO_NEW_GAME,
-        waitingGame as CluedoGameMessage
-      );
+      const socketIo = AppGetter.socketServer(req);
+      if (socketIo) {
+        [
+          ...Clients.all(socketIo),
+          ...PeerServerManager.from(req).sockets(),
+        ].forEach(s => {
+          s.emit(
+            CluedoGameEvent.CLUEDO_NEW_GAME,
+            waitingGame as CluedoGameMessage
+          );
+        });
+      }
       return catchableHandlerRequestPromise(() => {
         const token: string = createTokenOf(
           req,
@@ -127,10 +137,19 @@ export function postGamers(
   MongoDBGamesManager.gameManagers(req.params.id)
     .addGamer(req.body)
     .then(gamer => {
-      AppGetter.socketServer(req)?.emit(CluedoGameEvent.CLUEDO_NEW_GAMER, {
-        game: req.params.id,
-        gamer,
-      } as GamerMessage);
+      const socketIo = AppGetter.socketServer(req);
+      if (socketIo) {
+        [
+          ...Clients.all(socketIo),
+          ...PeerServerManager.from(req).sockets(),
+        ].forEach(s => {
+          s.emit(CluedoGameEvent.CLUEDO_NEW_GAMER, {
+            game: req.params.id,
+            gamer,
+          } as GamerMessage);
+        });
+      }
+
       return catchableHandlerRequestPromise(() => {
         const token: string = createTokenOf(req, gamer, req.params.id);
         return CreatedSender.json(
@@ -152,13 +171,18 @@ export function deleteGamer(
     .then(removed => {
       return catchableHandlerRequestPromise(() => {
         if (removed) {
-          AppGetter.socketServer(req)?.emit(
-            CluedoGameEvent.CLUEDO_REMOVE_GAMER,
-            {
-              game: req.params.id,
-              gamer: req.params.gamerId,
-            } as ExitGamerMessage
-          );
+          const socketIo = AppGetter.socketServer(req);
+          if (socketIo) {
+            [
+              ...Clients.all(socketIo),
+              ...PeerServerManager.from(req).sockets(),
+            ].forEach(s => {
+              s.emit(CluedoGameEvent.CLUEDO_REMOVE_GAMER, {
+                game: req.params.id,
+                gamer: req.params.gamerId,
+              } as ExitGamerMessage);
+            });
+          }
           AppGetter.tokensManger(req).removeToken(req.params.gamerId);
           return OkSender.text(res, req.params.gamerId);
         }

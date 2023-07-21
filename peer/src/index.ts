@@ -9,10 +9,15 @@ import {
   SocketServerConfig,
 } from '@utils/https-server';
 import routes from './routes';
-import sockets from './socket';
 import mongoose from 'mongoose';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import * as os from 'os';
+import createPeerClientStub from './socket/server';
+import {Peers} from '@model';
+import * as ip from 'ip';
+import Protocol = Peers.Protocol;
+import {v4 as uuid} from 'uuid';
+import {PeerServerManager} from './managers/peers-servers';
 
 const internalPort: number = Number(process.env.PORT) || 3001;
 const externalPort: number = Number(process.env.EXTERNAL_PORT) || internalPort;
@@ -37,6 +42,8 @@ const httpsOptions = {
   cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
 };
 
+const peersSockets = new PeerServerManager();
+
 const serverConfig: HTTPSServerConfig = {
   options: httpsOptions,
   uses: [express.json(), express.query({}), loggerHttp],
@@ -47,11 +54,21 @@ const serverConfig: HTTPSServerConfig = {
       publicKey: httpsOptions.cert,
       privateKey: httpsOptions.key,
     }),
+    peersSockets,
   },
 };
 
+const peer = {
+  identifier: uuid(),
+  protocol: Protocol.HTTPS,
+  hostname: os.hostname(),
+  port: externalPort,
+  address: ip.address(),
+  status: Peers.Status.ONLINE,
+};
+
 const socketConfig: SocketServerConfig = {
-  initSocketHandler: sockets.handlerSocketServer,
+  initSocketHandler: createPeerClientStub(peer),
 };
 
 const {httpsServer} = createHTTPSServerWithSocketServer(

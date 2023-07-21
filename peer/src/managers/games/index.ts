@@ -11,7 +11,7 @@ export interface GameManager {
   rollDie(): Promise<string>;
   useSecretPassage(): Promise<string>;
   makeAssumption(suggestion: Suggestion): Promise<boolean>;
-  takeNote(gamer: string, notes: string | StructuedNoteItem): Promise<boolean>;
+  takeNote(gamer: string, notes: Notes): Promise<boolean>;
   makeAccusation(suggestion: Suggestion): Promise<Suggestion>;
   silentGamerInRound(): Promise<Gamer>;
   leave(gamerId?: string): Promise<Gamer[]>;

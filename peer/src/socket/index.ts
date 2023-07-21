@@ -1,5 +1,5 @@
-import handlerSocket from './server';
+import createPeerClientStub from './server';
 
 export default {
-  handlerSocketServer: handlerSocket,
+  handlerSocketServer: createPeerClientStub,
 };

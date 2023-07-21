@@ -198,33 +198,25 @@ export default function ({game}: GameManagerOptions): void {
       .catch(done);
   });
 
-  describe('#takeNote(..)', () => {
-    it('string note', done => {
-      const text =
-        'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua';
-      gameManager
-        .takeNote(gamer2.identifier, text)
-        .then(added => {
-          logger.debug(added);
-          added.should.be.true;
-          done();
-        })
-        .catch(done);
-    });
-    it('structured note', done => {
-      const notes: StructuedNoteItem = {
-        name: RoomName.STUDY,
-        suspectState: GamerElements.SuspectState.MAYBE,
-      };
-      gameManager
-        .takeNote(gamer2.identifier, notes)
-        .then(added => {
-          logger.debug(added);
-          added.should.be.true;
-          done();
-        })
-        .catch(done);
-    });
+  it('#takeNote(..)', done => {
+    const structuredNoteItem: StructuredNoteItem = {
+      name: RoomName.STUDY,
+      suspectState: GamerElements.SuspectState.MAYBE,
+    };
+    const text =
+      'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua';
+    const notes: Notes = {
+      text,
+      structuredNotes: [structuredNoteItem],
+    };
+    gameManager
+      .takeNote(gamer2.identifier, notes)
+      .then(added => {
+        logger.debug(added);
+        added.should.be.true;
+        done();
+      })
+      .catch(done);
   });
 
   it('#silentGamer(..)', done => {

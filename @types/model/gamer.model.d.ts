@@ -10,12 +10,12 @@ declare interface Gamer {
   notes?: Notes;
 }
 
-declare interface StructuedNoteItem {
+declare interface StructuredNoteItem {
   name: string;
   suspectState: string;
 }
 
 declare interface Notes {
   text?: string;
-  structuredNotes?: StructuedNoteItem[];
+  structuredNotes?: StructuredNoteItem[];
 }

@@ -39,8 +39,11 @@ declare interface StayGamerMessage {
 
 declare type LeaveMessage = {
   gamer: string;
-  cards: string[];
-}[];
+  newDisposition: {
+    gamer: string;
+    cards: string[];
+  }[];
+};
 
 declare interface ToRoomMessage {
   gamer: string;
