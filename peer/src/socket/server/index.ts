@@ -2,9 +2,14 @@ import {Server, Socket} from 'socket.io';
 import {logger} from '@utils/logger';
 import {registerGameEventHandlers} from '../handlers';
 import {Peers} from '@model';
+import {PeerServerManager} from '../../managers/peers-servers';
 
+type AdditionalArg = {
+  peerServerManager: PeerServerManager;
+};
 export default function createPeerClientStub(
-  peer: Peer
+  peer: Peer,
+  {peerServerManager}: AdditionalArg
 ): (server: Server) => void {
   return (socketServer: Server) => {
     const peerAddress = Peers.url(peer);
@@ -17,7 +22,10 @@ export default function createPeerClientStub(
       );
       //TODO: emit to discovery server number of clients connected
 
-      registerGameEventHandlers(socketServer, socket, {peer});
+      registerGameEventHandlers(socketServer, socket, {
+        peer,
+        peerServerManager,
+      });
 
       socket.on('disconnect', reason => {
         //TODO: emit to discovery server number of clients connected

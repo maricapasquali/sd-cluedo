@@ -1,5 +1,5 @@
 import {Server, Socket} from 'socket.io';
-import {CPeer} from '@model/checker';
+import {SocketChecker} from '../../checker';
 
 export function sids(sockets: Socket[]): string[] {
   return sockets.map(s => s.id);
@@ -11,7 +11,7 @@ export namespace Clients {
   }
   export function peer(server: Server): Socket[] {
     const connectedSocket: Socket[] = all(server);
-    return connectedSocket.filter(s => isPeer(s));
+    return connectedSocket.filter(s => SocketChecker.isPeer(s));
   }
 
   export function real(server: Server): Socket[] {
@@ -21,20 +21,7 @@ export namespace Clients {
   }
   export function gamer(server: Server, gameId: string): Socket[] {
     return real(server).filter(
-      s => isGamer(s) && s.handshake.auth.gameId === gameId
+      s => SocketChecker.isGamer(s) && s.handshake.auth.gameId === gameId
     );
-  }
-
-  export function isGamer(socket: Socket): boolean {
-    return socket.handshake.auth.gamerId && socket.handshake.auth.gameId;
-  }
-
-  export function isPeer(socket: Socket): boolean {
-    try {
-      CPeer.check(socket.handshake.auth);
-      return true;
-    } catch (err) {
-      return false;
-    }
   }
 }

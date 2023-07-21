@@ -3,14 +3,16 @@ import {io as Client, Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
 import {registerGameEventHandlers} from '../handlers';
 import {Peers} from '@model';
+import {PeerServerManager} from '../../managers/peers-servers';
 
 type PeerClientConfig = {
   peer: Peer;
   mySelfServer: Server;
+  peerServerManager: PeerServerManager;
 };
 export function createPeerServerStub(
   serverAddress: string,
-  {peer, mySelfServer}: PeerClientConfig
+  {peer, mySelfServer, peerServerManager}: PeerClientConfig
 ): Socket {
   const peerClient = Client(serverAddress, {
     secure: true,
@@ -27,7 +29,10 @@ export function createPeerServerStub(
           peerClient.id
         }`
       );
-      registerGameEventHandlers(mySelfServer, peerClient, {peer});
+      registerGameEventHandlers(mySelfServer, peerClient, {
+        peer,
+        peerServerManager,
+      });
     })
     .on('connect_error', err => {
       logger.error(err);

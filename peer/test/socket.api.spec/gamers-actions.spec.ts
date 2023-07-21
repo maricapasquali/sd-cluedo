@@ -1,11 +1,12 @@
-import {io as Client, Socket} from 'socket.io-client';
 import {RestAPIRouteName} from '../../src/routes';
 import {
-  clientSocketConnect,
+  connectSomeGamerClient,
   gamersAuthenticationTokens,
+  gamersClientSocket,
   getReceiverInfo,
   nextGamer,
-  othersPeers,
+  noGamersClientSocket,
+  peerLikeClients,
 } from '../helper';
 import {promises} from '@utils/test-helper';
 import {logger} from '@utils/logger';
@@ -14,7 +15,7 @@ import {ResponseStatus} from '@utils/rest-api/responses';
 import {NotFoundError} from '../../src/managers/games/mongoose/errors';
 import {CluedoGameEvent} from '../../src/socket/events';
 import {MongoDBGamesManager} from '../../src/managers/games/mongoose';
-import {GamerElements, Gamers, Peers} from '@model';
+import {GamerElements, Gamers} from '@model';
 import * as _ from 'lodash';
 import CharacterName = GamerElements.CharacterName;
 import RoomName = GamerElements.RoomName;
@@ -27,19 +28,15 @@ import Action = QueryParameters.Action;
 import HousePart = GamerElements.HousePart;
 import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
 import CardsDeck = GamerElements.CardsDeck;
+import {getAuth} from '../../src/socket/utils';
+import {SocketChecker} from '../../src/socket/checker';
 
 const should = shouldFunc();
 
 type Config = {
   axiosInstance: AxiosInstance;
-  peerServerAddress: string;
-  socketClients: Socket[];
 };
-export default function ({
-  axiosInstance,
-  peerServerAddress,
-  socketClients,
-}: Config): void {
+export default function ({axiosInstance}: Config): void {
   const gamer1: Gamer = {
     identifier: uuid(),
     username: 'lollo',
@@ -58,10 +55,7 @@ export default function ({
   let gInRound: Gamer;
   let gamerInRound: string;
   let game: CluedoGame;
-  const gamersSocket: Socket[] = [];
-  const othersSocketGamers: Socket[] = [];
-  const othersSocketPeers: Socket[] = [];
-  const othersSocketNoGamers: Socket[] = [];
+
   const assumption: Suggestion = {
     character: CharacterName.REVEREND_GREEN,
     room: RoomName.DINING_ROOM,
@@ -97,83 +91,51 @@ export default function ({
         game.gamers.push(response.data);
         gamersAuthenticationTokens[response.data.identifier] =
           response.headers['x-access-token'];
-
-        game.gamers.forEach((g, i) => {
-          const _indexRand = Math.floor(
-            Math.random() * (othersPeers.length - 1)
-          );
-          const _attachOnPeer =
-            i === 0 ? peerServerAddress : Peers.url(othersPeers[_indexRand]);
-          gamersSocket.push(
-            Client(_attachOnPeer, {
-              secure: true,
-              autoConnect: false,
-              rejectUnauthorized: false,
-              auth: {
-                gameId: game.identifier,
-                gamerId: g.identifier,
-              },
-            })
-          );
-        });
-        return Promise.all(clientSocketConnect(gamersSocket));
+        return connectSomeGamerClient(game.identifier, game.gamers);
       })
-      .then(gamerSockets => {
-        socketClients.push(...gamerSockets);
-        othersSocketGamers.push(
-          ...gamersSocket.filter(
-            s =>
-              (s.auth as any).gamerId !== gamerInRound &&
-              (s.auth as any).gameId === game.identifier
-          )
-        );
-        othersSocketPeers.push(
-          ...socketClients.filter(s => (s.auth as any)?.peerId)
-        );
-        othersSocketNoGamers.push(
-          ...socketClients.filter(
-            s => !othersSocketPeers.includes(s) && !gamerSockets.includes(s)
-          )
-        );
+      .then(() => {
         done();
       })
       .catch(done);
   });
 
-  it('when a gamer starts game, other clients should receive it', done => {
-    const othersSocketGamersReceivers = promises(othersSocketGamers, client => {
-      return (resolve, reject) => {
-        client.once(
-          GameActionEvent.CLUEDO_START.action(game.identifier),
-          (message: CluedoGameMessage) => {
-            try {
-              logger.debug(
-                getReceiverInfo(client) + ' receive started cluedo game'
-              );
-              should.exist(message);
-              should.exist(message.gamers);
-              should.not.exist(message.solution);
-              const gamer = message.gamers.find(
-                g => g.identifier === client.auth.gamerId
-              );
-              gamer?.should.have.property('cards');
-              gamer?.should.have.property('notes');
-              for (const gamer of message.gamers.filter(
-                g => g.identifier !== client.auth.gamerId
-              )) {
-                gamer?.should.not.have.property('cards');
-                gamer?.should.not.have.property('notes');
+  it('when a gamer starts game, all other clients (even connected to other peers) should receive it', done => {
+    const othersSocketGamersReceivers = promises(
+      gamersClientSocket(game.identifier, gamerInRound),
+      client => {
+        return (resolve, reject) => {
+          client.once(
+            GameActionEvent.CLUEDO_START.action(game.identifier),
+            (message: CluedoGameMessage) => {
+              try {
+                logger.debug(
+                  getReceiverInfo(client) + ' receive started cluedo game'
+                );
+                should.exist(message);
+                should.exist(message.gamers);
+                should.not.exist(message.solution);
+                const gamer = message.gamers.find(
+                  g => g.identifier === getAuth(client).gamerId
+                );
+                gamer?.should.have.property('cards');
+                gamer?.should.have.property('notes');
+                for (const gamer of message.gamers.filter(
+                  g => g.identifier !== getAuth(client).gamerId
+                )) {
+                  gamer?.should.not.have.property('cards');
+                  gamer?.should.not.have.property('notes');
+                }
+                resolve();
+              } catch (err) {
+                reject(err);
               }
-              resolve();
-            } catch (err) {
-              reject(err);
             }
-          }
-        );
-      };
-    });
+          );
+        };
+      }
+    );
 
-    const othersSocketPeersReceivers = promises(othersSocketPeers, client => {
+    const othersSocketPeersReceivers = promises(peerLikeClients, client => {
       return (resolve, reject) => {
         client.once(
           GameActionEvent.CLUEDO_START.action(game.identifier),
@@ -199,7 +161,7 @@ export default function ({
     });
 
     const othersSocketRealClientNoGamerReceivers = promises(
-      othersSocketNoGamers,
+      noGamersClientSocket(game.identifier),
       client => {
         return (resolve, reject) => {
           client.once(
@@ -274,58 +236,106 @@ export default function ({
       .catch(done);
   });
 
-  it('when a game take notes, other peers should receive it (for backup purpose)', done => {
-    const message: TakeNotesMessage = {
-      gamer: game.gamers[1].identifier,
+  describe('when a game take notes, other peers should receive it (for backup purpose)', () => {
+    const message: Partial<TakeNotesMessage> = {
       note: {
         text: 'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua.',
       } as Notes,
     };
-
-    const receivers = promises(othersSocketPeers, client => {
-      return (resolve, reject) => {
-        client.once(
-          GameActionEvent.CLUEDO_TAKE_NOTES.action(game.identifier),
-          (message: TakeNotesMessage) => {
-            try {
-              logger.debug(
-                getReceiverInfo(client) + ' receive take notes message'
-              );
-              message.should.deep.equal(message);
-              resolve();
-            } catch (err) {
-              reject(err);
+    it('using only REST API', done => {
+      message.gamer = game.gamers[1].identifier;
+      const receivers = promises(peerLikeClients, client => {
+        return (resolve, reject) => {
+          client.once(
+            GameActionEvent.CLUEDO_TAKE_NOTES.action(game.identifier),
+            (message: TakeNotesMessage) => {
+              try {
+                logger.debug(
+                  getReceiverInfo(client) + ' receive take notes message'
+                );
+                message.should.deep.equal(message);
+                resolve();
+              } catch (err) {
+                reject(err);
+              }
             }
-          }
-        );
-      };
+          );
+        };
+      });
+
+      const takeNotes = axiosInstance.patch(
+        RestAPIRouteName.GAME,
+        message.note,
+        {
+          headers: {
+            authorization: gamersAuthenticationTokens[message.gamer],
+          },
+          urlParams: {
+            id: game.identifier,
+          },
+          params: {
+            gamer: message.gamer,
+            action: Action.TAKE_NOTES,
+          },
+        }
+      );
+      Promise.all([...receivers, takeNotes])
+        .then((res: any[]) => {
+          if (res.length !== receivers.length + 1)
+            throw new Error('Some promise has not been resolved');
+          done();
+        })
+        .catch(done);
     });
 
-    const takeNotes = axiosInstance.patch(RestAPIRouteName.GAME, message.note, {
-      headers: {
-        authorization: gamersAuthenticationTokens[message.gamer],
-      },
-      urlParams: {
-        id: game.identifier,
-      },
-      params: {
-        gamer: message.gamer,
-        action: Action.TAKE_NOTES,
-      },
+    it('using only SOCKET', done => {
+      message.gamer = game.gamers[0].identifier;
+
+      const receivers = promises(peerLikeClients, client => {
+        return (resolve, reject) => {
+          client.once(
+            GameActionEvent.CLUEDO_TAKE_NOTES.action(game.identifier),
+            (message: TakeNotesMessage) => {
+              try {
+                logger.debug(
+                  getReceiverInfo(client) + ' receive take notes message'
+                );
+                message.should.deep.equal(message);
+                resolve();
+                resolve();
+              } catch (err) {
+                reject(err);
+              }
+            }
+          );
+        };
+      });
+
+      gamersClientSocket(game.identifier)
+        .find(s => getAuth(s).gamerId === message.gamer)
+        ?.emit(
+          CluedoGameEvent.GameActionEvent.CLUEDO_TAKE_NOTES.action(
+            game.identifier
+          ),
+          message
+        );
+      Promise.all(receivers)
+        .then((res: any[]) => {
+          if (res.length !== receivers.length)
+            throw new Error('Some promise has not been resolved');
+          done();
+        })
+        .catch(done);
     });
-    Promise.all([...receivers, takeNotes])
-      .then((res: any[]) => {
-        if (res.length !== receivers.length + 1)
-          throw new Error('Some promise has not been resolved');
-        done();
-      })
-      .catch(done);
   });
 
   describe('when a gamer in round', () => {
     it('rolls die, other gamers and peers should receive it', done => {
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -370,7 +380,10 @@ export default function ({
     });
     it('makes assumption, other gamers and peers should receive it', done => {
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -425,7 +438,10 @@ export default function ({
       };
 
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -475,7 +491,10 @@ export default function ({
     });
     it('uses passage secret, other gamers and peers should receive it', done => {
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -544,14 +563,8 @@ export default function ({
       const _nextGamerId = nextGamer(game, gamerInRound);
       const othersGamersReceiver = promises(
         [
-          ...othersSocketPeers,
-          ...gamersSocket.filter(s => {
-            const _auth = s.auth as any;
-            return (
-              _auth?.gameId === game.identifier &&
-              _auth?.gamerId !== _nextGamerId
-            );
-          }),
+          ...gamersClientSocket(game.identifier, _nextGamerId),
+          ...peerLikeClients,
         ],
         client => {
           return (resolve, reject) => {
@@ -563,10 +576,8 @@ export default function ({
                 try {
                   message.roundGamer.should.equals(gamerInRound);
                   message.refuterGamer.should.equals(_nextGamerId);
-                  const _auth = client.auth as any;
-                  const isGamer = _auth?.gamerId === gamerInRound;
-                  const isPeer = _auth?.peerId;
-                  if (isGamer || isPeer) {
+                  const isGamer = SocketChecker.isGamer(client, gamerInRound);
+                  if (isGamer || SocketChecker.isPeer(client)) {
                     logger.debug(
                       getReceiverInfo(client) +
                         (isGamer ? ' IN ROUND' : '') +
@@ -628,9 +639,12 @@ export default function ({
   });
 
   describe('when a gamer in round', () => {
-    it('decides to stay (after wrong accusation), other gamers and peers (clients) should receive it', done => {
+    it('decides to stay (after wrong accusation), other gamers and peers should receive it', done => {
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -677,7 +691,10 @@ export default function ({
     });
     it('decides to leave (after wrong accusation), other gamers and peers (clients) should receive it', done => {
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -723,9 +740,12 @@ export default function ({
         })
         .catch(done);
     });
-    it('ends a round, other gamers and peers (clients) should receive it', done => {
+    it('ends a round, other gamers and peers should receive it', done => {
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -769,9 +789,12 @@ export default function ({
         })
         .catch(done);
     });
-    it('stops game, other gamers and peers (clients) should receive it', done => {
+    it('stops game, other gamers and peers should receive it', done => {
       const receivers = promises(
-        [...othersSocketGamers, ...othersSocketPeers],
+        [
+          ...gamersClientSocket(game.identifier, gamerInRound),
+          ...peerLikeClients,
+        ],
         client => {
           return (resolve, reject) => {
             client.once(
@@ -813,9 +836,5 @@ export default function ({
         })
         .catch(done);
     });
-  });
-
-  after(() => {
-    gamersSocket.forEach(s => s.disconnect());
   });
 }

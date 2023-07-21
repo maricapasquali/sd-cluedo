@@ -14,12 +14,14 @@ import {v4 as uuid} from 'uuid';
 import {promises} from '@utils/test-helper';
 import {
   connectionToPeerServer,
-  connectSomeClientToMe,
+  connectSomeClientTo,
   createPeerServer,
   getReceiverInfo,
-  othersPeers,
-  peerServerManager,
   upSomePeersLikeClientsToMe,
+  actualClients,
+  othersPeers,
+  peerLikeClients,
+  peerServerManager,
 } from '../helper';
 import {should as shouldFunc} from 'chai';
 
@@ -37,6 +39,7 @@ describe('Socket API', function () {
     status: Peers.Status.ONLINE,
     port: port,
   };
+  othersPeers.push(mePeer);
   const peerServerAddress: string = Peers.url(mePeer);
   const axiosInstance: AxiosInstance = createAxiosInstance({
     baseURL: peerServerAddress,
@@ -46,12 +49,11 @@ describe('Socket API', function () {
   const nPeers = 2;
   const nOtherPeersClients = 1;
 
-  const socketClients: Socket[] = [];
   let socketServer: Server;
   const mongodbURI: string =
     process.env.MONGODB_ADDRESS || 'mongodb://localhost:27017/cluedo-test';
 
-  const myPeerServers: HTTPSServerWithSocket[] = [];
+  const uppedServers: HTTPSServerWithSocket[] = [];
 
   let game: CluedoGame;
 
@@ -63,6 +65,7 @@ describe('Socket API', function () {
         logger.debug('Open connection mongodb: uri ' + mongodbURI);
 
         const httpsWithSocket = createPeerServer(mePeer);
+        uppedServers.push(httpsWithSocket);
         socketServer = httpsWithSocket.socketServer;
         httpsWithSocket.httpsServer
           .listen(port, mePeer.address, () => {
@@ -73,27 +76,19 @@ describe('Socket API', function () {
               nAttachedClientsForOtherPeer: nOtherPeersClients,
             }) //I act like a client
               .then(httpsWithSocket => {
-                myPeerServers.push(...httpsWithSocket.httpsWithSocket);
-                socketClients.push(...httpsWithSocket.sockets);
+                uppedServers.push(...httpsWithSocket);
                 return upSomePeersLikeClientsToMe(nPeers, {
                   myPeer: mePeer,
                   nAttachedClientsForOtherPeer: nOtherPeersClients,
                 }); // I  act like a server
               })
               .then(httpsWithSocket => {
-                myPeerServers.push(...httpsWithSocket.httpsWithSocket);
-                socketClients.push(...httpsWithSocket.sockets);
-                return connectSomeClientToMe(mePeer, {
+                uppedServers.push(...httpsWithSocket);
+                return connectSomeClientTo(mePeer, {
                   nClients,
                 });
               })
-              .then(res => {
-                socketClients.push(...res);
-                socketClients.should.have.length(
-                  nPeers + nClients + othersPeers.length * nOtherPeersClients
-                );
-                done();
-              })
+              .then(() => done())
               .catch(done);
           })
           .on('error', err => {
@@ -104,13 +99,13 @@ describe('Socket API', function () {
       .catch(done);
   });
 
-  it('when one client posts a new cluedo game, other clients should receive it', done => {
+  it('when one client posts a new cluedo game, all other clients (even connected to other peers) should receive it', done => {
     const creator: Gamer = {
       identifier: uuid(),
       username: 'mario03',
       characterToken: GamerElements.CharacterName.MISS_SCARLET,
     };
-    const receivers = promises(socketClients, client => {
+    const receivers = promises(actualClients, client => {
       return resolve => {
         client.once(
           CluedoGameEvent.CLUEDO_NEW_GAME,
@@ -144,13 +139,13 @@ describe('Socket API', function () {
       .catch(done);
   });
 
-  it('when one client joins in a existing game (status waiting), other clients should receive it', done => {
+  it('when one client joins in a existing game (status waiting), all other clients (even connected to other peers) should receive it', done => {
     const gamer: Gamer = {
       identifier: uuid(),
       username: 'jake-reed',
       characterToken: GamerElements.CharacterName.REVEREND_GREEN,
     };
-    const receivers = promises(socketClients, client => {
+    const receivers = promises(actualClients, client => {
       return resolve => {
         client.once(
           CluedoGameEvent.CLUEDO_NEW_GAMER,
@@ -187,8 +182,8 @@ describe('Socket API', function () {
       .catch(done);
   });
 
-  it('when one client exits from a existing game (status waiting), other clients should receive it', done => {
-    const receivers = promises(socketClients, client => {
+  it('when one client exits from a existing game (status waiting), all other clients (even connected to other peers) should receive it', done => {
+    const receivers = promises(actualClients, client => {
       return resolve => {
         client.once(
           CluedoGameEvent.CLUEDO_REMOVE_GAMER,
@@ -223,8 +218,6 @@ describe('Socket API', function () {
   describe('Play Game', () => {
     gamersActionsSpec({
       axiosInstance,
-      peerServerAddress,
-      socketClients,
     });
   });
 
@@ -233,11 +226,13 @@ describe('Socket API', function () {
       .disconnect()
       .then(() => {
         logger.debug('Close connection with mongodb');
-        Object.values(socketClients).forEach(c => c.disconnect());
+        Object.values([...actualClients, ...peerLikeClients]).forEach(c =>
+          c.disconnect()
+        );
         peerServerManager.sockets().forEach((s: Socket) => s.disconnect());
         return Promise.all(
           promises(
-            [...myPeerServers.map(hs => hs.socketServer), socketServer],
+            uppedServers.map(hs => hs.socketServer),
             s => {
               return resolve => {
                 s.close(() => {

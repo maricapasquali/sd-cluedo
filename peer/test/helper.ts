@@ -16,7 +16,8 @@ import {v4 as uuid} from 'uuid';
 import {Server} from 'socket.io';
 import createPeerClientStub from '../src/socket/server';
 import {createPeerServerStub} from '../src/socket/client';
-import * as _ from 'lodash';
+import {SocketChecker} from '../src/socket/checker';
+import {getAuth} from '../src/socket/utils';
 
 export const gamersAuthenticationTokens: {[gamerId: string]: string} = {};
 
@@ -51,7 +52,7 @@ export function createPeerServer(peer: Peer): HTTPSServerWithSocket {
         peerServerManager,
       },
     },
-    {initSocketHandler: createPeerClientStub(peer)}
+    {initSocketHandler: createPeerClientStub(peer, {peerServerManager})}
   );
 }
 
@@ -85,16 +86,34 @@ export function clientSocketConnect(sockets: Socket[]): Promise<Socket>[] {
 
 export function getReceiverInfo(socket: Socket): string {
   function _getReceiverInfo(socket: Socket): string {
-    if ((socket.auth as any)?.peerId) return 'Peer (act as client)';
-    if ((socket.auth as any)?.gamerId) return 'Gamer';
+    if (SocketChecker.isPeer(socket)) return 'Peer (act as client)';
+    if (SocketChecker.isGamer(socket)) return 'Gamer';
     return 'client';
   }
-  const {hostname, port} = socket.io.opts;
-  return `${_getReceiverInfo(socket)} on ${hostname}:${port}`;
+  const opts = socket.io?.opts;
+  if (!opts?.hostname && !opts?.port) return _getReceiverInfo(socket);
+  return `${_getReceiverInfo(socket)} on ${opts?.hostname}:${opts?.port}`;
 }
 
 export const othersPeers: Peer[] = [];
+export const actualClients: Socket[] = [];
+export const peerLikeClients: Socket[] = [];
 
+export function gamersClientSocket(
+  gameId: string,
+  excludedGamer?: string
+): Socket[] {
+  const _gamers = actualClients.filter(
+    s => SocketChecker.isGamer(s) && getAuth(s).gameId === gameId
+  );
+  return excludedGamer
+    ? _gamers.filter(s => getAuth(s).gamerId !== excludedGamer)
+    : _gamers;
+}
+
+export function noGamersClientSocket(gameId: string): Socket[] {
+  return actualClients.filter(s => !gamersClientSocket(gameId).includes(s));
+}
 export function connectionToPeerServer({
   myPeer,
   myServer,
@@ -103,10 +122,7 @@ export function connectionToPeerServer({
   myPeer: Peer;
   myServer: Server;
   nAttachedClientsForOtherPeer?: number;
-}): Promise<{
-  httpsWithSocket: HTTPSServerWithSocket[];
-  sockets: Socket[];
-}> {
+}): Promise<HTTPSServerWithSocket[]> {
   const peers = [
     {
       identifier: uuid(),
@@ -125,23 +141,20 @@ export function connectionToPeerServer({
       port: myPeer.port + 2,
     },
   ];
-
   othersPeers.push(...peers);
   const servers: HTTPSServerWithSocket[] = [];
-  const socketsClients: Socket[] = [];
   return Promise.all(peers.map(p => upPeer(p)))
     .then(res => {
       servers.push(...res);
       return Promise.all(
         peers.map(p =>
-          connectSomeClientToMe(p, {
+          connectSomeClientTo(p, {
             nClients: nAttachedClientsForOtherPeer,
           })
         )
       );
     })
-    .then((res: Array<Socket[]>) => {
-      socketsClients.push(..._.flatten(res));
+    .then(() => {
       const httpsWithSocket: Promise<HTTPSServerWithSocket>[] = promises(
         servers,
         (serverWithSocket, index) => {
@@ -151,6 +164,7 @@ export function connectionToPeerServer({
             const serverStub = createPeerServerStub(peerAddress, {
               peer: myPeer,
               mySelfServer: myServer,
+              peerServerManager,
             });
             peerServerManager.addPeer(peer, serverStub);
             serverStub
@@ -163,11 +177,7 @@ export function connectionToPeerServer({
         }
       );
       return Promise.all(httpsWithSocket);
-    })
-    .then(() => ({
-      httpsWithSocket: servers,
-      sockets: socketsClients,
-    }));
+    });
 }
 export function upSomePeersLikeClientsToMe(
   nPeers: number,
@@ -175,11 +185,7 @@ export function upSomePeersLikeClientsToMe(
     myPeer,
     nAttachedClientsForOtherPeer = 1,
   }: {myPeer: Peer; nAttachedClientsForOtherPeer?: number}
-): Promise<{
-  httpsWithSocket: HTTPSServerWithSocket[];
-  peers: Peer[];
-  sockets: Socket[];
-}> {
+): Promise<HTTPSServerWithSocket[]> {
   const _httpsSocket: Promise<HTTPSServerWithSocket>[] = [];
   const peers: Peer[] = [];
   for (let i = 0; i < nPeers; i++) {
@@ -195,55 +201,68 @@ export function upSomePeersLikeClientsToMe(
     _httpsSocket.push(upPeer(peer));
   }
   othersPeers.push(...peers);
-  return Promise.all(_httpsSocket).then(res => {
-    const sockets: Socket[] = res.map((_httpsSocket, i) => {
+  return Promise.all(_httpsSocket).then(servers => {
+    const sockets: Socket[] = servers.map((_httpsSocket, i) => {
       return createPeerServerStub(Peers.url(myPeer), {
         peer: peers[i],
         mySelfServer: _httpsSocket.socketServer,
+        peerServerManager,
       });
     });
-
-    const otherPeerClients: Socket[] = [];
+    peerLikeClients.push(...sockets);
     return Promise.all(
       peers.map(p =>
-        connectSomeClientToMe(p, {
+        connectSomeClientTo(p, {
           nClients: nAttachedClientsForOtherPeer,
         })
       )
     )
-      .then((res: Array<Socket[]>) => {
-        otherPeerClients.push(..._.flatten(res));
-        return Promise.all([...clientSocketConnect(sockets)]);
-      })
-      .then((sockets: Socket[]) => {
-        return {
-          httpsWithSocket: res,
-          peers,
-          sockets: [...sockets, ...otherPeerClients],
-        };
-      });
+      .then(() => Promise.all([...clientSocketConnect(sockets)]))
+      .then(() => servers);
   });
 }
 
-export function connectSomeClientToMe(
+export function connectSomeClientTo(
   mePeer: Peer,
   {nClients}: {nClients: number}
 ): Promise<Socket[]> {
   const peerServerAddress = Peers.url(mePeer);
   const socketClients: Socket[] = [];
   for (let i = 0; i < nClients; i++) {
-    socketClients.push(
-      Client(peerServerAddress, {
-        secure: true,
-        autoConnect: false,
-        rejectUnauthorized: false,
-      })
-    );
+    const socket = Client(peerServerAddress, {
+      secure: true,
+      autoConnect: false,
+      rejectUnauthorized: false,
+    });
+    socketClients.push(socket);
+    actualClients.push(socket);
   }
   const connections = clientSocketConnect(socketClients);
   return Promise.all(connections).then(res => {
     if (res.length !== socketClients.length)
       throw new Error('Not all clients have connected');
     return socketClients;
+  });
+}
+
+export function connectSomeGamerClient(gameId: string, gamers: Gamer[]) {
+  const sockets: Socket[] = gamers.map((g, i) => {
+    const _indexRand = Math.floor(Math.random() * (othersPeers.length - 1));
+    const _attachOnPeer = Peers.url(
+      i === 0 ? othersPeers[0] : othersPeers[_indexRand]
+    );
+    return Client(_attachOnPeer, {
+      secure: true,
+      autoConnect: false,
+      rejectUnauthorized: false,
+      auth: {
+        gameId: gameId,
+        gamerId: g.identifier,
+      },
+    });
+  });
+  return Promise.all(clientSocketConnect(sockets)).then(gamersSockets => {
+    actualClients.push(...gamersSockets);
+    return gamersSockets;
   });
 }

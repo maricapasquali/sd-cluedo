@@ -68,7 +68,9 @@ const peer = {
 };
 
 const socketConfig: SocketServerConfig = {
-  initSocketHandler: createPeerClientStub(peer),
+  initSocketHandler: createPeerClientStub(peer, {
+    peerServerManager: peersSockets,
+  }),
 };
 
 const {httpsServer} = createHTTPSServerWithSocketServer(
