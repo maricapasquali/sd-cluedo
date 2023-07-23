@@ -2,7 +2,7 @@ import {Response, Request, NextFunction} from 'express';
 import PeersManager from '../../managers/peers';
 import {CreatedSender, OkSender} from '@utils/rest-api/responses';
 import {AppGetter, catchableHandlerRequestPromise} from '@utils/rest-api';
-import {DiscoveryPeerEvent} from '../../socket';
+import {DiscoveryPeerEvent} from '@discovery-peers-routes';
 
 export function postPeer(
   req: Request,

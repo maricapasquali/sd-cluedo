@@ -4,12 +4,8 @@ import {logger} from '@utils/logger';
 import PeersManager from '../managers/peers';
 import PeersDevicesManager from '../managers/peers/devices';
 import {Peers} from '@model';
+import {DiscoveryPeerEvent} from '@discovery-peers-routes';
 
-export namespace DiscoveryPeerEvent {
-  export const PEER = '/discovery/peer';
-  export const PEER_DELETE = PEER + '/delete';
-  export const PEER_DEVICES = PEER + '/devices';
-}
 export default function handlerSocket(socketServer: Server): void {
   socketServer
     .use((socket, next) => {

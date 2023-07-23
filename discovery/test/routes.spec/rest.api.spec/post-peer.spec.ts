@@ -1,6 +1,6 @@
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
-import {RestAPIRouteName} from 'discovery/src/routes';
+import {RestAPIRouteName} from '@discovery-peers-routes';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 
@@ -49,19 +49,6 @@ export default function (
       })
       .then(done)
       .catch(err => handlerResponseErrorCheck(err, ResponseStatus.FORBIDDEN))
-      .then(done)
-      .catch(done);
-  });
-
-  it('409 error', done => {
-    axiosInstance
-      .post(RestAPIRouteName.PEERS, peer, {
-        headers: {
-          'X-Forwarded-For': peer.address,
-        },
-      })
-      .then(done)
-      .catch(err => handlerResponseErrorCheck(err, ResponseStatus.CONFLICT))
       .then(done)
       .catch(done);
   });

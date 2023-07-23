@@ -11,7 +11,7 @@ import {Socket} from 'socket.io-client';
 import {AxiosInstance} from 'axios';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {DiscoveryRouteName} from '../../src/routes';
+import {DiscoveryRouteName} from '@discovery-peers-routes';
 import {should as shouldFunc} from 'chai';
 import {Peers} from '@model';
 import {AxiosResponse} from 'axios';

@@ -325,8 +325,16 @@ export const MongoDBGamesManager = new (class implements GamesManager {
     });
   }
 
-  getGames(status?: string): Promise<CluedoGame[]> {
-    return CluedoGameModel.find(status ? {status} : {}).then(
+  getGames(status?: string | string[]): Promise<CluedoGame[]> {
+    const filters: {[key: string]: any} = {};
+    if (status) {
+      if (typeof status === 'string') {
+        filters.status = status;
+      } else {
+        filters.status = {$in: status};
+      }
+    }
+    return CluedoGameModel.find(filters).then(
       games => games.map(gs => gs.toObject()) as CluedoGame[]
     );
   }

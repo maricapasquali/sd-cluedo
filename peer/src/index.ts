@@ -18,6 +18,9 @@ import * as ip from 'ip';
 import Protocol = Peers.Protocol;
 import {v4 as uuid} from 'uuid';
 import {PeerServerManager} from './managers/peers-servers';
+import {connectAndListenOnDiscoveryServer} from './socket/client';
+import {createServerStub} from '@utils/socket';
+import {machineIdSync} from 'node-machine-id';
 
 const internalPort: number = Number(process.env.PORT) || 3001;
 const externalPort: number = Number(process.env.EXTERNAL_PORT) || internalPort;
@@ -58,8 +61,9 @@ const serverConfig: HTTPSServerConfig = {
   },
 };
 
-const peer = {
-  identifier: uuid(),
+const myPeer = {
+  identifier:
+    process.env.NODE_ENV === 'production' ? machineIdSync(true) : uuid(),
   protocol: Protocol.HTTPS,
   hostname: os.hostname(),
   port: externalPort,
@@ -67,13 +71,22 @@ const peer = {
   status: Peers.Status.ONLINE,
 };
 
+logger.debug(myPeer);
+
+const discoveryServerSocketClient = createServerStub(discoveryServerAddress, {
+  auth: {
+    peerId: myPeer.identifier,
+  },
+});
+
 const socketConfig: SocketServerConfig = {
-  initSocketHandler: createPeerClientStub(peer, {
+  initSocketHandler: createPeerClientStub(myPeer, {
     peerServerManager: peersSockets,
+    discoveryServerSocketClient,
   }),
 };
 
-const {httpsServer} = createHTTPSServerWithSocketServer(
+const {httpsServer, socketServer} = createHTTPSServerWithSocketServer(
   serverConfig,
   socketConfig
 );
@@ -82,11 +95,16 @@ httpsServer
   .listen(internalPort, () => {
     logger.info('Listen on ' + internalPort);
 
-    //TODO:
-    // 1) connect (socket) to discovery server
-    // 1) post (rest api) myself to discovery server
+    connectAndListenOnDiscoveryServer(discoveryServerSocketClient, {
+      myPeer,
+      mySocketServer: socketServer,
+      discoveryServerAddress,
+      peerServerManager: peersSockets,
+    });
 
     if (process.env.ENV_CI === 'CI/CD') {
+      discoveryServerSocketClient.disconnect();
+      socketServer.close(() => logger.info('Close socket server'));
       httpsServer.close(() => {
         logger.info('Close server');
         mongoose

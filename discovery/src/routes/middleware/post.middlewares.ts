@@ -3,15 +3,10 @@ import {
   catchableHandlerRequestPromise,
   HeadersFormatter,
 } from '@utils/rest-api';
-import {
-  BadRequestSender,
-  ConflictSender,
-  ForbiddenSender,
-} from '@utils/rest-api/responses';
+import {BadRequestSender, ForbiddenSender} from '@utils/rest-api/responses';
 import * as net from 'net';
 import * as Checkers from '@model/checker';
 import {ValidationError} from 'runtypes';
-import PeersManager from '../../managers/peers';
 
 export function handlerBadRequest(
   req: Request,
@@ -57,22 +52,6 @@ export function handlerForbiddenRequest(
       return ForbiddenSender.json(res, {
         message: '"x-forwarded-for" value is different to body.address',
       });
-    }
-    return;
-  })
-    .then(next)
-    .catch(next);
-}
-
-export function handlerConflictRequest(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  catchableHandlerRequestPromise(() => {
-    const {peer} = res.locals;
-    if (PeersManager.findPeer(peer.identifier)) {
-      return ConflictSender.json(res, {message: 'current peer already exists'});
     }
     return;
   })

@@ -6,7 +6,7 @@ import {createDiscoveryServerWithSocketServer} from '../helper';
 import {logger} from '@utils/logger';
 import {Socket} from 'socket.io-client';
 import {Server} from 'socket.io';
-import {DiscoveryPeerEvent} from '../../src/socket';
+import {DiscoveryPeerEvent} from '@discovery-peers-routes';
 import {v4 as uuid} from 'uuid';
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';

@@ -1,6 +1,6 @@
 import {logger, loggerHttp} from '@utils/logger';
 import {promises} from '@utils/test-helper';
-import {io as Client, Socket} from 'socket.io-client';
+import {Socket} from 'socket.io-client';
 import * as fs from 'fs';
 import * as path from 'path';
 import {
@@ -18,6 +18,7 @@ import createPeerClientStub from '../src/socket/server';
 import {createPeerServerStub} from '../src/socket/client';
 import {SocketChecker} from '../src/socket/checker';
 import {getAuth} from '../src/socket/utils';
+import {createServerStub} from '@utils/socket';
 
 export const gamersAuthenticationTokens: {[gamerId: string]: string} = {};
 
@@ -162,8 +163,8 @@ export function connectionToPeerServer({
             const peer = peers[index];
             const peerAddress = Peers.url(peer);
             const serverStub = createPeerServerStub(peerAddress, {
-              peer: myPeer,
-              mySelfServer: myServer,
+              myPeer: myPeer,
+              mySocketServer: myServer,
               peerServerManager,
             });
             peerServerManager.addPeer(peer, serverStub);
@@ -204,8 +205,8 @@ export function upSomePeersLikeClientsToMe(
   return Promise.all(_httpsSocket).then(servers => {
     const sockets: Socket[] = servers.map((_httpsSocket, i) => {
       return createPeerServerStub(Peers.url(myPeer), {
-        peer: peers[i],
-        mySelfServer: _httpsSocket.socketServer,
+        myPeer: peers[i],
+        mySocketServer: _httpsSocket.socketServer,
         peerServerManager,
       });
     });
@@ -229,11 +230,7 @@ export function connectSomeClientTo(
   const peerServerAddress = Peers.url(mePeer);
   const socketClients: Socket[] = [];
   for (let i = 0; i < nClients; i++) {
-    const socket = Client(peerServerAddress, {
-      secure: true,
-      autoConnect: false,
-      rejectUnauthorized: false,
-    });
+    const socket = createServerStub(peerServerAddress);
     socketClients.push(socket);
     actualClients.push(socket);
   }
@@ -251,10 +248,7 @@ export function connectSomeGamerClient(gameId: string, gamers: Gamer[]) {
     const _attachOnPeer = Peers.url(
       i === 0 ? othersPeers[0] : othersPeers[_indexRand]
     );
-    return Client(_attachOnPeer, {
-      secure: true,
-      autoConnect: false,
-      rejectUnauthorized: false,
+    return createServerStub(_attachOnPeer, {
       auth: {
         gameId: gameId,
         gamerId: g.identifier,

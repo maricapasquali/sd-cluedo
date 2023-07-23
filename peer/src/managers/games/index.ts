@@ -22,5 +22,5 @@ export interface GameManager {
 export interface GamesManager {
   gameManagers(identifier: string): GameManager;
   createGame(game: CluedoGame): Promise<CluedoGame>;
-  getGames(status?: string): Promise<CluedoGame[]>;
+  getGames(status?: string | string[]): Promise<CluedoGame[]>;
 }

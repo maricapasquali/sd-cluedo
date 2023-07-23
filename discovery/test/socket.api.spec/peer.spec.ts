@@ -1,10 +1,10 @@
-import {io as Client, Socket} from 'socket.io-client';
+import {Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
 import {promises} from '@utils/test-helper';
-import {DiscoveryPeerEvent} from '../../src/socket';
-import {RestAPIRouteName} from '../../src/routes';
+import {DiscoveryPeerEvent, RestAPIRouteName} from '@discovery-peers-routes';
 import {Peers} from '@model';
 import {AxiosInstance} from 'axios';
+import {createServerStub} from '@utils/socket';
 
 type PeerSpecOptions = {
   discoveryServerAddress: string;
@@ -21,10 +21,8 @@ export default function ({
   let socketPeer: Socket;
 
   it('when one peer posts himself, other peers should receive his information', done => {
-    socketPeer = Client(discoveryServerAddress, {
-      secure: true,
+    socketPeer = createServerStub(discoveryServerAddress, {
       autoConnect: true,
-      rejectUnauthorized: false,
       auth: {
         peerId: peer.identifier,
       },

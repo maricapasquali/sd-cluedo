@@ -18,7 +18,12 @@ const PeersManager: IPeersManager = new (class implements IPeersManager {
   }
 
   addPeer(peer: Peer): void {
-    this._peers.push(peer);
+    const index: number = this.findIndexPeer(peer.identifier);
+    if (index > -1) {
+      this._peers.splice(index, 1, peer);
+    } else {
+      this._peers.push(peer);
+    }
   }
 
   updatePeer(id: string, status: string): void {

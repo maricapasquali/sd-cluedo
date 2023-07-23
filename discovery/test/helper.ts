@@ -10,13 +10,15 @@ import {
   HTTPSServerWithSocket,
   SocketServerConfig,
 } from '@utils/https-server';
-import routes, {RestAPIRouteName} from '../src/routes';
+import {RestAPIRouteName} from '@discovery-peers-routes';
+import routes from '../src/routes';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import handlerSocket from '../src/socket';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
-import {io as Client, Socket} from 'socket.io-client';
+import {Socket} from 'socket.io-client';
 import {createAxiosInstance} from '@utils/axios';
+import {createServerStub} from '@utils/socket';
 
 function getHttpsConfig(port: number): HTTPSServerConfig {
   const httpsOptions = {
@@ -48,11 +50,7 @@ export function createDiscoveryServerWithSocketServer(
   const socketConfig: SocketServerConfig = {
     initSocketHandler: handlerSocket,
   };
-  const httpsServerWithSocket = createHTTPSServerWithSocketServer(
-    serverConfig,
-    socketConfig
-  );
-  return httpsServerWithSocket;
+  return createHTTPSServerWithSocketServer(serverConfig, socketConfig);
 }
 
 export function mocksPeerServer(): Server {
@@ -83,10 +81,7 @@ export function mocksPeerClient(
     status: Peers.Status.ONLINE,
     hostname: 'host-' + (i + 1),
   };
-  const clientPeer = Client(discoveryServerAddress, {
-    secure: true,
-    autoConnect: false,
-    rejectUnauthorized: false,
+  const clientPeer = createServerStub(discoveryServerAddress, {
     auth: {
       peerId: peer.identifier,
       nConnectedDevice,

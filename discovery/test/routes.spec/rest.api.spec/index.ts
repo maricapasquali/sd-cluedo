@@ -7,7 +7,7 @@ import {createAxiosInstance} from '@utils/axios';
 import {logger} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
-import {RestAPIRouteName} from '../../../src/routes';
+import {RestAPIRouteName} from '@discovery-peers-routes';
 import {Server} from 'https';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {createAndUpDiscoveryServer} from '../../helper';

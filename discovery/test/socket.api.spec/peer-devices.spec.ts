@@ -1,4 +1,4 @@
-import {DiscoveryPeerEvent} from '../../src/socket';
+import {DiscoveryPeerEvent} from '@discovery-peers-routes';
 import {logger} from '@utils/logger';
 import {promises} from '@utils/test-helper';
 import {Peers} from '@model';

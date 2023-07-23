@@ -6,7 +6,7 @@ import GameActionEvent = CluedoGameEvent.GameActionEvent;
 import {MongoDBGamesManager} from '../../managers/games/mongoose';
 import {Clients, sids} from '../server/clients';
 import {getStartedCluedoGame} from '../../utils';
-import {Peers} from '@model';
+import {CluedoGames, Peers} from '@model';
 import {MongooseError} from 'mongoose';
 import {SocketChecker} from '../checker';
 import {getAuth} from '../utils';
@@ -277,8 +277,13 @@ export function registerGameEventHandlers(
   }
 
   if (SocketChecker.isPeer(socket)) {
-    MongoDBGamesManager.getGames()
+    MongoDBGamesManager.getGames([
+      CluedoGames.Status.WAITING,
+      CluedoGames.Status.STARTED,
+    ])
       .then(games => {
+        logger.debug(receiver + ' Games to listen');
+        logger.debug(games);
         games
           .map(g => g.identifier)
           .forEach(gameId =>

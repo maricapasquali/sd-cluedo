@@ -21,6 +21,9 @@
       ],
       "@model/checker" : [
         "./libs/model/checker"
+      ],
+      "@discovery-peers-routes": [
+        "./libs/discovery-routes/"
       ]
     }
   },

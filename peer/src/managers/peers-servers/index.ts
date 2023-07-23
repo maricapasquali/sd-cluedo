@@ -1,10 +1,19 @@
-import {Socket as Server} from 'socket.io-client';
+import {Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
 import {Request} from 'express';
+import {Peers} from '@model';
 
-export class PeerServerManager {
-  readonly peers: {peer: Peer; socket: Server}[] = [];
-  addPeer(peer: Peer, socket: Server) {
+export type PeerServer = {peer: Peer; socket: Socket};
+export interface IPeerServerManager {
+  addPeer(peer: Peer, socket: Socket): void;
+  removePeer(id: string): void;
+  sockets(): Socket[];
+  find(identifier: string): PeerServer | undefined;
+}
+
+export class PeerServerManager implements IPeerServerManager {
+  readonly peers: PeerServer[] = [];
+  addPeer(peer: Peer, socket: Socket) {
     const index = this.findIndex(peer.identifier);
     if (index > -1) {
       Object.assign(this.peers[index], {peer, socket});
@@ -21,18 +30,22 @@ export class PeerServerManager {
     if (index > -1) this.peers.splice(index, 1);
     logger.debug(this.peers.map(i => i.peer));
   }
-  sockets(): Server[] {
-    return this.peers.map(i => i.socket);
+  sockets(): Socket[] {
+    return this.peers
+      .filter(i => i.peer.status !== Peers.Status.OFFLINE)
+      .map(i => i.socket);
   }
-
+  find(identifier: string): PeerServer | undefined {
+    return this.peers[this.findIndex(identifier)];
+  }
   private findIndex(id: string): number {
     return this.peers.findIndex(i => i.peer.identifier === id);
   }
 }
 
 export namespace PeerServerManager {
-  export function from(req: Request): PeerServerManager {
-    const peerServerManager: PeerServerManager =
+  export function from(req: Request): IPeerServerManager {
+    const peerServerManager: IPeerServerManager =
       req.app.get('peerServerManager');
     if (!peerServerManager) throw new Error('"peerServerManager" is not set');
     return peerServerManager;
