@@ -15,6 +15,7 @@ export enum ResponseStatus {
   FORBIDDEN = 403,
   NOT_FOUND = 404,
   CONFLICT = 409,
+  GONE = 410,
   SERVER_ERROR = 500,
   NOT_IMPLEMENTED = 501,
 }
@@ -22,6 +23,7 @@ export enum ResponseStatus {
 export interface ResponseSender {
   status: ResponseStatus;
   json(res: Response, payload: MessageError | any): ResponseStatus;
+  text(res: Response, payload: string): ResponseStatus;
 }
 
 class BasicResponseSender implements ResponseSender {
@@ -51,6 +53,11 @@ class BasicResponseSender implements ResponseSender {
     }
     return this.status;
   }
+
+  text(res: Response, payload: string): ResponseStatus {
+    res.header('content-type', 'text/plain').status(this.status).send(payload);
+    return this.status;
+  }
 }
 
 export const CreatedSender: ResponseSender = BasicResponseSender.create(
@@ -78,6 +85,10 @@ export const ForbiddenSender: ResponseSender = BasicResponseSender.create(
 
 export const ConflictSender: ResponseSender = BasicResponseSender.create(
   ResponseStatus.CONFLICT
+);
+
+export const GoneSender: ResponseSender = BasicResponseSender.create(
+  ResponseStatus.GONE
 );
 
 export const ServerErrorSender: ResponseSender = BasicResponseSender.create(

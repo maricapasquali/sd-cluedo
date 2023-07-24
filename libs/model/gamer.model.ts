@@ -4,9 +4,4 @@ export namespace Gamers {
     PARTICIPANT = 'participant',
     SILENT = 'silent',
   }
-  export enum SuspectState {
-    EXCLUDED = 'excluded',
-    MAYBE = 'maybe',
-    SURE = 'sure',
-  }
 }

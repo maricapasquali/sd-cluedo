@@ -1,26 +1,21 @@
 declare interface Gamer {
   identifier: string;
-  username?: string;
+  username: string;
+  characterToken: string;
   role?: string[];
   device?: Device;
-  characterToken?: Character;
   assumptions?: Suggestion[];
   accusation?: Suggestion;
-  cards?: Card[];
+  cards?: string[];
   notes?: Notes;
 }
 
-declare interface StructuedNoteItem {
+declare interface StructuredNoteItem {
   name: string;
   suspectState: string;
 }
 
 declare interface Notes {
   text?: string;
-  structuedNotes?: StructuedNoteItem[];
-}
-
-declare namespace Gamers {
-  enum Role {}
-  enum SuspectState {}
+  structuredNotes?: StructuredNoteItem[];
 }

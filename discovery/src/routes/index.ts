@@ -1,15 +1,8 @@
 import * as express from 'express';
 import * as controller from './controller';
 import * as middleware from './middleware';
-
-export enum RestAPIRouteName {
-  PEERS = '/api/v1/peers',
-  PEER = '/api/v1/peers/:id',
-}
-
-export enum DiscoveryRouteName {
-  BASE = '/',
-}
+import {serverError, pathNotFound} from '@utils/rest-api/middlewares';
+import {DiscoveryRouteName, RestAPIRouteName} from '@discovery-peers-routes';
 
 export default function (app: express.Application): void {
   app.route(DiscoveryRouteName.BASE).get(controller.baseHandler);
@@ -19,7 +12,6 @@ export default function (app: express.Application): void {
     .post(
       middleware.post.handlerBadRequest,
       middleware.post.handlerForbiddenRequest,
-      middleware.post.handlerConflictRequest,
       controller.restApi.postPeer
     )
     .get(controller.restApi.getPeers);
@@ -41,7 +33,7 @@ export default function (app: express.Application): void {
       controller.restApi.deletePeer
     );
 
-  app.use(controller.serverError);
+  app.use(serverError);
 
-  app.use(controller.pathNotFound);
+  app.use(pathNotFound);
 }

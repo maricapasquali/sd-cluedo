@@ -1,6 +1,6 @@
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
-import {RestAPIRouteName} from 'discovery/src/routes';
+import {RestAPIRouteName} from '@discovery-peers-routes';
 import {ResponseStatus} from '@utils/rest-api/responses';
 
 const should = shouldFunc();

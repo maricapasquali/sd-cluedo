@@ -1,0 +1,1 @@
+import './rest.api.spec';

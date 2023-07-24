@@ -10,53 +10,33 @@ import {
   HTTPSServerWithSocket,
   SocketServerConfig,
 } from '@utils/https-server';
-import routes, {RestAPIRouteName} from '../src/routes';
-import createTokenManager from '../src/managers/tokens';
+import {RestAPIRouteName} from '@discovery-peers-routes';
+import routes from '../src/routes';
+import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import handlerSocket from '../src/socket';
-import {ResponseStatus} from '@utils/rest-api/responses';
 import {v4 as uuid} from 'uuid';
 import {Peers} from '@model';
-import {io as Client, Socket} from 'socket.io-client';
+import {Socket} from 'socket.io-client';
 import {createAxiosInstance} from '@utils/axios';
+import {createServerStub} from '@utils/socket';
 
 function getHttpsConfig(port: number): HTTPSServerConfig {
+  const httpsOptions = {
+    key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
+    cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
+  };
   return {
-    options: {
-      key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
-      cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
-    },
+    options: httpsOptions,
     uses: [express.json(), loggerHttp],
     routes,
     sets: {
-      tokensManager: createTokenManager('https://localhost:' + port),
+      tokensManager: BasicTokenManager.create({
+        issuer: 'https://localhost:' + port,
+        publicKey: httpsOptions.cert,
+        privateKey: httpsOptions.key,
+      }),
     },
   };
-}
-
-export function handlerResponseErrorCheck(
-  err: any,
-  status: ResponseStatus
-): Promise<void> {
-  return new Promise((resolve, reject) => {
-    if ((err?.response?.status as ResponseStatus) === status) {
-      resolve();
-    } else {
-      reject(err);
-    }
-  });
-}
-
-type PromiseHandler = (resolve: any, reject: any) => any;
-
-export function promises<T>(
-  array: any[],
-  handler: (item: any, index: number) => PromiseHandler
-): Promise<T>[] {
-  const _promises: Promise<T>[] = [];
-  array.forEach((item, index) =>
-    _promises.push(new Promise<T>(handler(item, index)))
-  );
-  return _promises;
 }
 
 export function createAndUpDiscoveryServer(port: number): Server {
@@ -70,11 +50,7 @@ export function createDiscoveryServerWithSocketServer(
   const socketConfig: SocketServerConfig = {
     initSocketHandler: handlerSocket,
   };
-  const httpsServerWithSocket = createHTTPSServerWithSocketServer(
-    serverConfig,
-    socketConfig
-  );
-  return httpsServerWithSocket;
+  return createHTTPSServerWithSocketServer(serverConfig, socketConfig);
 }
 
 export function mocksPeerServer(): Server {
@@ -105,10 +81,7 @@ export function mocksPeerClient(
     status: Peers.Status.ONLINE,
     hostname: 'host-' + (i + 1),
   };
-  const clientPeer = Client(discoveryServerAddress, {
-    secure: true,
-    autoConnect: false,
-    rejectUnauthorized: false,
+  const clientPeer = createServerStub(discoveryServerAddress, {
     auth: {
       peerId: peer.identifier,
       nConnectedDevice,

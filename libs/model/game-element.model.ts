@@ -33,4 +33,30 @@ export namespace GamerElements {
     LIVING_ROOM = 'living room',
     STUDY = 'study',
   }
+
+  export enum SuspectState {
+    EXCLUDED = 'excluded',
+    MAYBE = 'maybe',
+    SURE = 'sure',
+  }
+
+  export const RoomWithSecretPassage: {[key: string]: RoomName} = {
+    [RoomName.BILLIARD_ROOM]: RoomName.DINING_ROOM,
+    [RoomName.BALLROOM]: RoomName.STUDY,
+    [RoomName.DINING_ROOM]: RoomName.BILLIARD_ROOM,
+    [RoomName.STUDY]: RoomName.BALLROOM,
+  };
+
+  export type Card = RoomName | WeaponName | CharacterName;
+
+  export const HousePart: string[] = [
+    ...Object.values(GamerElements.RoomName),
+    ...Object.values(GamerElements.LobbyName),
+  ];
+
+  export const CardsDeck: string[] = [
+    ...Object.values(GamerElements.RoomName),
+    ...Object.values(GamerElements.WeaponName),
+    ...Object.values(GamerElements.CharacterName),
+  ];
 }

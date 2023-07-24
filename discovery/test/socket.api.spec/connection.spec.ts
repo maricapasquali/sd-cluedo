@@ -1,7 +1,8 @@
-import {io as Client, Socket} from 'socket.io-client';
+import {Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
 import {AxiosResponse} from 'axios';
 import {mocksPeerClient} from '../helper';
+import {createServerStub} from '@utils/socket';
 
 type ConnectionSpecOptions = {
   discoveryServerAddress: string;
@@ -36,10 +37,7 @@ export default function ({
   });
 
   it("if the parameter 'auth.peerId' is missing in the handshake, it should get a connect_error", done => {
-    const client = Client(discoveryServerAddress, {
-      secure: true,
-      autoConnect: false,
-      rejectUnauthorized: false,
+    const client = createServerStub(discoveryServerAddress, {
       auth: {},
     });
     client

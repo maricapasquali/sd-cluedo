@@ -1,7 +1,6 @@
-import {promises} from '../helper';
-import {DiscoveryPeerEvent} from '../../src/socket';
+import {promises} from '@utils/test-helper';
 import {logger} from '@utils/logger';
-import {RestAPIRouteName} from '../../src/routes';
+import {DiscoveryPeerEvent, RestAPIRouteName} from '@discovery-peers-routes';
 import {Socket} from 'socket.io-client';
 import {AxiosInstance} from 'axios';
 

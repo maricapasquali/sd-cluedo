@@ -5,7 +5,7 @@ import * as os from 'os';
 import {logger, loggerHttp} from '@utils/logger';
 import {HTTPSServerConfig} from '@utils/https-server';
 import routes from './routes';
-import createTokenManager from './managers/tokens';
+import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import {
   createHTTPSServerWithSocketServer,
   SocketServerConfig,
@@ -19,17 +19,21 @@ logger.debug('Discovery Server: index.ts');
 logger.debug('internalPort = ' + internalPort);
 logger.debug('externalPort = ' + externalPort);
 
+const httpsOptions = {
+  key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
+  cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
+};
+
 const serverConfig: HTTPSServerConfig = {
-  options: {
-    key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
-    cert: fs.readFileSync(path.resolve('sslcert', 'cert.pem')),
-  },
+  options: httpsOptions,
   uses: [express.json(), loggerHttp],
   routes,
   sets: {
-    tokensManager: createTokenManager(
-      'https://' + os.hostname() + ':' + externalPort
-    ),
+    tokensManager: BasicTokenManager.create({
+      issuer: 'https://' + os.hostname() + ':' + externalPort,
+      privateKey: httpsOptions.key,
+      publicKey: httpsOptions.cert,
+    }),
   },
 };
 

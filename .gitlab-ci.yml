@@ -3,11 +3,13 @@ image: node:latest
 variables:
   ENV_CI: "CI/CD"
   ENV_TEST: "test"
+  MONGO_DB: "mongodb://mongo:27017/cluedo"
+  MONGO_DB_TEST: "mongodb://mongo:27017/cluedo-test"
 
 before_script:
   - echo 'Install dependencies'
   - npm install
-  
+
 cache:
   paths:
     - node_modules/
@@ -35,13 +37,14 @@ deploy-peer:
   needs:
     - job: build
       artifacts: true
+  services:
+  - mongo:latest
   script:
-  - echo 'Run discovery server'
-  - ENV_CI=$ENV_CI npm start -w peer
+  - echo 'Run peer'
+  - MONGODB_ADDRESS=$MONGO_DB ENV_CI=$ENV_CI npm start -w peer
 
 test-discovery:
   stage: test
-  allow_failure: true
   script:
     - echo 'Run tests of discovery server'
     - NODE_ENV=$ENV_TEST npm test -w discovery
@@ -49,9 +52,11 @@ test-discovery:
 test-peer:
   stage: test
   allow_failure: true
+  services:
+    - mongo:latest
   script:
     - echo 'Run tests of peer'
-    - NODE_ENV=$ENV_TEST npm test -w peer
+    - MONGODB_ADDRESS=$MONGO_DB_TEST NODE_ENV=$ENV_TEST ENV_CI=$ENV_CI npm test -w peer
 
 lint:
   stage: test

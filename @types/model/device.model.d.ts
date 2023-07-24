@@ -10,10 +10,3 @@ declare interface Peer extends Device {
   devices?: Device[];
   status: string;
 }
-
-declare namespace Peers {
-  enum Status {}
-  enum Protocol {}
-
-  function url(peer: Peer): string;
-}

@@ -1,11 +1,7 @@
 import {Record, String, Number, Array} from 'runtypes';
 import * as net from 'net';
-import {validate} from 'uuid';
 import {Peers} from '../device.model';
-
-const identifierConstraint = String.withConstraint(s => validate(s), {
-  name: 'uuid format',
-});
+import {identifierConstraint} from './constraints';
 
 const addressConstraint = String.withConstraint(s => net.isIPv4(s), {
   name: 'IPv4 string',
