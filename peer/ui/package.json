@@ -1,0 +1,25 @@
+{
+  "name": "peer-ui",
+  "version": "1.0.0",
+  "scripts": {
+    "build": "vue-cli-service build --dest ../../build/peer/ui/dist",
+    "dev-peer-ui": "vue-cli-service serve"
+  },
+  "dependencies": {
+    "axios": "^1.4.0",
+    "bootstrap": "^5.3.0",
+    "bootstrap-vue-next": "^0.9.26",
+    "pinia": "^2.1.4",
+    "socket.io-client": "^4.7.1",
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4"
+  },
+  "devDependencies": {
+    "@vue/cli-plugin-typescript": "~5.0.0",
+    "@vue/cli-service": "^5.0.8",
+    "fork-ts-checker-webpack-plugin": "^8.0.0",
+    "typescript": "~4.5.5",
+    "vue-loader": "^17.2.2",
+    "vue-template-compiler": "^2.7.14"
+  }
+}

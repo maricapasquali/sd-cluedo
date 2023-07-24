@@ -1,0 +1,27 @@
+{
+  "compilerOptions": {
+    "types": [
+      "webpack-env"
+    ],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ]
+    },
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable",
+      "scripthost"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "../../@types/model/**/*.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}
