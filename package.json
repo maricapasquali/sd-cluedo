@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "description": "This is a digital and distributed version of the well-known board game Cluedo",
   "scripts": {
-    "build": "copyfiles -E **/sslcert/* build && tsc --build && npm run build -w peer/ui",
+    "install:peer-ui": "cd ./peer/ui && npm install && cd ../../",
+    "build": "copyfiles -E **/sslcert/* build && cd ./peer/ui && npm run build && cd ../../ && tsc --build",
     "test": "npm test -ws",
     "coverage": "npm run coverage -ws",
     "lint": "gts lint",
@@ -20,8 +21,7 @@
   "license": "ISC",
   "workspaces": [
     "discovery",
-    "peer",
-    "peer/ui"
+    "peer"
   ],
   "devDependencies": {
     "@types/chai": "^4.3.5",

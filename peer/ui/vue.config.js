@@ -8,7 +8,7 @@ const devPeerServerPort = Number(process.env.PEER_PORT) || 3001;
 module.exports = {
   pages: {
     index: {
-      entry: 'src/main.ts',
+      entry: 'main.ts',
       title: 'Cluedo',
       template: 'public/index.html',
     },
