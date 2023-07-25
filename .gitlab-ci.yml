@@ -9,6 +9,7 @@ variables:
 before_script:
   - echo 'Install dependencies'
   - npm install
+  - npm run install:peer-ui
 
 cache:
   paths:
