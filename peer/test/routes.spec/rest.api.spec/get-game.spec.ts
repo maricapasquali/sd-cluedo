@@ -1,5 +1,5 @@
 import {AxiosInstance} from 'axios';
-import {RestAPIRouteName} from '../../../src/routes';
+import {RestAPIRouteName} from '../../../src/routes/routesNames';
 import {CluedoGames} from '@model';
 import {should as shouldFunc} from 'chai';
 import {handlerResponseErrorCheck} from '@utils/test-helper';

@@ -6,4 +6,15 @@ const router: Router = createRouter({
   routes,
 });
 
+router.beforeResolve((to, from) => {
+  const localGame = JSON.parse(window.localStorage.getItem('game') || '{}');
+  if (
+    (to.name === 'waiting-room' || to.name === 'started-room') &&
+    (Object.keys(localGame).length === 0 ||
+      localGame.game.identifier !== to.params.id)
+  )
+    return {name: 'home'};
+  return true;
+});
+
 export default router;

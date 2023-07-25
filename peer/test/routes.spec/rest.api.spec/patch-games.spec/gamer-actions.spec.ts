@@ -2,7 +2,7 @@ import {CluedoGames, GamerElements, Gamers} from '@model';
 import {QueryParameters} from '../../../../src/routes/parameters';
 import {logger} from '@utils/logger';
 import {MongoDBGamesManager} from '../../../../src/managers/games/mongoose';
-import {RestAPIRouteName} from '../../../../src/routes';
+import {RestAPIRouteName} from '../../../../src/routes/routesNames';
 import {gamersAuthenticationTokens, games, nextGamer} from '../../../helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {NotFoundError} from '../../../../src/managers/games/mongoose/errors';

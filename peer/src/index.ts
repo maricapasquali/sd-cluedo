@@ -57,7 +57,7 @@ const serverConfig: HTTPSServerConfig = {
       publicKey: httpsOptions.cert,
       privateKey: httpsOptions.key,
     }),
-    peersSockets,
+    peerServerManager: peersSockets,
   },
 };
 

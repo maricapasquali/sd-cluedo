@@ -1,24 +1,29 @@
 <template>
-  <nav>
-    <router-link to="/">Home</router-link> |
-    <router-link to="/about">About</router-link>
-  </nav>
-  <router-view></router-view>
+  <header>
+    <h1>Cluedo Online</h1>
+  </header>
+  <router-view />
 </template>
 
 <script setup lang="ts">
 </script>
 
-<style>
+<style lang="scss">
+$app-background-color:midnightblue;
+
+html {
+  background-color: $app-background-color;
+}
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-align: center;
-  color: #2c3e50;
+  color: white;
+  background-color: $app-background-color;
 }
 
-nav {
+header, nav {
   padding: 30px;
 }
 

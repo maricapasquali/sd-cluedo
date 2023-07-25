@@ -5,7 +5,8 @@ import patchGameSpec from './patch-games.spec';
 import postGamerSpec from './post-gamer.spec';
 import deleteGamerSpec from './delete-gamer.spec';
 
-import routes, {RestAPIRouteName} from '../../../src/routes';
+import routes from '../../../src/routes';
+import {RestAPIRouteName} from '../../../src/routes/routesNames';
 import {AxiosInstance} from 'axios';
 import {createAxiosInstance} from '@utils/axios';
 import {createHTTPSServer} from '@utils/https-server';

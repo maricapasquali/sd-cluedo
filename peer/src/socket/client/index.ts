@@ -6,7 +6,7 @@ import {Peers} from '@model';
 import {PeerServerManager} from '../../managers/peers-servers';
 import {createServerStub} from '@utils/socket';
 import {createAxiosInstance} from '@utils/axios';
-import {RestAPIRouteName} from '../../routes';
+import {RestAPIRouteName} from '../../routes/routesNames';
 import {MongoDBGamesManager} from '../../managers/games/mongoose';
 import {
   DiscoveryPeerEvent,

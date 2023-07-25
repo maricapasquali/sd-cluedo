@@ -1,5 +1,5 @@
 import {NextFunction, Request, Response} from 'express';
-import {RestAPIRouteName} from '../index';
+import {RestAPIRouteName} from '../routesNames';
 import * as Checkers from '@model/checker';
 import {
   BadRequestSender,
@@ -61,8 +61,11 @@ export function handlerBadRequest(
       req.method === 'GET' &&
       new RegExp(RestAPIRouteName.GAMES + '/.*').test(req.path)
     ) {
-      logger.debug('[handlerBadRequest]: retrieve game');
-      if (!Object.values(GameStatus).includes(req.query.status as GameStatus)) {
+      logger.debug('[handlerBadRequest]: retrieve game ');
+      if (
+        req.query.status &&
+        !Object.values(GameStatus).includes(req.query.status as GameStatus)
+      ) {
         return BadRequestSender.json(res, {
           message:
             'Game status is not valid. Available are ' +

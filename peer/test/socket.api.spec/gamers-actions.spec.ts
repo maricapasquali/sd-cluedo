@@ -1,4 +1,4 @@
-import {RestAPIRouteName} from '../../src/routes';
+import {RestAPIRouteName} from '../../src/routes/routesNames';
 import {
   connectSomeGamerClient,
   gamersAuthenticationTokens,

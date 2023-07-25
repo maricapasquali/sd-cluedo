@@ -7,9 +7,14 @@ const routes: Array<RouteRecordRaw> = [
     component: () => import('@/views/Home.vue'),
   },
   {
-    path: '/about',
-    name: 'about',
-    component: () => import('@/views/About.vue'),
+    path: '/waiting-room/:id',
+    name: 'waiting-room',
+    component: () => import('@/views/WaitingRoom.vue'),
+  },
+  {
+    path: '/started-room/:id',
+    name: 'started-room',
+    component: () => import('@/views/StartedRoom.vue'),
   },
 ];
 export default routes;

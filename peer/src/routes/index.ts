@@ -4,13 +4,7 @@ import * as middleware from './middleware';
 import {pathNotFound, serverError} from '@utils/rest-api/middlewares';
 import * as serveStatic from 'serve-static';
 import * as path from 'path';
-
-export enum RestAPIRouteName {
-  GAMES = '/api/v1/games',
-  GAME = '/api/v1/games/:id',
-  GAMERS = '/api/v1/games/:id/gamers',
-  GAMER = '/api/v1/games/:id/gamers/:gamerId',
-}
+import {RestAPIRouteName} from './routesNames';
 
 export default function (app: express.Application): void {
   if (process.env.NODE_ENV === 'production') {
