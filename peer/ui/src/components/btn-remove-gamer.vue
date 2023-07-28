@@ -4,6 +4,7 @@ import axios from "axios";
 import { RestAPIRouteName } from "../../../src/routes/routesNames";
 import router from "@/router";
 import { ref } from "vue";
+import { localGameStorageManager } from "@/services/localstoragemanager";
 
 const loading = ref<boolean>(false);
 
@@ -12,18 +13,19 @@ const emit = defineEmits<{
 }>()
 
 function removeGamer() {
-  const localGame = JSON.parse(window.localStorage.getItem('game') || '{}');
+  const _localGameId = localGameStorageManager.localGame.identifier
+  const _localGamerId = localGameStorageManager.localGamer.identifier
 
   loading.value = true;
-  axios.delete(RestAPIRouteName.GAMER.replace(':id', localGame?.game.identifier).replace(':gamerId', localGame?.gamer.identifier),
+  axios.delete(RestAPIRouteName.GAMER.replace(':id', _localGameId).replace(':gamerId', _localGamerId),
     {
       headers: {
-        authorization: localGame.accessToken,
+        authorization: localGameStorageManager.accessToken,
       }
     }).then(() => {
-    window.localStorage.removeItem('game');
+    localGameStorageManager.remove();
     if(router.currentRoute.value.name === 'home') {
-      emit('removed-gamer', localGame?.game.identifier, localGame?.gamer.identifier)
+      emit('removed-gamer', _localGameId, _localGamerId)
     } else {
       router.replace({name: 'home'});
     }

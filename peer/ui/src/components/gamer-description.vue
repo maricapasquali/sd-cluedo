@@ -1,14 +1,22 @@
 <script lang="ts">
-import { defineComponent } from "vue";
-import { GamerElements } from "../../../../libs/model";
+import { defineComponent, PropType } from "vue";
+import { GamerElements, Gamers } from "../../../../libs/model";
 import CharacterName = GamerElements.CharacterName;
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { localGameStorageManager } from "@/services/localstoragemanager";
 
 export default defineComponent({
   props: {
-    gamer: { type: Object, required: true},
+    id:  {type: String, required: true},
+    gamer: { type: Object as PropType<Gamer>, required: true },
+    onlyIcon: {type: Boolean, required: false},
+    size: {type: String, required: false, enum: ["sm", "md", "lg"]},
   },
   name: "gamer-description",
   computed: {
+    avatarId() {
+      return `${this.id}-avatar-${this.gamer.identifier}-${this.gamer.characterToken}`
+    },
     variant() {
       switch ((this.gamer as Gamer).characterToken as CharacterName) {
         case GamerElements.CharacterName.COLONEL_MUSTARD: return 'warning'
@@ -24,23 +32,34 @@ export default defineComponent({
     },
     me(): string | boolean {
       try {
-        return JSON.parse(window.localStorage.getItem('game') || '{}').gamer.identifier === this.gamer.identifier ? 'Me' : false
+        return localGameStorageManager.localGamer.identifier === this.gamer.identifier ? 'Me' : false
       }  catch (e){
         return false;
       }
+    },
+    completeName(): string {
+      return this.gamer.characterToken + (this.gamer.username ? ` (${this.gamer.username})`: '') +( this.isSilentGamer ? ' silent': '')
+    },
+    isSilentGamer(): boolean {
+      return this.gamer.role?.includes(Gamers.Role.SILENT) || false;
     }
   }
 });
 </script>
 
 <template>
-  <BContainer class="my-2" >
-    <BAvatar class="align-content-center" rounded="lg" :badge="me" badge-variant="dark" :variant="variant" icon="person-circle" />
-    <span class="mx-2">
-      <b>{{(gamer as Gamer).characterToken.toUpperCase()}}</b>
-      <span v-if="!noUsername">({{(gamer as Gamer).username}})</span>
+  <div class="my-2" >
+    <BTooltip v-if="onlyIcon" :target="avatarId" triggers="hover">
+      {{completeName}}
+    </BTooltip>
+    <BAvatar :id="avatarId" class="align-content-center p-0" :size="size || 'md'" rounded="lg" :badge="me" badge-variant="dark" :variant="variant" icon="person-circle" :alt="gamer.characterToken">
+      <font-awesome-icon :icon="isSilentGamer ? 'user-slash':'user'" :size="size || '1x'" />
+    </BAvatar>
+    <span class="mx-2" v-if="!onlyIcon">
+      <b>{{(gamer as Gamer).characterToken?.toUpperCase()}}</b>
+      <span v-if="!noUsername"> ({{(gamer as Gamer).username}})</span>
     </span>
-  </BContainer>
+  </div>
 </template>
 
 <style scoped>

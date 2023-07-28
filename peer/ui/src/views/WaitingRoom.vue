@@ -7,10 +7,9 @@ import { CluedoGames } from "../../../../libs/model";
 import GamerDescription from "@/components/gamer-description.vue";
 import BtnRemoveGamer from "@/components/btn-remove-gamer.vue";
 import { QueryParameters } from "../../../src/routes/parameters";
+import { localGameStorageManager } from "@/services/localstoragemanager";
 
-const localGame = JSON.parse(window.localStorage.getItem('game') || '{}');
 const gameId = router.currentRoute.value.params.id as string;
-
 const loading = ref<boolean>(false);
 const game = ref<CluedoGame>();
 
@@ -18,7 +17,7 @@ function getWaitingGame(){
   axios.get(RestAPIRouteName.GAME.replace(':id', gameId))
     .then(response => {
       console.debug('Game in waiting = ', response.data)
-      if(!response.data.gamers.find((g: Gamer) => localGame.gamer?.identifier === g.identifier) || response.data.status === CluedoGames.Status.FINISHED) {
+      if(!response.data.gamers.find((g: Gamer) => localGameStorageManager.localGamer.identifier === g.identifier) || response.data.status === CluedoGames.Status.FINISHED) {
         router.replace({name: 'home'});
       }
       if(response.data.status === CluedoGames.Status.STARTED) {
@@ -31,16 +30,15 @@ function getWaitingGame(){
 function startGame() {
   axios.patch(RestAPIRouteName.GAME.replace(':id', gameId), null, {
     headers: {
-      authorization: localGame.accessToken
+      authorization: localGameStorageManager.accessToken
     },
     params: {
-      gamer: localGame.gamer.identifier,
+      gamer: localGameStorageManager.localGamer.identifier,
       action: QueryParameters.Action.START_GAME
     }
   }).then(response => {
-    console.log(response.data);
-    localGame.game = response.data
-    window.localStorage.setItem('game', JSON.stringify(localGame));
+    console.debug(response.data);
+    localGameStorageManager.localGame = response.data;
     router.replace({name: 'started-room', params: {id: gameId}})
   }).catch(err => console.error(err));
 }
@@ -54,7 +52,7 @@ getWaitingGame();
     <template #header>
       <h4 class="mb-0">Game ({{game.identifier}})</h4>
     </template>
-    <gamer-description v-for="gamer in game.gamers" :gamer="gamer" :key="gamer.identifier" />
+    <gamer-description id="list-gamers-in-waiting-room" v-for="gamer in game.gamers" :gamer="gamer" :key="gamer.identifier" />
 
     <BContainer class="mt-5 mb-4">
       <BSpinner variant="secondary" label="Looking to other gamers"/>
@@ -67,8 +65,7 @@ getWaitingGame();
                @click="startGame"> Start </BButton>
     </BContainer>
   </BCard>
-
-  <text v-if="!loading && !game">No waiting game with identifier {{gameId}}</text>
+  <text v-else>No waiting game with identifier {{gameId}}</text>
   <div v-if="loading" class="d-flex justify-content-center mb-3">
     <BSpinner variant="primary" label="Loading..."/>
   </div>

@@ -2,10 +2,11 @@
 import { ref, PropType, defineComponent } from "vue";
 import GamerDescription from "@/components/gamer-description.vue";
 import { v4 as uuid } from "uuid";
-import { GamerElements } from "../../../../libs/model";
+import { GamerElements } from "../../../../../libs/model";
 import axios, { AxiosError } from "axios";
-import { RestAPIRouteName } from "../../../src/routes/routesNames";
+import { RestAPIRouteName } from "../../../../src/routes/routesNames";
 import router from "@/router";
+import { localGameStorageManager } from "@/services/localstoragemanager";
 
 const emit = defineEmits<{
   (e: 'posted-game', game: CluedoGame): void
@@ -33,19 +34,9 @@ const cluedoCharacters = props.game ? Object.values(GamerElements.CharacterName)
   : GamerElements.CharacterName
 
 function setLocalGame(localGame: {game: { identifier: string }, gamer:Gamer, accessToken: string}) {
-  const localGameString = window.localStorage.getItem('game');
-  if(!localGameString) {
-    window.localStorage.setItem('game', JSON.stringify(localGame))
-  } else {
-    const _localGame = JSON.parse(localGameString);
-    if(localGame.game.identifier === _localGame.game.identifier) {
-      Object.assign(_localGame, localGame);
-      window.localStorage.setItem('game', JSON.stringify(_localGame))
-    } else {
-      window.localStorage.setItem('game', JSON.stringify(localGame))
-    }
-    console.debug(window.localStorage.getItem('game'))
-  }
+  localGameStorageManager.localGame = localGame.game as CluedoGame;
+  localGameStorageManager.localGamer = localGame.gamer as Gamer;
+  localGameStorageManager.accessToken = localGame.accessToken;
 }
 function postGame() {
   console.debug(gamer.value.username)
@@ -82,8 +73,7 @@ function enterInGame() {
 
 function clickEnterInGame() {
   const gameId = props.game?.identifier || '';
-  const localGame = JSON.parse(window.localStorage.getItem('game') || '{}');
-  if(localGame.game?.identifier === gameId) {
+  if(localGameStorageManager.localGame.identifier === gameId) {
     router.replace({name: 'waiting-room', params: {id: gameId}})
   } else {
     modal.value = !modal.value
@@ -111,7 +101,7 @@ function clickEnterInGame() {
         </div>
         <BFormRadioGroup id="radio-character-token" v-model="gamer.characterToken" name="radio-sub-component">
           <BFormRadio v-for="character in cluedoCharacters" :value="character" style="cursor: pointer">
-            <gamer-description :gamer="{characterToken: character}" style="cursor: pointer" />
+            <gamer-description id="choose-gamer-token" :gamer="{characterToken: character}" style="cursor: pointer" />
           </BFormRadio>
         </BFormRadioGroup>
       </BForm>

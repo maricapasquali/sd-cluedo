@@ -49,7 +49,7 @@ const peersSockets = new PeerServerManager();
 
 const serverConfig: HTTPSServerConfig = {
   options: httpsOptions,
-  uses: [express.json(), express.query({}), loggerHttp],
+  uses: [express.json(), express.text(), loggerHttp],
   routes,
   sets: {
     tokensManager: BasicTokenManager.create({

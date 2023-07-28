@@ -210,11 +210,14 @@ export class MongoDBGameManager implements GameManager {
   silentGamerInRound(): Promise<Gamer> {
     return this.game().then(game => {
       const _gamerRound = this.getRoundGamer(game);
-      const index =
-        _gamerRound.role?.findIndex(r => r === GamerRole.PARTICIPANT) || -1;
-      if (index > 0 && _gamerRound.role) {
-        _gamerRound.role[index] = GamerRole.SILENT;
-      }
+      // const index =
+      //   _gamerRound.role?.findIndex(r => r === GamerRole.PARTICIPANT) || -1;
+      // if (index > 0 && _gamerRound.role) {
+      //   _gamerRound.role[index] = GamerRole.SILENT;
+      // }
+      _gamerRound.role = _gamerRound.role?.map(r =>
+        r === GamerRole.PARTICIPANT ? GamerRole.SILENT : r
+      );
       return game.save().then(() => _gamerRound);
     });
   }

@@ -243,6 +243,19 @@ export function handlerForbiddenRequest(
                     message:
                       "You can't perform this operation because you can't disprove your assumption",
                   });
+                } else if (
+                  !inRound &&
+                  ![
+                    Action.CONFUTATION_ASSUMPTION,
+                    Action.LEAVE,
+                    Action.END_ROUND,
+                    Action.TAKE_NOTES,
+                  ].includes(action)
+                ) {
+                  ForbiddenSender.json(res, {
+                    message:
+                      "You can't perform this operation because you is not in round",
+                  });
                 } else next();
               })
               .catch(err => {
