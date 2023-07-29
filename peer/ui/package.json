@@ -25,7 +25,7 @@
     "fork-ts-checker-webpack-plugin": "^8.0.0",
     "sass": "^1.64.1",
     "sass-loader": "^13.3.2",
-    "typescript": "~4.5.5",
+    "typescript": "^5.1.6",
     "vue-loader": "^17.2.2",
     "vue-template-compiler": "^2.7.14"
   }
