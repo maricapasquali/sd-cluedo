@@ -6,16 +6,14 @@ import { defineComponent } from 'vue';
 import axios from "axios";
 import { CluedoGames } from "../../../../libs/model";
 import BtnRemoveGamer from "@/components/btn-remove-gamer.vue";
-import * as _ from 'lodash';
 import { localGameStorageManager } from "@/services/localstoragemanager";
+import { BContainer } from "bootstrap-vue-next";
+import GameCard from "@/components/started-room/game-card.vue";
 export default defineComponent({
   name: 'Home',
-  computed: {
-    CluedoGames() {
-      return CluedoGames
-    }
-  },
   components: {
+    GameCard,
+    BContainer,
     BtnRemoveGamer,
     PostNewGame,
     GamerDescription
@@ -27,7 +25,17 @@ export default defineComponent({
     return {
       games,
       loading: true,
-      noInGame
+      noInGame,
+      filteredStatus: '' as '' | CluedoGames.Status,
+      optionsStatus: [{ value: '', text: 'NO FILTER'}, ...Object.values(CluedoGames.Status).map(s => ({value: s, text: s.toUpperCase()}))],
+    }
+  },
+  computed: {
+    CluedoGames() {
+      return CluedoGames
+    },
+    filteredGames(): CluedoGame[] {
+      return this.filteredStatus.length > 0 ? this.games.filter((g: CluedoGame) => g.status === this.filteredStatus) : this.games;
     }
   },
   methods: {
@@ -56,21 +64,7 @@ export default defineComponent({
     inGame(game: string): boolean {
       return localGameStorageManager.localGame.identifier === game;
     },
-    isInWaiting(game: CluedoGame): boolean {
-      return game.status === CluedoGames.Status.WAITING
-    },
-    isStarted(game: CluedoGame): boolean {
-      return game.status === CluedoGames.Status.STARTED
-    },
-    isFinished(game: CluedoGame): boolean {
-      return game.status === CluedoGames.Status.FINISHED
-    },
-    getWinner(game: CluedoGame): string {
-      const winner = game.gamers.find(g => _.isEqual(g.accusation, game.solution))
-      return (winner? `${winner.characterToken} (${winner.username})` : 'None one').toUpperCase();
-    },
     getGames() {
-      //TODO: (Peer server) REMOVE solution and cards of other gamers in GET /api/v1/games only if status != CluedoGames.Status.FINISHED
       axios
         .get(RestAPIRouteName.GAMES)
         .then(response => {
@@ -93,29 +87,34 @@ export default defineComponent({
 </script>
 
 <template>
-  <b-overlay :show="loading" rounded="md">
-    <BContainer v-if="noInGame" class="d-flex justify-content-start mb-3">
-      <post-new-game @posted-game="onPostedGame" />
+  <BOverlay :show="loading" rounded="md">
+    <BContainer v-if="!loading" class="mb-3">
+      <BRow class="d-flex justify-content-between">
+        <BCol v-if="noInGame || games.length == 0" class="d-flex justify-content-start">
+          <post-new-game @posted-game="onPostedGame" />
+        </BCol>
+        <BCol v-if="games.length > 0" class="d-flex justify-content-end">
+          <BFormSelect v-model="filteredStatus" :options="optionsStatus"/>
+        </BCol>
+      </BRow>
     </BContainer>
     <BContainer>
-      <BCard class="h-100 mb-2" v-for="(game) in games" :key="game.identifier">
-        <template #header>
-          <h4 class="mb-0">Game {{game.identifier}} {{game.status.toUpperCase()}} </h4>
+      <game-card v-for="game in filteredGames" :game="game">
+        <template #footer="{game}">
+          <BContainer class="d-flex justify-content-between">
+            <BButton v-if="inGame(game.identifier)" @click="$router.replace({name: game.status === CluedoGames.Status.STARTED ? 'started-room': 'waiting-room', params: {id: game.identifier}})">Go to game</BButton>
+            <btn-remove-gamer v-if="inGame(game.identifier)" @removed-gamer="onRemoveGamer" />
+            <post-new-game v-if="noInGame && game.status === CluedoGames.Status.WAITING" :game="game" @posted-gamer="onPostedGamer" />
+          </BContainer>
         </template>
-        <BContainer>
-          <gamer-description id="list-game" v-for="gamer in game.gamers" :gamer="gamer" :key="gamer.identifier" />
-        </BContainer>
-        <BContainer v-if="game.status===CluedoGames.Status.FINISHED" class="justify-content-center">
-          <p><h5>Winner is <b>{{getWinner(game)}}</b></h5></p>
-          <p><h5>Solution: <b>{{game.solution?.character}}</b> has killed using <b>{{game.solution?.weapon}}</b> in <b>{{game.solution?.room}}</b> </h5></p>
-        </BContainer>
-        <BContainer class="d-flex justify-content-between" v-else>
-          <BButton v-if="inGame(game.identifier)" @click="$router.replace({name: game.status === CluedoGames.Status.STARTED ? 'started-room': 'waiting-room', params: {id: game.identifier}})">Go to game</BButton>
-          <btn-remove-gamer v-if="inGame(game.identifier)" @removed-gamer="onRemoveGamer" />
-          <post-new-game v-if="noInGame && game.status === CluedoGames.Status.WAITING" :game="game" @posted-gamer="onPostedGamer" />
-       </BContainer>
-      </BCard>
+      </game-card>
     </BContainer>
     <p v-if="!loading && games.length == 0">No waiting games</p>
-  </b-overlay>
+  </BOverlay>
 </template>
+
+<style>
+.bg-lightgray {
+  background-color: lightgray;
+}
+</style>

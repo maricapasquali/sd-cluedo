@@ -32,6 +32,7 @@ export default defineComponent({
     },
     me(): string | boolean {
       try {
+        if(!this.gamer.identifier && !localGameStorageManager.localGamer.identifier) throw new Error();
         return localGameStorageManager.localGamer.identifier === this.gamer.identifier ? 'Me' : false
       }  catch (e){
         return false;

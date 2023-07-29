@@ -179,8 +179,8 @@ export const EndRoundRequest: GamerManagerRequest =
       gameManager
         .passRoundToNext(gamer)
         .then(nextGamer => {
+          const serverIo = AppGetter.socketServer(req);
           if (nextGamer) {
-            const serverIo = AppGetter.socketServer(req);
             if (serverIo) {
               [
                 ...PeerServerManager.from(req).sockets(),
@@ -199,9 +199,28 @@ export const EndRoundRequest: GamerManagerRequest =
             }
             return OkSender.text(res, nextGamer);
           } else {
-            return ServerErrorSender.json(res, {
-              message: 'Pass round is not performed',
-            });
+            return gameManager
+              .game()
+              .then(game => {
+                if (serverIo) {
+                  [
+                    ...PeerServerManager.from(req).sockets(),
+                    ...Clients.peer(serverIo),
+                    ...gamersSockets(serverIo, gameId).filter(
+                      s => s.handshake.auth.gamerId !== gamer
+                    ),
+                  ].forEach(s => {
+                    s.emit(
+                      CluedoGameEvent.GameActionEvent.CLUEDO_END_ROUND.action(
+                        gameId
+                      ),
+                      game.solution
+                    );
+                  });
+                }
+                return OkSender.json(res, game.solution);
+              })
+              .catch(err => catchMongooseNotFoundError(err, res, next));
           }
         })
         .catch(err => catchMongooseNotFoundError(err, res, next));
@@ -492,24 +511,30 @@ export const StopGameRequest: GamerManagerRequest =
         .stopGame()
         .then(stopped => {
           if (stopped) {
-            const serverIo = AppGetter.socketServer(req);
-            if (serverIo) {
-              [
-                ...PeerServerManager.from(req).sockets(),
-                ...Clients.peer(serverIo),
-                ...Clients.gamer(serverIo, gameId).filter(
-                  s => s.handshake.auth.gamerId !== gamer
-                ),
-              ].forEach(s => {
-                s.emit(
-                  CluedoGameEvent.GameActionEvent.CLUEDO_STOP_GAME.action(
-                    gameId
+            return gameManager.game().then(game => {
+              const result: StopGameMessage = {
+                gameId,
+                solution: game.solution || ({} as Suggestion),
+              };
+              const serverIo = AppGetter.socketServer(req);
+              if (serverIo) {
+                [
+                  ...PeerServerManager.from(req).sockets(),
+                  ...Clients.peer(serverIo),
+                  ...Clients.real(serverIo).filter(
+                    s => s.handshake.auth?.gamerId !== gamer
                   ),
-                  gameId
-                );
-              });
-            }
-            return OkSender.text(res, gameId);
+                ].forEach(s => {
+                  s.emit(
+                    CluedoGameEvent.GameActionEvent.CLUEDO_STOP_GAME.action(
+                      gameId
+                    ),
+                    result
+                  );
+                });
+              }
+              return OkSender.json(res, result);
+            });
           } else {
             return ServerErrorSender.json(res, {
               message: 'Stop game is not performed',

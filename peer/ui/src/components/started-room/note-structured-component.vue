@@ -15,6 +15,7 @@ const props = defineProps({
   },
   columLabel: { type: String, required: true },
   myCards: { type: Object as PropType<string[]>, required: true },
+  disabled: { type: Boolean, required: false}
 })
 
 const structuredNotes = reactive(props.value);
@@ -76,7 +77,7 @@ props.options?.forEach(item => {
                   <BCol class="col-xs-7 col-sm-12 col-lg-7">
                     <BFormSelect v-model="_notes[item.name].suspectState"
                                  @input="onSelectSuspectState($event, item)"
-                                 :options="suspectStates" stacked/>
+                                 :options="suspectStates" :disabled="disabled" stacked/>
                   </BCol>
                 </BRow>
               </BContainer>

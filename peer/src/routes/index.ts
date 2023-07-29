@@ -21,6 +21,7 @@ export default function (app: express.Application): void {
     .get(
       middleware.games.handlerBadRequest,
       middleware.games.handlerNotFoundRequest,
+      middleware.games.extractAccessToken,
       controller.restApi.getGame
     )
     .patch(

@@ -4,207 +4,210 @@ import * as net from 'net';
 
 export type DocCluedoGame = CluedoGame & Document;
 
-const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>({
-  identifier: {type: String, required: true},
-  status: {
-    type: String,
-    required: false,
-    default: CluedoGames.Status.WAITING,
-    enum: Object.values(CluedoGames.Status),
-  },
-  gamers: {
-    type: [
-      {
-        _id: false,
-        identifier: {
-          type: String,
-          required: true,
-        },
-        username: {
-          type: String,
-          required: true,
-        },
-        characterToken: {
-          type: String,
-          required: true,
-        },
-        role: {
-          type: [String],
-          required: false,
-          default: [Gamers.Role.PARTICIPANT],
-          enum: Object.values(Gamers.Role),
-        },
-        assumptions: {
-          type: [
-            {
+const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
+  {
+    identifier: {type: String, required: true},
+    status: {
+      type: String,
+      required: false,
+      default: CluedoGames.Status.WAITING,
+      enum: Object.values(CluedoGames.Status),
+    },
+    gamers: {
+      type: [
+        {
+          _id: false,
+          identifier: {
+            type: String,
+            required: true,
+          },
+          username: {
+            type: String,
+            required: true,
+          },
+          characterToken: {
+            type: String,
+            required: true,
+          },
+          role: {
+            type: [String],
+            required: false,
+            default: [Gamers.Role.PARTICIPANT],
+            enum: Object.values(Gamers.Role),
+          },
+          assumptions: {
+            type: [
+              {
+                _id: false,
+                room: String,
+                character: String,
+                weapon: String,
+              },
+            ],
+            default: [],
+            required: false,
+          },
+          accusation: {
+            type: {
               _id: false,
               room: String,
               character: String,
               weapon: String,
             },
-          ],
-          default: [],
-          required: false,
-        },
-        accusation: {
-          type: {
-            _id: false,
-            room: String,
-            character: String,
-            weapon: String,
+            default: {},
+            required: false,
           },
-          default: {},
-          required: false,
-        },
-        device: {
-          type: {
-            identifier: {
-              type: String,
-              required: true,
-            },
-            hostname: {
-              type: String,
-              required: true,
-            },
-            address: {
-              type: String,
-              required: false,
-              validate: {
-                validator: function (v: string) {
-                  return net.isIPv4(v);
+          device: {
+            type: {
+              identifier: {
+                type: String,
+                required: true,
+              },
+              hostname: {
+                type: String,
+                required: true,
+              },
+              address: {
+                type: String,
+                required: false,
+                validate: {
+                  validator: function (v: string) {
+                    return net.isIPv4(v);
+                  },
+                  message: props =>
+                    `${props.value} is not a valid device address!`,
                 },
-                message: props =>
-                  `${props.value} is not a valid device address!`,
               },
             },
+            required: false,
           },
-          required: false,
-        },
-        cards: {
-          type: [String],
-          required: false,
-          default: [],
-          enum: [
-            ...Object.values(GamerElements.RoomName),
-            ...Object.values(GamerElements.CharacterName),
-            ...Object.values(GamerElements.WeaponName),
-          ],
-        },
-        notes: {
-          type: {
-            _id: false,
-            text: {
-              type: String,
-              required: false,
-            },
-            structuredNotes: {
-              type: [
-                {
-                  _id: false,
-                  name: String,
-                  suspectState: String,
-                },
-              ],
-              required: false,
-            },
+          cards: {
+            type: [String],
+            required: false,
+            default: [],
+            enum: [
+              ...Object.values(GamerElements.RoomName),
+              ...Object.values(GamerElements.CharacterName),
+              ...Object.values(GamerElements.WeaponName),
+            ],
           },
-          default: {},
-          required: false,
+          notes: {
+            type: {
+              _id: false,
+              text: {
+                type: String,
+                required: false,
+              },
+              structuredNotes: {
+                type: [
+                  {
+                    _id: false,
+                    name: String,
+                    suspectState: String,
+                  },
+                ],
+                required: false,
+              },
+            },
+            default: {},
+            required: false,
+          },
         },
-      },
-    ],
-    required: true,
-    min: CluedoGames.MIN_GAMERS,
-    max: CluedoGames.MAX_GAMERS,
-  },
-  roundGamer: {
-    type: String,
-    required: false,
-  },
-  solution: {
-    type: {
-      _id: false,
-      room: String,
-      character: String,
-      weapon: String,
+      ],
+      required: true,
+      min: CluedoGames.MIN_GAMERS,
+      max: CluedoGames.MAX_GAMERS,
     },
-    required: false,
-  },
-  weapons: {
-    type: [
-      {
+    roundGamer: {
+      type: String,
+      required: false,
+    },
+    solution: {
+      type: {
         _id: false,
-        name: {
-          type: String,
-          required: true,
-          enum: Object.values(GamerElements.WeaponName),
-        },
-        place: {
-          type: String,
-          required: false,
-          enum: Object.values(GamerElements.RoomName),
-        },
+        room: String,
+        character: String,
+        weapon: String,
       },
-    ],
-    default: [],
-    required: false,
+      required: false,
+    },
+    weapons: {
+      type: [
+        {
+          _id: false,
+          name: {
+            type: String,
+            required: true,
+            enum: Object.values(GamerElements.WeaponName),
+          },
+          place: {
+            type: String,
+            required: false,
+            enum: Object.values(GamerElements.RoomName),
+          },
+        },
+      ],
+      default: [],
+      required: false,
+    },
+    characters: {
+      type: [
+        {
+          _id: false,
+          name: {
+            type: String,
+            required: true,
+            enum: Object.values(GamerElements.CharacterName),
+          },
+          place: {
+            type: String,
+            required: false,
+            enum: [
+              ...Object.values(GamerElements.RoomName),
+              ...Object.values(GamerElements.LobbyName),
+            ],
+          },
+        },
+      ],
+      default: [],
+      required: false,
+    },
+    rooms: {
+      type: [
+        {
+          _id: false,
+          name: {
+            type: String,
+            required: true,
+            enum: Object.values(GamerElements.RoomName),
+          },
+          secretPassage: {
+            type: String,
+            required: false,
+            enum: Object.values(GamerElements.RoomName),
+          },
+        },
+      ],
+      default: [],
+      required: false,
+    },
+    lobbies: {
+      type: [
+        {
+          _id: false,
+          name: {
+            type: String,
+            required: true,
+            enum: Object.values(GamerElements.LobbyName),
+          },
+        },
+      ],
+      default: [],
+      required: false,
+    },
   },
-  characters: {
-    type: [
-      {
-        _id: false,
-        name: {
-          type: String,
-          required: true,
-          enum: Object.values(GamerElements.CharacterName),
-        },
-        place: {
-          type: String,
-          required: false,
-          enum: [
-            ...Object.values(GamerElements.RoomName),
-            ...Object.values(GamerElements.LobbyName),
-          ],
-        },
-      },
-    ],
-    default: [],
-    required: false,
-  },
-  rooms: {
-    type: [
-      {
-        _id: false,
-        name: {
-          type: String,
-          required: true,
-          enum: Object.values(GamerElements.RoomName),
-        },
-        secretPassage: {
-          type: String,
-          required: false,
-          enum: Object.values(GamerElements.RoomName),
-        },
-      },
-    ],
-    default: [],
-    required: false,
-  },
-  lobbies: {
-    type: [
-      {
-        _id: false,
-        name: {
-          type: String,
-          required: true,
-          enum: Object.values(GamerElements.LobbyName),
-        },
-      },
-    ],
-    default: [],
-    required: false,
-  },
-});
+  {timestamps: true}
+);
 
 CluedoGameSchema.set('toObject', {
   transform: function (doc, ret) {

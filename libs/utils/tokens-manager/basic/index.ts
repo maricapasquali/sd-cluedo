@@ -73,12 +73,20 @@ export class BasicTokenManager implements ITokensManager {
 
   decode(id: string, accessToken: string): Payload | false {
     try {
-      const payload = decode(accessToken, this.publicKey);
+      const payload = this.payload(accessToken);
       return (payload as unknown as Payload).identifier === id
         ? (payload as unknown as Payload)
         : false;
     } catch (e) {
       return false;
+    }
+  }
+
+  payload(accessToken: string): Payload {
+    try {
+      return decode(accessToken, this.publicKey) as unknown as Payload;
+    } catch (e) {
+      return {} as Payload;
     }
   }
 

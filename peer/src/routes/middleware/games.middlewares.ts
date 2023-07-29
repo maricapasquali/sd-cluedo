@@ -152,6 +152,23 @@ export function handlerNotFoundRequest(
     });
 }
 
+export function extractAccessToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  catchableHandlerRequestPromise(() => {
+    const authorization = HeadersFormatter.authorization(req);
+    const accessTokenPayload = (
+      AppGetter.tokensManger(req) as BasicTokenManager
+    ).payload(authorization.parameters);
+    res.locals.gamerId = accessTokenPayload?.identifier;
+    return;
+  })
+    .then(next)
+    .catch(next);
+}
+
 export function handlerUnauthorizedRequest(
   req: Request,
   res: Response,
@@ -212,7 +229,7 @@ export function handlerForbiddenRequest(
         Action.CONFUTATION_ASSUMPTION,
         Action.LEAVE,
         Action.END_ROUND,
-        Action.TAKE_NOTES,
+        Action.STOP_GAME,
       ];
       if (
         payload.role.includes(Gamers.Role.SILENT) &&

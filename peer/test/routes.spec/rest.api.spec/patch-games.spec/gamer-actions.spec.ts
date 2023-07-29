@@ -234,8 +234,8 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
   it(QueryParameters.Action.STOP_GAME + ' action', done => {
     performActionInRound(QueryParameters.Action.STOP_GAME)
       .then(response => {
-        response.headers['content-type'].should.contain('text/plain');
-        response.data.should.be.a('string').and.equal(game.identifier);
+        response.data.should.have.property('gameId').equal(game.identifier);
+        response.data.should.have.property('solution');
         done();
       })
       .catch(done);

@@ -789,9 +789,10 @@ export default function ({axiosInstance}: Config): void {
         })
         .catch(done);
     });
-    it('stops game, other gamers and peers should receive it', done => {
+    it('stops game, other gamers, peers and no gamers should receive it', done => {
       const receivers = promises(
         [
+          ...noGamersClientSocket(game.identifier),
           ...gamersClientSocket(game.identifier, gamerInRound),
           ...peerLikeClients,
         ],
@@ -804,7 +805,8 @@ export default function ({axiosInstance}: Config): void {
                   logger.debug(
                     getReceiverInfo(client) + ' receive stop message'
                   );
-                  message.should.be.a('string').and.be.equal(game.identifier);
+                  message.should.have.property('gameId').equal(game.identifier);
+                  message.should.have.property('solution');
                   resolve();
                 } catch (err) {
                   reject(err);

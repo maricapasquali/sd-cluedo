@@ -11,6 +11,7 @@ import {MongooseError} from 'mongoose';
 import {SocketChecker} from '../checker';
 import {getAuth} from '../utils';
 import {PeerServerManager} from '../../managers/peers-servers';
+import {CSuggestion} from '@model/checker';
 
 function receiverName(
   server: Server,
@@ -232,18 +233,31 @@ function registerGameActionEvent(
     )
     .on(
       GameActionEvent.CLUEDO_END_ROUND.action(gameId),
-      (message: NextGamerMessage) => {
+      (message: NextGamerMessage | Suggestion) => {
         logger.info(
           receiver + 'receive END ROUND game ' + JSON.stringify(message)
         );
-        gameManager
-          .passRoundToNext(message)
-          .then(() => {
-            server
-              .to(sids(Clients.gamer(server, gameId)))
-              .emit(GameActionEvent.CLUEDO_END_ROUND.action(gameId), message);
-          })
-          .catch(err => logger.error(err));
+        const sendMessage = () => {
+          server
+            .to(sids(Clients.gamer(server, gameId)))
+            .emit(GameActionEvent.CLUEDO_END_ROUND.action(gameId), message);
+        };
+        const isSolution = (message: any) => {
+          try {
+            CSuggestion.check(message);
+            return true;
+          } catch (e) {
+            return false;
+          }
+        };
+        if (typeof message === 'string') {
+          gameManager
+            .passRoundToNext(message)
+            .then(() => sendMessage())
+            .catch(err => logger.error(err));
+        } else if (isSolution(message)) {
+          sendMessage();
+        }
       }
     )
     .once(
@@ -254,7 +268,7 @@ function registerGameActionEvent(
           .stopGame()
           .then(() => {
             server
-              .to(sids(Clients.gamer(server, gameId)))
+              .to(sids(Clients.real(server)))
               .emit(GameActionEvent.CLUEDO_STOP_GAME.action(gameId), message);
           })
           .catch(err => logger.error(err));

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import OperationErrorAlert from "@/components/started-room/gamer-actions/operation-error-alert.vue";
-import { computed, PropType, ref } from "vue";
+import { computed, PropType, ref, watch } from "vue";
 import GamerDescription from "@/components/gamer-description.vue";
 import { QueryParameters } from "../../../../../src/routes/parameters";
 import { GamerElements, Gamers } from "../../../../../../libs/model";
@@ -37,6 +37,9 @@ const inRoundGamer = computed(() => props.game.gamers.find(g => g.identifier ===
 const nextGamer = computed(() => nextGamerOf(props.game.roundGamer || ''));
 
 
+const inLobby = computed(() => Object.values(LobbyName).includes( props.game?.characters?.find(c => c.name === localGameStorageManager.localGamer.characterToken)?.place as LobbyName) )
+const myPositionInHouse = computed(() => props.game?.characters?.find(c => c.name === localGameStorageManager.localGamer.characterToken)?.place || '')
+
 type VModelForModal = {show: boolean}
 
 const denialOperationError = ref<VModelForModal & {action: Action | '', error: MessageError & {codeText?: string}}>({show: false, action: '', error: { message: '' }});
@@ -44,6 +47,7 @@ const denialOperationError = ref<VModelForModal & {action: Action | '', error: M
 const characters = props.game.characters?.map(w => w.name) || []
 const rooms = props.game.rooms?.map(w => w.name) || []
 const weapons = props.game.weapons?.map(w => w.name) || []
+
 
 function username(gamerId: string): string {
   const gamer = props.game?.gamers.find(g => g.identifier === gamerId);
@@ -77,7 +81,6 @@ function handlerError(error: AxiosError, action: Action) {
 }
 
 function endRound(leave: boolean = false) {
-  //TODO: (Peer server) GET /api/v1/game/:id?action=end_round& => CHECK IF ONE NO SILENT GAMER LEFT AND IN CASE RETURN SOLUTION.
   axios.patch(RestAPIRouteName.GAME.replace(':id', props.game.identifier), null, {
     headers: {
       authorization: localGameStorageManager.accessToken
@@ -87,16 +90,21 @@ function endRound(leave: boolean = false) {
       action: Action.END_ROUND
     }
   }).then(response => {
-    props.game.roundGamer = response.data;
-    if(leave) {
-      router.replace({name: 'home'});
-      localGameStorageManager.remove();
+    if(typeof response.data == 'string') {
+      props.game.roundGamer = response.data;
+      if(leave) {
+        router.replace({name: 'home'});
+        localGameStorageManager.remove();
+      }
+      resetRollDieModal();
+      resetMakeAssumptionModal();
+      resetMakeAccusationModal();
+      resetUseSecretPassageModal();
+    } else {
+      // GAME OVER WITHOUT WINNER
+      endGameModal.value.show = true;
+      endGameModal.value.solution = response.data;
     }
-    resetRollDieModal();
-    resetMakeAssumptionModal();
-    resetMakeAccusationModal();
-    resetUseSecretPassageModal();
-
   }).catch(err => handlerError(err, Action.END_ROUND))
 }
 
@@ -141,7 +149,11 @@ const makeAssumptionModal = ref<VModelForModal & {message: boolean, confutation:
   show: false,
   message: false,
   confutation: {},
-  assumption: {} as Suggestion
+  assumption: {
+    character: null,
+    room: null,
+    weapon: null
+  } as unknown as Suggestion
 });
 
 function resetMakeAssumptionModal() {
@@ -149,13 +161,17 @@ function resetMakeAssumptionModal() {
     show: false,
     message: false,
     confutation: {},
-    assumption: {} as Suggestion
+    assumption: {
+      character: null,
+      room: null,
+      weapon: null
+    } as unknown as Suggestion
   }
 }
 
 function onClickMakeAssumption() {
   makeAssumptionModal.value.show = true;
-  makeAssumptionModal.value.assumption.room = props.game.characters?.find(c => c.name ===inRoundGamer.value?.characterToken )?.place || '';
+  makeAssumptionModal.value.assumption.room = myPositionInHouse.value;
 }
 
 function makeAssumption() {
@@ -202,7 +218,11 @@ function clickOkOnReceiveConfutation() {
 const makeAccusationModal = ref<VModelForModal & {solution: Suggestion, accusation: Suggestion, win: boolean | null}>({
   show: false,
   solution: {} as Suggestion,
-  accusation: {} as Suggestion,
+  accusation: {
+    character: null,
+    room: null,
+    weapon: null
+  } as unknown as Suggestion,
   win: null,
 });
 
@@ -210,7 +230,11 @@ function resetMakeAccusationModal() {
   makeAccusationModal.value = {
     show: false,
     solution: {} as Suggestion,
-    accusation: {} as Suggestion,
+    accusation: {
+      character: null,
+      room: null,
+      weapon: null
+    } as unknown as Suggestion,
     win: null,
   }
 }
@@ -247,8 +271,8 @@ function stopGame() {
     }
   }).then(() => {
     makeAccusationModal.value.show = false;
-    router.replace({name: 'home'});
     localGameStorageManager.remove();
+    router.replace({name: 'home'});
   }).catch(err => handlerError(err, Action.STOP_GAME))
 }
 
@@ -426,12 +450,7 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
         </BCol>
         <BCol class="my-2 col-12 col-sm-4">
           <label for="assumption-room"> Room </label>
-          <BFormSelect id="assumption-room" >
-            <template #first>
-              <BFormSelectOption v-model="makeAssumptionModal.assumption.room">
-                {{ makeAssumptionModal.assumption.room }}</BFormSelectOption>
-            </template>
-          </BFormSelect>
+          <div id="assumption-room" class="form-control">{{ myPositionInHouse }}</div>
         </BCol>
       </BRow>
       <BRow>
@@ -643,10 +662,10 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
   </BModal>
 
   <BButtonGroup v-if="youAreInRound" vertical>
-    <BButton variant="outline-primary" class="btn-action" @click="rollDie">Roll die</BButton>
-    <BButton variant="outline-primary" class="btn-action" @click="onClickMakeAssumption">Make assumption</BButton>
-    <BButton variant="outline-primary" class="btn-action" @click="onClickMakeAccusation">Make accusation</BButton>
-    <BButton variant="outline-primary" class="btn-action" @click="useSecretPassage" v-if="inRoomWithSecretPassage">Use secret passage</BButton>
+    <BButton variant="outline-primary" class="btn-action" @click="rollDie" v-if="!makeAssumptionModal.message">Roll die</BButton>
+    <BButton variant="outline-primary" class="btn-action" @click="onClickMakeAssumption" v-if="!inLobby">Make assumption</BButton>
+    <BButton variant="outline-primary" class="btn-action" @click="onClickMakeAccusation" v-if="!inLobby && !makeAssumptionModal.message">Make accusation</BButton>
+    <BButton variant="outline-primary" class="btn-action" @click="useSecretPassage" v-if="inRoomWithSecretPassage && !makeAssumptionModal.message">Use secret passage</BButton>
   </BButtonGroup>
   <BContainer v-else class="my-3">
     <BRow>

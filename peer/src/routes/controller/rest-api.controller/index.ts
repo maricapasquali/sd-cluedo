@@ -27,6 +27,8 @@ import {CluedoGameEvent} from '../../../socket/events';
 import {Clients} from '../../../socket/server/clients';
 import {PeerServerManager} from '../../../managers/peers-servers';
 import Action = QueryParameters.Action;
+import {CluedoGames} from '@model';
+import {getStartedCluedoGame} from '../../../utils';
 
 export function postGames(
   req: Request,
@@ -71,12 +73,23 @@ export function getGames(
   next: NextFunction
 ): void {
   MongoDBGamesManager.getGames(req.query.status as string)
-    .then(games => OkSender.json(res, games))
+    .then(games =>
+      OkSender.json(
+        res,
+        games.map(g =>
+          (g.status as CluedoGames.Status.STARTED) ===
+          CluedoGames.Status.STARTED
+            ? getStartedCluedoGame(g)
+            : g
+        )
+      )
+    )
     .catch(next);
 }
 
 export function getGame(req: Request, res: Response, next: NextFunction): void {
   catchableHandlerRequestPromise(() => {
+    const {gamerId} = res.locals;
     const status = req.query.status as string;
     const gamer = req.query.gamer as string;
     const filters: {
@@ -87,7 +100,15 @@ export function getGame(req: Request, res: Response, next: NextFunction): void {
     if (gamer) filters.gamer = gamer;
     return MongoDBGamesManager.gameManagers(req.params.id)
       .game(Object.keys(filters).length > 0 ? filters : undefined)
-      .then(game => OkSender.json(res, game))
+      .then(game =>
+        OkSender.json(
+          res,
+          (game.status as CluedoGames.Status.STARTED) ===
+            CluedoGames.Status.STARTED
+            ? getStartedCluedoGame(game.toObject(), gamerId)
+            : game
+        )
+      )
       .catch((err: MongooseError) =>
         catchMongooseNotFoundError(err, res, next)
       );
