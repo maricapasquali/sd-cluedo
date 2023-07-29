@@ -4,6 +4,7 @@
     "types": [
       "webpack-env"
     ],
+    "typeRoots": ["node_modules/@types"],
     "baseUrl": ".",
     "paths": {
       "@/*": [
