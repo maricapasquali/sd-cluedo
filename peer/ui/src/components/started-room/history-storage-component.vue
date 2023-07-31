@@ -4,6 +4,8 @@ import { HistoryItem, localGameStorageManager } from "@/services/localstorageman
 import { QueryParameters } from "../../../../src/routes/parameters";
 import Action = QueryParameters.Action;
 import GamerDescription from "@/components/gamer-description.vue";
+import eventbus from "@/eventbus";
+import { ACTION_GAMER } from "@/eventbus/eventsName";
 
 const props = defineProps({
   game: {type: Object as PropType<CluedoGame>, required: true}
@@ -56,6 +58,8 @@ function parseMessage(action: Action, message: any) {
   //   default: break;
   // }
 }
+
+eventbus.on(ACTION_GAMER, appendInHistory);
 </script>
 
 <template>

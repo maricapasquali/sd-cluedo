@@ -54,8 +54,3 @@ declare interface TakeNotesMessage {
   gamer: string;
   note: Notes;
 }
-
-declare type StopGameMessage = {
-  gameId: string;
-  solution: Suggestion;
-};

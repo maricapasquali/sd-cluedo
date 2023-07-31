@@ -512,10 +512,6 @@ export const StopGameRequest: GamerManagerRequest =
         .then(stopped => {
           if (stopped) {
             return gameManager.game().then(game => {
-              const result: StopGameMessage = {
-                gameId,
-                solution: game.solution || ({} as Suggestion),
-              };
               const serverIo = AppGetter.socketServer(req);
               if (serverIo) {
                 [
@@ -529,11 +525,11 @@ export const StopGameRequest: GamerManagerRequest =
                     CluedoGameEvent.GameActionEvent.CLUEDO_STOP_GAME.action(
                       gameId
                     ),
-                    result
+                    game
                   );
                 });
               }
-              return OkSender.json(res, result);
+              return OkSender.text(res, gameId);
             });
           } else {
             return ServerErrorSender.json(res, {

@@ -9,6 +9,7 @@ import {NotFoundError} from '../../../../src/managers/games/mongoose/errors';
 import {AxiosInstance} from 'axios';
 import {should as shouldFunc} from 'chai';
 import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
+import CharacterName = GamerElements.CharacterName;
 const should = shouldFunc();
 
 type PatchGameActionConfig = {
@@ -87,7 +88,14 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
   it(QueryParameters.Action.TAKE_NOTES + ' action', done => {
     performActionInRound(QueryParameters.Action.TAKE_NOTES, {
       text: 'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua.',
-    })
+      structuredNotes: [
+        {
+          name: CharacterName.MRS_PEACOCK,
+          suspectState: GamerElements.SuspectState.EXCLUDED,
+          confutation: true,
+        },
+      ] as StructuredNoteItem[],
+    } as Notes)
       .then(response => {
         response.headers['content-type'].should.contain('text/plain');
         response.data.should.be.a('string');
@@ -234,8 +242,8 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
   it(QueryParameters.Action.STOP_GAME + ' action', done => {
     performActionInRound(QueryParameters.Action.STOP_GAME)
       .then(response => {
-        response.data.should.have.property('gameId').equal(game.identifier);
-        response.data.should.have.property('solution');
+        response.headers['content-type'].should.contain('text/plain');
+        response.data.should.be.a('string').and.equal(game.identifier);
         done();
       })
       .catch(done);

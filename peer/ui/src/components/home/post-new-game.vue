@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, PropType, defineComponent } from "vue";
+import { ref, PropType, defineComponent, computed } from "vue";
 import GamerDescription from "@/components/gamer-description.vue";
 import { v4 as uuid } from "uuid";
 import { GamerElements } from "../../../../../libs/model";
@@ -29,9 +29,11 @@ const loading = ref<boolean>(false)
 const gamer = ref<Partial<Gamer>>({identifier: uuid()})
 const error = ref<Partial<AxiosError>>({})
 
-const cluedoCharacters = props.game ? Object.values(GamerElements.CharacterName)
-    .filter(c => !props.game?.gamers.map(g => g.characterToken).includes(c))
-  : GamerElements.CharacterName
+const cluedoCharacters = computed(() =>
+  props.game ? Object.values(GamerElements.CharacterName)
+      .filter(c => !props.game?.gamers.map(g => g.characterToken).includes(c))
+    : GamerElements.CharacterName
+)
 
 function setLocalGame(localGame: {game: { identifier: string }, gamer:Gamer, accessToken: string}) {
   localGameStorageManager.localGame = localGame.game as CluedoGame;

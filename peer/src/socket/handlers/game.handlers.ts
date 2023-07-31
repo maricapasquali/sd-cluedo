@@ -262,7 +262,7 @@ function registerGameActionEvent(
     )
     .once(
       GameActionEvent.CLUEDO_STOP_GAME.action(gameId),
-      (message: StopGameMessage) => {
+      (message: CluedoGameMessage) => {
         logger.info(receiver + 'receive STOP game' + JSON.stringify(message));
         gameManager
           .stopGame()

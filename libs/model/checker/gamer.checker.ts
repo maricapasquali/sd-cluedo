@@ -1,4 +1,4 @@
-import {Array, Record, String} from 'runtypes';
+import {Array, Record, String, Boolean} from 'runtypes';
 import {characterConstraint, identifierConstraint} from './constraints';
 import {GamerElements} from '../game-element.model';
 import {Gamers} from '../gamer.model';
@@ -13,16 +13,19 @@ export const CStructuredNoteItem = Record({
     name: 'StructuredNoteItem name available ' + CardsDeck,
   }),
   suspectState: String.withConstraint(
-    s => Object.values(SuspectState).includes(s as SuspectState),
+    s => ['', ...Object.values(SuspectState)].includes(s),
     {
-      name: 'Suspect States available ' + Object.values(SuspectState),
+      name: 'Suspect States available ' + ['', ...Object.values(SuspectState)],
     }
   ),
+  confutation: Boolean.withConstraint(c => c === true, {
+    name: "Confutation value only 'true'",
+  }).optional(),
 });
 
 export const CNotes = Record({
   text: String.optional(),
-  structuredNotes: CStructuredNoteItem.optional(),
+  structuredNotes: Array(CStructuredNoteItem).optional(),
 });
 
 export const CGamer = Record({

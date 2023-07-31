@@ -13,6 +13,7 @@ declare interface Gamer {
 declare interface StructuredNoteItem {
   name: string;
   suspectState: string;
+  confutation?: true;
 }
 
 declare interface Notes {

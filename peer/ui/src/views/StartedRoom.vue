@@ -1,23 +1,50 @@
 <script setup lang="ts">
-import axios, {AxiosError} from 'axios';
-import {RestAPIRouteName} from '../../../src/routes/routesNames';
+import axios, { AxiosError } from "axios";
+import { RestAPIRouteName } from "../../../src/routes/routesNames";
 import { CluedoGames, Gamers } from "../../../../libs/model";
-import router from '@/router';
-import { computed, reactive, ref, watch } from "vue";
-import {ResponseStatus} from '../../../../libs/utils/rest-api/responses';
-import GamerDescription from '@/components/gamer-description.vue';
-import GameBoard from '@/components/started-room/game-board.vue';
-import OperationsGameComponent from '@/components/started-room/gamer-actions/operations-game-component.vue';
-import NoteStructuredComponent from '@/components/started-room/note-structured-component.vue';
+import router from "@/router";
+import { computed, defineComponent, reactive, ref, watch } from "vue";
+import { ResponseStatus } from "../../../../libs/utils/rest-api/responses";
+import GamerDescription from "@/components/gamer-description.vue";
+import GameBoard from "@/components/started-room/game-board.vue";
+import OperationsGameComponent from "@/components/started-room/gamer-actions/operations-game-component.vue";
+import NoteStructuredComponent from "@/components/started-room/note-structured-component.vue";
 import HistoryStorageComponent from "@/components/started-room/history-storage-component.vue";
 import { localGameStorageManager } from "@/services/localstoragemanager";
+import socket from "@/services/socket";
+import * as _ from "lodash";
+import { CluedoGameEvent } from "../../../src/socket/events";
+import { QueryParameters } from "../../../src/routes/parameters";
+import Action = QueryParameters.Action;
 
 const loading = ref<boolean>(true);
 let reactiveGame = reactive<CluedoGame>({} as CluedoGame);
 let iGamer: Gamer;
 let othersGamers: Gamer[];
 
-const amISilent = computed(() => iGamer.role?.includes(Gamers.Role.SILENT) || true);
+const amISilent = computed(() => iGamer.role?.includes(Gamers.Role.SILENT) || false);
+
+const components = defineComponent({
+  unmounted() {
+    console.debug('unmounted STARTED ROOM')
+    Object.values(CluedoGameEvent.GameActionEvent).map(v => v.action(reactiveGame.identifier)).forEach(e => socket.off(e));
+  }
+})
+
+function connectSocketLikeGamer() {
+  const gamerAuth = {
+    gamerId: localGameStorageManager.localGamer.identifier,
+    gameId: localGameStorageManager.localGame.identifier,
+    accessToken: localGameStorageManager.accessToken
+  }
+  console.debug('Socket auth ', socket.auth)
+  console.debug('gamerAuth ',gamerAuth);
+  if(!_.isEqual(socket.auth, gamerAuth)) {
+    socket.connectLike(gamerAuth).on('connect', () => {
+      console.debug(`Started room: connect socket ${socket.id}`);
+    })
+  }
+}
 
 function getStartedGame(gameId: string) {
   axios
@@ -46,6 +73,7 @@ function getStartedGame(gameId: string) {
       }
       localGameStorageManager.localGame = response.data;
       setReactiveGame(response.data);
+      connectSocketLikeGamer();
     })
     .catch((err: AxiosError) => {
       if (err.response?.status === ResponseStatus.NOT_FOUND) {
@@ -63,6 +91,7 @@ function getStartedGame(gameId: string) {
 function setReactiveGame(game: CluedoGame) {
   reactiveGame = reactive<CluedoGame>(game);
   iGamer = reactiveGame.gamers.find(g => g.identifier === localGameStorageManager.localGamer.identifier) || ({} as Gamer)
+  if(iGamer.notes) iGamer.notes.structuredNotes = iGamer.notes.structuredNotes || [];
   othersGamers = reactiveGame.gamers.filter(g => g.identifier !== localGameStorageManager.localGamer.identifier) || []
 }
 
@@ -74,8 +103,27 @@ watch(reactiveGame, (newGame) => {
   localGameStorageManager.localGamer = newGame.gamers.find(g => g.identifier === localGameStorageManager.localGamer.identifier) || {} as Gamer;
 })
 
-function onWriteNotes(text: string) {
-  if(iGamer.notes) iGamer.notes.text = text
+function onWriteNotes(note: string | StructuredNoteItem[]) {
+  console.debug('onWriteNotes ', note)
+  if(typeof note === 'string') {
+    if(iGamer.notes) iGamer.notes.text = note
+  }
+  if(!socket.connected) {
+    axios.patch(RestAPIRouteName.GAME.replace(':id', reactiveGame.identifier), iGamer.notes, {
+      headers: {
+        authorization: localGameStorageManager.accessToken
+      },
+      params: {
+        gamer: localGameStorageManager.localGamer.identifier,
+        action: Action.TAKE_NOTES
+      }
+    }).then((res) => console.debug(res.data)).catch(err => console.error(err))
+  } else {
+    socket.emit(CluedoGameEvent.GameActionEvent.CLUEDO_TAKE_NOTES.action(reactiveGame.identifier), {
+      gamer: localGameStorageManager.localGamer.identifier,
+      note: iGamer.notes
+    });
+  }
 }
 </script>
 
@@ -130,7 +178,7 @@ function onWriteNotes(text: string) {
               no-resize
               rows="14"
               class="mb-2"
-              :value="iGamer.notes?.text"
+              v-model="iGamer.notes.text"
               @input="onWriteNotes"
               :disabled="amISilent"
             />
@@ -140,6 +188,7 @@ function onWriteNotes(text: string) {
               :my-cards="iGamer.cards"
               :value="iGamer.notes?.structuredNotes"
               :disabled="amISilent"
+              @input="onWriteNotes"
             />
 
             <note-structured-component
@@ -148,6 +197,7 @@ function onWriteNotes(text: string) {
               :my-cards="iGamer.cards"
               :value="iGamer.notes?.structuredNotes"
               :disabled="amISilent"
+              @input="onWriteNotes"
             />
 
             <note-structured-component
@@ -156,6 +206,7 @@ function onWriteNotes(text: string) {
               :my-cards="iGamer.cards"
               :value="iGamer.notes?.structuredNotes"
               :disabled="amISilent"
+              @input="onWriteNotes"
             />
           </BCard>
         </BCol>

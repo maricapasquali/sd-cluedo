@@ -1,20 +1,23 @@
 <script setup lang="ts">
 import OperationErrorAlert from "@/components/started-room/gamer-actions/operation-error-alert.vue";
-import { computed, PropType, ref, watch } from "vue";
+import { computed, PropType, ref } from "vue";
 import GamerDescription from "@/components/gamer-description.vue";
 import { QueryParameters } from "../../../../../src/routes/parameters";
 import { GamerElements, Gamers } from "../../../../../../libs/model";
 import { RestAPIRouteName } from "../../../../../src/routes/routesNames";
 import axios, { AxiosError } from "axios";
 import { MessageError, ResponseStatus } from "../../../../../../libs/utils/rest-api/responses";
-import Action = QueryParameters.Action;
-import emitter from '@/eventbus';
-import { CONFUTATION_CARD } from "@/eventbus/eventsName";
+import emitter from "@/eventbus";
+import { ACTION_GAMER, CONFUTATION_CARD } from "@/eventbus/eventsName";
 import * as _ from "lodash";
 import router from "@/router";
-import LobbyName = GamerElements.LobbyName;
-import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
 import { localGameStorageManager } from "@/services/localstoragemanager";
+import socket from "@/services/socket";
+import { CluedoGameEvent } from "../../../../../src/socket/events";
+import LobbyName = GamerElements.LobbyName;
+import Action = QueryParameters.Action;
+import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
+import eventbus from "@/eventbus";
 
 const props = defineProps({
   game: {
@@ -48,6 +51,9 @@ const characters = props.game.characters?.map(w => w.name) || []
 const rooms = props.game.rooms?.map(w => w.name) || []
 const weapons = props.game.weapons?.map(w => w.name) || []
 
+function gamer(gamerId: string): Gamer {
+  return props.game?.gamers.find(g => g.identifier === gamerId) || ({} as Gamer);
+}
 
 function username(gamerId: string): string {
   const gamer = props.game?.gamers.find(g => g.identifier === gamerId);
@@ -91,7 +97,13 @@ function endRound(leave: boolean = false) {
     }
   }).then(response => {
     if(typeof response.data == 'string') {
+      eventbus.emit(ACTION_GAMER, {
+        gamer: props.game?.roundGamer || '',
+        action: Action.END_ROUND,
+        message: response.data
+      });
       props.game.roundGamer = response.data;
+
       if(leave) {
         router.replace({name: 'home'});
         localGameStorageManager.remove();
@@ -104,7 +116,14 @@ function endRound(leave: boolean = false) {
       // GAME OVER WITHOUT WINNER
       endGameModal.value.show = true;
       endGameModal.value.solution = response.data;
+      eventbus.emit(ACTION_GAMER, {
+        gamer: props.game?.roundGamer || '',
+        action: Action.END_ROUND,
+        message: response.data
+      });
+      stopGame();
     }
+
   }).catch(err => handlerError(err, Action.END_ROUND))
 }
 
@@ -131,8 +150,13 @@ function rollDie() {
       action: Action.ROLL_DIE
     }
   }).then(response => {
-    rollDieModal.value.show = true;
+    // rollDieModal.value.show = true;
     rollDieModal.value.message = response.data;
+    afterRollDie();
+    eventbus.emit(ACTION_GAMER, {
+      gamer: localGameStorageManager.localGamer.identifier,
+      action: Action.ROLL_DIE,
+      message: { gamer: localGameStorageManager.localGamer.identifier, housePart: response.data } as RollDiceMessage })
     if(Object.values(LobbyName).includes(response.data as LobbyName)) {
       endRound()
     }
@@ -184,7 +208,12 @@ function makeAssumption() {
       gamer: localGameStorageManager.localGamer.identifier,
       action: Action.MAKE_ASSUMPTION
     }
-  }).then(() => {
+  }).then(response => {
+
+    eventbus.emit(ACTION_GAMER, {
+      gamer: localGameStorageManager.localGamer.identifier,
+      action: Action.MAKE_ASSUMPTION,
+      message: response.data});
 
     makeAssumptionModal.value.message = true;
     moveCharacterTokenIn(makeAssumptionModal.value.assumption.room || '', makeAssumptionModal.value.assumption.character)
@@ -192,6 +221,12 @@ function makeAssumption() {
 
   }).catch(err => handlerError(err, Action.MAKE_ASSUMPTION))
 }
+
+const haveReceivedAnyConfutation = computed(() => {
+  const _len = Object.keys(makeAssumptionModal.value.confutation).length;
+  const _otherGamersLen = props.game?.gamers.length - 1;
+  return (_len < _otherGamersLen && Object.values(makeAssumptionModal.value.confutation).some(c => c.length > 0)) || (_len === _otherGamersLen)
+})
 
 function clickOkOnReceiveConfutation() {
   Object.values(makeAssumptionModal.value.confutation).filter(c => c && c.length > 0)
@@ -215,8 +250,9 @@ function clickOkOnReceiveConfutation() {
 }
 
 /*MAKE ACCUSATION*/
-const makeAccusationModal = ref<VModelForModal & {solution: Suggestion, accusation: Suggestion, win: boolean | null}>({
+const makeAccusationModal = ref<VModelForModal & { gamerId: string | undefined, solution: Suggestion, accusation: Suggestion, win: boolean | null}>({
   show: false,
+  gamerId: undefined,
   solution: {} as Suggestion,
   accusation: {
     character: null,
@@ -229,6 +265,7 @@ const makeAccusationModal = ref<VModelForModal & {solution: Suggestion, accusati
 function resetMakeAccusationModal() {
   makeAccusationModal.value = {
     show: false,
+    gamerId: undefined,
     solution: {} as Suggestion,
     accusation: {
       character: null,
@@ -254,8 +291,16 @@ function makeAccusation() {
       action: Action.MAKE_ACCUSATION
     }
   }).then(response => {
+    eventbus.emit(ACTION_GAMER, {
+      gamer: localGameStorageManager.localGamer.identifier,
+      action: Action.MAKE_ACCUSATION,
+      message: response.data});
+
     makeAccusationModal.value.solution = response.data.solution;
     makeAccusationModal.value.win = _.isEqual(makeAccusationModal.value.accusation, makeAccusationModal.value.solution);
+    if (makeAccusationModal.value.win) {
+      stopGame();
+    }
   }).catch(err => handlerError(err, Action.MAKE_ACCUSATION))
 }
 
@@ -269,13 +314,13 @@ function stopGame() {
       gamer: localGameStorageManager.localGamer.identifier,
       action: Action.STOP_GAME
     }
-  }).then(() => {
-    makeAccusationModal.value.show = false;
-    localGameStorageManager.remove();
-    router.replace({name: 'home'});
-  }).catch(err => handlerError(err, Action.STOP_GAME))
+  }).then(() => console.debug(`Game ${props.game?.identifier} is finished.`)).catch(err => handlerError(err, Action.STOP_GAME))
 }
 
+function finishedGameSoGoHomePage() {
+  localGameStorageManager.remove();
+  router.replace({name: 'home'});
+}
 function leaveGame(){
   denialOperationError.value.show = false;
   axios.patch(RestAPIRouteName.GAME.replace(':id', props.game.identifier), null, {
@@ -286,7 +331,7 @@ function leaveGame(){
       gamer: localGameStorageManager.localGamer.identifier,
       action: Action.LEAVE
     }
-  }).then(response => {
+  }).then(() => {
     makeAccusationModal.value.show = false;
     endRound(true);
   }).catch(err => handlerError(err, Action.LEAVE))
@@ -302,6 +347,10 @@ function stayInGame(){
       action: Action.STAY
     }
   }).then(response => {
+    eventbus.emit(ACTION_GAMER, {
+      gamer: localGameStorageManager.localGamer.identifier,
+      action: Action.STAY,
+      message: response.data});
     const fGamer = props.game?.gamers.find(g => g.identifier === localGameStorageManager.localGamer.identifier);
     if(fGamer) {
       fGamer.role = response.data;
@@ -335,8 +384,13 @@ function useSecretPassage() {
       action: Action.USE_SECRET_PASSAGE
     }
   }).then(response => {
-    useSecretPassageModal.value.show = true;
+    eventbus.emit(ACTION_GAMER, {
+      gamer: localGameStorageManager.localGamer.identifier,
+      action: Action.USE_SECRET_PASSAGE,
+      message: response.data});
+    // useSecretPassageModal.value.show = true;
     useSecretPassageModal.value.message = response.data;
+    afterUseSecretPassage();
   }).catch(err => handlerError(err, Action.USE_SECRET_PASSAGE))
 }
 
@@ -384,11 +438,12 @@ function confutationGamerAssumption() {
     },
   }).then(res => {
     console.debug('Confute ', res.data)
-
-    confutationAssumptionModal.value.show = false;
-    confutationAssumptionModal.value.confute = '';
-    confutationAssumptionModal.value.arrivalAssumption = {suggestion: {} as Suggestion, gamer: ''};
-
+    eventbus.emit(ACTION_GAMER, {
+      gamer: res.data.refuterGamer,
+      action: Action.CONFUTATION_ASSUMPTION,
+      message: res.data
+    });
+    resetConfutationAssumptionModal();
   }).catch((err: AxiosError) => handlerError(err, Action.CONFUTATION_ASSUMPTION))
 }
 
@@ -398,9 +453,136 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
   show: false,
   solution: {} as Suggestion,
 });
+
+/* SOCKET LISTENERS */
+const gameId = props.game?.identifier;
+socket
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_ROLL_DIE.action(gameId), (message: RollDiceMessage) => {
+    moveCharacterTokenIn(message.housePart, gamer(message.gamer).characterToken);
+    eventbus.emit(ACTION_GAMER, {
+      gamer: message.gamer,
+      action: Action.ROLL_DIE,
+      message
+    })
+  })
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_MAKE_ASSUMPTION.action(gameId), (message: SuggestionMessage) => {
+    moveCharacterTokenIn(message.suggestion.room, message.suggestion.character);
+    moveWeaponTokenIn(message.suggestion.room, message.suggestion.weapon);
+    gamer(message.gamer).assumptions?.push(message.suggestion);
+
+    eventbus.emit(ACTION_GAMER, {
+      gamer: message.gamer,
+      action: Action.MAKE_ASSUMPTION,
+      message
+    })
+
+    let roundGamerIndex = props.game.gamers.findIndex(g => g.identifier === props.game?.roundGamer);
+    if (roundGamerIndex > -1) {
+      const nextIndex = (roundGamerIndex + 1) % props.game.gamers.length;
+      confutationAssumptionModal.value.arrivalAssumption = message;
+      if (props.game?.gamers[nextIndex].identifier === localGameStorageManager.localGamer.identifier) {
+        confutationAssumptionModal.value.show = true;
+      }
+    }
+  })
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_CONFUTATION_ASSUMPTION.action(gameId), (message: ConfutationMessage) => {
+    eventbus.emit(ACTION_GAMER, {
+      gamer: message.refuterGamer,
+      action: Action.CONFUTATION_ASSUMPTION,
+      message
+    });
+    if(localGameStorageManager.localGamer.identifier === message.roundGamer) {
+      makeAssumptionModal.value.confutation[message.refuterGamer] = message.card as string;
+    } else if(!(message.card as unknown as boolean)) {
+      let refuterGamerIndex = props.game.gamers.findIndex(g => g.identifier === message.refuterGamer);
+      if (refuterGamerIndex > -1) {
+        const nextIndex = (refuterGamerIndex + 1) % props.game.gamers.length;
+        if(props.game?.gamers[nextIndex].identifier !== props.game?.roundGamer) {
+          confutationAssumptionModal.value.show = true;
+        }
+      }
+    } else {
+      resetConfutationAssumptionModal();
+    }
+  })
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_MAKE_ACCUSATION.action(gameId), (message: AccusationMessage) => {
+    if (message.win) {
+      makeAccusationModal.value.show = true;
+      makeAccusationModal.value.solution = message.suggestion;
+      makeAccusationModal.value.win = true;
+      makeAccusationModal.value.accusation = message.suggestion;
+      makeAccusationModal.value.gamerId = message.gamer;
+    }
+    eventbus.emit(ACTION_GAMER, {
+      gamer: message.gamer,
+      action: Action.MAKE_ACCUSATION,
+      message
+    });
+  })
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_USE_SECRET_PASSAGE.action(gameId), (message: ToRoomMessage) => {
+    moveCharacterTokenIn(message.room, gamer(message.gamer).characterToken);
+    eventbus.emit(ACTION_GAMER, {
+      gamer: message.gamer,
+      action: Action.USE_SECRET_PASSAGE,
+      message
+    });
+  })
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_END_ROUND.action(gameId), (message: NextGamerMessage | Suggestion) => {
+    if(typeof message == 'string') {
+      eventbus.emit(ACTION_GAMER, {
+        gamer: props.game?.roundGamer || '',
+        action: Action.END_ROUND,
+        message
+      });
+      props.game.roundGamer = message;
+    } else {
+      // GAME OVER WITHOUT WINNER
+      endGameModal.value.show = true;
+      endGameModal.value.solution = message;
+      eventbus.emit(ACTION_GAMER, {
+        gamer: props.game?.roundGamer || '',
+        action: Action.END_ROUND,
+        message
+      });
+    }
+  })
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_STAY.action(gameId), (message: StayGamerMessage) => {
+    console.debug('STAY MESSAGE : ', message);
+    gamer(message.gamer).role = message.roles;
+    eventbus.emit(ACTION_GAMER, {
+      gamer: message.gamer,
+      action: Action.STAY,
+      message
+    });
+  })
+  .on(CluedoGameEvent.GameActionEvent.CLUEDO_LEAVE.action(gameId), (message: LeaveMessage) => {
+    console.debug('LEAVE MESSAGE : ', message);
+    const gamerIndex = props.game?.gamers.findIndex(gm => gm.identifier === message.gamer);
+    if (gamerIndex > -1) {
+      props.game?.gamers.splice(gamerIndex, 1);
+    }
+    message.newDisposition.forEach(newDispositionItem => {
+      gamer(newDispositionItem.gamer).cards?.push(...newDispositionItem.cards)
+    })
+    // TODO: Peer Server CLUEDO_LEAVE:  message.newDisposition REMOVE cards is not for local gamer
+    eventbus.emit(ACTION_GAMER, {
+      gamer: message.gamer,
+      action: Action.LEAVE,
+      message
+    });
+  })
+  // .on(CluedoGameEvent.GameActionEvent.CLUEDO_STOP_GAME.action(gameId), (message: CluedoGameMessage) => {
+  //   //TODO: handler socket STOP GAME
+  //   eventbus.emit(ACTION_GAMER, {
+  //     gamer: props.game?.roundGamer || '',
+  //     action: Action.STOP_GAME,
+  //     message
+  //   });
+  // })
 </script>
 
 <template>
+  <!-- TODO: REMOVE MODAL ROLL DIE -->
   <BModal centered v-model="rollDieModal.show" hide-footer no-close-on-esc no-close-on-backdrop hide-header-close>
     <template #title >
       <h4 class="m-0 p-2 bg-primary rounded-3 text-white">
@@ -415,6 +597,25 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
       <BRow>
         <BCol class="d-flex justify-content-end">
           <BButton variant="outline-primary" @click="afterRollDie">Ok</BButton>
+        </BCol>
+      </BRow>
+    </BContainer>
+  </BModal>
+  <!-- TODO: REMOVE MODAL USE SECRET PASSAGE -->
+  <BModal centered v-model="useSecretPassageModal.show" hide-footer no-close-on-esc no-close-on-backdrop hide-header-close>
+    <template #title >
+      <h4 class="m-0 p-2 bg-primary rounded-3 text-white">
+        {{QueryParameters.Action.USE_SECRET_PASSAGE.replace('_', ' ').toUpperCase()}}
+      </h4>
+    </template>
+    <OperationErrorAlert v-model="denialOperationError.show" :opMessageError="denialOperationError" />
+    <BContainer>
+      <BRow>
+        <BCol><p>{{useSecretPassageModal.message}}</p></BCol>
+      </BRow>
+      <BRow>
+        <BCol class="d-flex justify-content-end">
+          <BButton variant="outline-primary" @click="afterUseSecretPassage">Ok</BButton>
         </BCol>
       </BRow>
     </BContainer>
@@ -481,7 +682,7 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
               </BListGroupItem>
             </BListGroup>
           </BRow>
-          <BRow>
+          <BRow v-if="haveReceivedAnyConfutation">
             <BCol class="mt-3 d-flex justify-content-end"> <BButton variant="outline-primary" @click="clickOkOnReceiveConfutation">Ok</BButton> </BCol>
           </BRow>
         </BContainer>
@@ -490,7 +691,7 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
 
   </BModal>
 
-  <BModal centered v-model="confutationAssumptionModal.show" hide-footer>
+  <BModal centered v-model="confutationAssumptionModal.show" hide-footer no-close-on-esc no-close-on-backdrop hide-header-close>
     <template #title >
       <h4 class="m-0 p-2 bg-primary rounded-3 text-white">
         {{QueryParameters.Action.CONFUTATION_ASSUMPTION.replace('_', ' ').toUpperCase()}}
@@ -577,14 +778,14 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
     </BContainer>
     <BContainer v-else-if="makeAccusationModal.win">
       <BRow>
-        <p>I assumed that
+        <p>{{makeAccusationModal.gamerId ? username(makeAccusationModal.gamerId) : 'I'}} assumed that
           <b>{{makeAccusationModal.accusation.character}}</b> has killed using
           <b>{{makeAccusationModal.accusation.weapon}}</b> in <b> {{makeAccusationModal.accusation.room}}</b>
         </p>
       </BRow>
       <BRow>
         <BCol class=" mt-3 d-flex justify-content-end">
-          <BButton variant="primary" @click="stopGame">Ok</BButton>
+          <BButton variant="primary" @click="finishedGameSoGoHomePage">Ok</BButton>
         </BCol>
       </BRow>
       <BRow></BRow>
@@ -613,25 +814,6 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
     </BContainer>
   </BModal>
 
-  <BModal centered v-model="useSecretPassageModal.show" hide-footer no-close-on-esc no-close-on-backdrop hide-header-close>
-    <template #title >
-      <h4 class="m-0 p-2 bg-primary rounded-3 text-white">
-        {{QueryParameters.Action.USE_SECRET_PASSAGE.replace('_', ' ').toUpperCase()}}
-      </h4>
-    </template>
-    <OperationErrorAlert v-model="denialOperationError.show" :opMessageError="denialOperationError" />
-    <BContainer>
-      <BRow>
-        <BCol><p>{{useSecretPassageModal.message}}</p></BCol>
-      </BRow>
-      <BRow>
-        <BCol class="d-flex justify-content-end">
-          <BButton variant="outline-primary" @click="afterUseSecretPassage">Ok</BButton>
-        </BCol>
-      </BRow>
-    </BContainer>
-  </BModal>
-
   <BModal centered v-model="endGameModal.show" hide-footer no-close-on-backdrop no-close-on-esc hide-header-close>
     <template #title >
       <h4 class="m-0 p-2 bg-warning rounded-3 text-white">
@@ -654,7 +836,7 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
       <BRow>
         <BCol >
           <BCol class=" mt-3 d-flex justify-content-end">
-            <BButton variant="outline-primary" @click="stopGame">Ok</BButton>
+            <BButton variant="outline-primary" @click="finishedGameSoGoHomePage">Ok</BButton>
           </BCol>
         </BCol>
       </BRow>
@@ -676,7 +858,7 @@ const endGameModal = ref<VModelForModal & {solution: Suggestion}>({
       <BCol class="col-12"><h5>Next one</h5></BCol>
       <BCol class="col-12"><gamer-description id="next-gamer" :gamer="nextGamer"></gamer-description></BCol>
     </BRow>
-    <BButton v-if="!noAssumptionArrival" variant="outline-primary" @click="onClickConfutation">Confutation a gamer assumption</BButton>
+<!--    <BButton v-if="!noAssumptionArrival || confutationActive" variant="outline-primary" @click="onClickConfutation">Confutation a gamer assumption</BButton>-->
   </BContainer>
 </template>
 
