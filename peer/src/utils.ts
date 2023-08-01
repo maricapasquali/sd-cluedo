@@ -13,6 +13,13 @@ export function getStartedCluedoGame(
   _gamers.forEach(g => {
     delete g.cards;
     delete g.notes;
+    g.assumptions = g.assumptions?.map(a => {
+      a.confutation = a.confutation?.map(c => {
+        c.card = typeof c.card === 'string' && c.card.length > 0;
+        return c;
+      });
+      return a;
+    });
   });
   return _clonedGame;
 }

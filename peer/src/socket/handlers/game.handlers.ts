@@ -1,4 +1,4 @@
-import {Socket as PeerClient, Server} from 'socket.io';
+import {Socket as PeerClient, Server, Socket} from 'socket.io';
 import {Socket as PeerServer} from 'socket.io-client';
 import {logger} from '@utils/logger';
 import {CluedoGameEvent} from '../events';
@@ -88,7 +88,7 @@ function registerGameActionEvent(
     )
     .on(
       GameActionEvent.CLUEDO_TAKE_NOTES.action(gameId),
-      (message: TakeNotesMessage) => {
+      (message: TakeNotesMessage, ack: Function) => {
         logger.info(
           receiver + 'receive TAKE NOTES game' + JSON.stringify(message)
         );
@@ -104,6 +104,7 @@ function registerGameActionEvent(
                     message
                   )
               );
+              if (typeof ack === 'function') ack();
             }
           })
           .catch(err => logger.error(err));
@@ -224,9 +225,18 @@ function registerGameActionEvent(
         gameManager
           .leave(message.gamer)
           .then(() => {
-            server
-              .to(sids(Clients.gamer(server, gameId)))
-              .emit(GameActionEvent.CLUEDO_LEAVE.action(gameId), message);
+            Clients.gamer(server, gameId).forEach(s => {
+              const _leaveMessage: LeaveMessage = {
+                ...message,
+                newDisposition: message.newDisposition.filter(
+                  nD => nD.gamer === (s as Socket).handshake.auth.gamerId
+                ),
+              };
+              s.emit(
+                GameActionEvent.CLUEDO_LEAVE.action(gameId),
+                _leaveMessage
+              );
+            });
           })
           .catch(err => logger.error(err));
       }

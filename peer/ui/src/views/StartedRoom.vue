@@ -105,24 +105,27 @@ watch(reactiveGame, (newGame) => {
 
 function onWriteNotes(note: string | StructuredNoteItem[]) {
   console.debug('onWriteNotes ', note)
-  if(typeof note === 'string') {
-    if(iGamer.notes) iGamer.notes.text = note
-  }
-  if(!socket.connected) {
-    axios.patch(RestAPIRouteName.GAME.replace(':id', reactiveGame.identifier), iGamer.notes, {
-      headers: {
-        authorization: localGameStorageManager.accessToken
-      },
-      params: {
+  if(iGamer.notes) {
+    if(typeof note === 'string') {
+      iGamer.notes.text = note
+      socket.emit(CluedoGameEvent.GameActionEvent.CLUEDO_TAKE_NOTES.action(reactiveGame.identifier), {
         gamer: localGameStorageManager.localGamer.identifier,
-        action: Action.TAKE_NOTES
-      }
-    }).then((res) => console.debug(res.data)).catch(err => console.error(err))
-  } else {
-    socket.emit(CluedoGameEvent.GameActionEvent.CLUEDO_TAKE_NOTES.action(reactiveGame.identifier), {
-      gamer: localGameStorageManager.localGamer.identifier,
-      note: iGamer.notes
-    });
+        note: iGamer.notes
+      }, (response: any) => {
+        console.debug('Notes updated')
+      });
+    } else {
+      iGamer.notes.structuredNotes = note;
+      axios.patch(RestAPIRouteName.GAME.replace(':id', reactiveGame.identifier), iGamer.notes, {
+        headers: {
+          authorization: localGameStorageManager.accessToken
+        },
+        params: {
+          gamer: localGameStorageManager.localGamer.identifier,
+          action: Action.TAKE_NOTES
+        }
+      }).then((res) => console.debug(res.data)).catch(err => console.error(err))
+    }
   }
 }
 </script>
@@ -186,6 +189,7 @@ function onWriteNotes(note: string | StructuredNoteItem[]) {
               colum-label="Room"
               :options="reactiveGame.rooms"
               :my-cards="iGamer.cards"
+              :my-assumptions="iGamer.assumptions"
               :value="iGamer.notes?.structuredNotes"
               :disabled="amISilent"
               @input="onWriteNotes"
@@ -195,6 +199,7 @@ function onWriteNotes(note: string | StructuredNoteItem[]) {
               colum-label="Weapon"
               :options="reactiveGame.weapons"
               :my-cards="iGamer.cards"
+              :my-assumptions="iGamer.assumptions"
               :value="iGamer.notes?.structuredNotes"
               :disabled="amISilent"
               @input="onWriteNotes"
@@ -204,6 +209,7 @@ function onWriteNotes(note: string | StructuredNoteItem[]) {
               colum-label="Character"
               :options="reactiveGame.characters"
               :my-cards="iGamer.cards"
+              :my-assumptions="iGamer.assumptions"
               :value="iGamer.notes?.structuredNotes"
               :disabled="amISilent"
               @input="onWriteNotes"

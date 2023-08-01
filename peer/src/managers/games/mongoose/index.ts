@@ -186,6 +186,22 @@ export class MongoDBGameManager implements GameManager {
     });
   }
 
+  confuteLastAssumptionOfRoundedGamer(
+    gamer: string,
+    card: string
+  ): Promise<CluedoGame> {
+    return this.game().then(game => {
+      const rGamer = this.getRoundGamer(game);
+      if (rGamer.assumptions) {
+        rGamer.assumptions[rGamer.assumptions?.length - 1].confutation?.push({
+          gamer,
+          card,
+        });
+      }
+      return game.save().then(sGame => sGame.toObject());
+    });
+  }
+
   takeNote(gamer: string, notes: Notes): Promise<boolean> {
     return CluedoGameModel.updateOne(
       {

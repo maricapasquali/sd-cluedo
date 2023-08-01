@@ -12,6 +12,8 @@ import {Clients} from '../../../socket/server/clients';
 import clientsSockets = Clients.real;
 import gamersSockets = Clients.gamer;
 import {PeerServerManager} from '../../../managers/peers-servers';
+import {SocketChecker} from '../../../socket/checker';
+import {Socket} from 'socket.io';
 
 type ActionOptions = {
   req: Request;
@@ -282,12 +284,13 @@ export const ConfutationRequest: GamerManagerRequest =
       next,
       gamer,
       gameId,
+      gameManager,
     }: ActionOptions): void {
       const card: string = req.body;
       const serverIo = AppGetter.socketServer(req);
       if (serverIo) {
-        MongoDBGamesManager.gameManagers(gameId)
-          .game()
+        gameManager
+          .confuteLastAssumptionOfRoundedGamer(gamer, card)
           .then(game => {
             [
               ...PeerServerManager.from(req).sockets(),
@@ -397,15 +400,22 @@ export const LeaveRequest: GamerManagerRequest =
                 s => s.handshake.auth.gamerId !== gamer
               ),
             ].forEach(s => {
+              const leaveMessage: LeaveMessage = {
+                gamer,
+                newDisposition: gamers.map(g => ({
+                  gamer: g.identifier,
+                  cards: g.cards || [],
+                })),
+              };
+              if (SocketChecker.isGamer(s)) {
+                leaveMessage.newDisposition =
+                  leaveMessage.newDisposition.filter(
+                    nD => nD.gamer === (s as Socket).handshake.auth.gamerId
+                  );
+              }
               s.emit(
                 CluedoGameEvent.GameActionEvent.CLUEDO_LEAVE.action(gameId),
-                {
-                  gamer,
-                  newDisposition: gamers.map(g => ({
-                    gamer: g.identifier,
-                    cards: g.cards || [],
-                  })),
-                } as LeaveMessage
+                leaveMessage
               );
             });
           }

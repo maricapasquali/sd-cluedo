@@ -42,6 +42,17 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
                 room: String,
                 character: String,
                 weapon: String,
+                confutation: {
+                  type: [
+                    {
+                      _id: false,
+                      gamer: String,
+                      card: String,
+                    },
+                  ],
+                  default: [],
+                  required: false,
+                },
               },
             ],
             default: [],
@@ -104,6 +115,11 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
                     _id: false,
                     name: String,
                     suspectState: String,
+                    confutation: {
+                      type: Boolean,
+                      enum: [true],
+                      required: false,
+                    },
                   },
                 ],
                 required: false,

@@ -17,6 +17,7 @@ const props = defineProps({
   },
   columLabel: { type: String, required: true },
   myCards: { type: Object as PropType<string[]>, required: true },
+  myAssumptions: { type: Object as PropType<Assumption[]>, required: true },
   disabled: { type: Boolean, required: false}
 })
 
@@ -29,14 +30,18 @@ const suspectStates = ['', ...Object.values(GamerElements.SuspectState)];
 const _notes: {[key: string]: { suspectState: string, confutation?: true }} = reactive({});
 
 props.options?.forEach(item => {
-  _notes[item.name] = { suspectState: isInMyHand(item) ? GamerElements.SuspectState.EXCLUDED : ''};
+  _notes[item.name] = {
+    suspectState: isInMyHand(item) || isConfuted(item) ? GamerElements.SuspectState.EXCLUDED : '',
+  };
+  if(isConfuted(item)) _notes[item.name].confutation = true;
 })
 
 emitter.on(CONFUTATION_CARD, (message: {assumption: Suggestion; card: string}) => {
   const {assumption, card} = message;
+  console.debug('Assumption ', assumption, ', card ', card)
   if(card.length === 0) {
     Object.values(assumption)
-      .filter(c => _notes[c].suspectState !== GamerElements.SuspectState.EXCLUDED)
+      .filter(c => c !== null && !isInMyHand(c) && !isConfuted(c))
       .forEach((c: string) => _notes[c] = { suspectState: GamerElements.SuspectState.MAYBE });
   } else if(props.options?.map(i => i.name).includes(card)) {
       _notes[card] = { suspectState: GamerElements.SuspectState.EXCLUDED, confutation: true }
@@ -61,9 +66,23 @@ watch(props.myCards, (newMyCards) => {
   newMyCards.forEach(card => _notes[card] = { suspectState: GamerElements.SuspectState.EXCLUDED })
 })
 
+watch(props.myAssumptions, (newMyAssumptions) => {
+  newMyAssumptions?.map(i => i.confutation).
+  forEach(c => {
+    c?.filter(i => typeof i.card === 'string' && (i.card as string).length > 0).map(i => i.card).forEach(c => {
+      _notes[c as string] = { suspectState: GamerElements.SuspectState.EXCLUDED, confutation: true }
+    })
+  })
+})
+
 function isInMyHand(item: string | { name: string }) {
   if(typeof item === 'string') return props.myCards.find(c => c === item);
   return props.myCards.find(c => c === item.name);
+}
+
+function isConfuted(item: string | { name: string }) {
+  if(typeof item === 'string') return props.myAssumptions.find(c => c.confutation?.map(i => i.card).includes(item));
+  return props.myAssumptions.find(c => c.confutation?.map(i => i.card).includes(item.name));
 }
 
 </script>
