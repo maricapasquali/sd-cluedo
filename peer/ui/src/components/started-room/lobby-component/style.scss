@@ -1,0 +1,16 @@
+.lobby {
+  display: flex;
+  align-items: center !important;
+  justify-content: center !important;
+  border: 0.5px solid;
+  background-color: lightgray;
+  color: black;
+  width: 200px;
+  height: 130px;
+  position: relative;
+  & > div {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    grid-gap: 3px;
+  }
+}

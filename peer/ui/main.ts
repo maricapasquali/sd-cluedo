@@ -6,6 +6,7 @@ import 'bootstrap/dist/css/bootstrap.css';
 import 'bootstrap-vue-next/dist/bootstrap-vue-next.css';
 import {Router} from 'vue-router';
 import emitter from './src/eventbus';
+import components from './src/components';
 
 import {library} from '@fortawesome/fontawesome-svg-core';
 import {faUser, faUserSlash} from '@fortawesome/free-solid-svg-icons';
@@ -22,6 +23,9 @@ declare module '@vue/runtime-core' {
 const app = createApp(App);
 app.use(router);
 app.component('font-awesome-icon', FontAwesomeIcon);
+Object.entries(components).forEach(([name, component]) =>
+  app.component(name, component)
+);
 app.config.globalProperties.$router = router;
 app.config.globalProperties.$emitter = emitter;
 app.use(BootstrapVueNext);

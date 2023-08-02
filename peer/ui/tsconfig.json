@@ -9,6 +9,15 @@
     "paths": {
       "@/*": [
         "src/*"
+      ],
+      "@model": [
+        "../../libs/model"
+      ],
+      "@utils/*": [
+        "../../libs/utils/*"
+      ],
+      "@peer/*": [
+        "../src/*"
       ]
     },
     "lib": [

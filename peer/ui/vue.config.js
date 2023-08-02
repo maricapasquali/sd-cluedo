@@ -14,6 +14,13 @@ module.exports = {
     },
   },
   configureWebpack: {
+    resolve: {
+      alias: {
+        '@peer': path.resolve(__dirname, '../src/'),
+        '@model': path.resolve(__dirname, '../../libs/model'),
+        '@utils': path.resolve(__dirname, '../../libs/utils'),
+      },
+    },
     module: {
       rules: [
         {

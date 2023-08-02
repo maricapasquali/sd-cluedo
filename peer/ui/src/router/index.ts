@@ -1,6 +1,7 @@
 import {createRouter, createWebHistory, Router} from 'vue-router';
 import routes from './routes';
-import {localGameStorageManager} from '@/services/localstoragemanager';
+import {localStoreManager} from '@/services/localstore';
+import routesNames from './routesNames';
 
 const router: Router = createRouter({
   history: createWebHistory(process.env.BASE_URL),
@@ -9,11 +10,12 @@ const router: Router = createRouter({
 
 router.beforeResolve(to => {
   if (
-    (to.name === 'waiting-room' || to.name === 'started-room') &&
-    (localGameStorageManager.isEmpty() ||
-      localGameStorageManager.localGame.identifier !== to.params.id)
+    (to.name === routesNames.WAITING_ROOM ||
+      to.name === routesNames.STARTED_ROOM) &&
+    (localStoreManager.isEmpty() ||
+      localStoreManager.game.identifier !== to.params.id)
   )
-    return {name: 'home'};
+    return {name: routesNames.HOME};
   return true;
 });
 

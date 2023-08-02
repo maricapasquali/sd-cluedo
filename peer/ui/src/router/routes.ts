@@ -1,20 +1,20 @@
 import {RouteRecordRaw} from 'vue-router';
-
+import routesNames from './routesNames';
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    name: 'home',
-    component: () => import('@/views/Home.vue'),
+    name: routesNames.HOME,
+    component: () => import('@/views/home/Home.vue'),
   },
   {
     path: '/waiting-room/:id',
-    name: 'waiting-room',
-    component: () => import('@/views/WaitingRoom.vue'),
+    name: routesNames.WAITING_ROOM,
+    component: () => import('@/views/waiting-room/WaitingRoom.vue'),
   },
   {
     path: '/started-room/:id',
-    name: 'started-room',
-    component: () => import('@/views/StartedRoom.vue'),
+    name: routesNames.STARTED_ROOM,
+    component: () => import('@/views/started-room/StartedRoom.vue'),
   },
 ];
 export default routes;

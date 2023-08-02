@@ -1,5 +1,4 @@
-// eslint-disable-next-line node/no-unpublished-import
-import {createServerStub} from '../../../../../libs/utils/socket';
+import {createServerStub} from '@utils/socket';
 
 const socket = createServerStub(window.location.origin);
 
