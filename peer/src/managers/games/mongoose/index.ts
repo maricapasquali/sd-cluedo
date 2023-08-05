@@ -186,6 +186,22 @@ export class MongoDBGameManager implements GameManager {
     });
   }
 
+  confuteLastAssumptionOfRoundedGamer(
+    gamer: string,
+    card: string
+  ): Promise<CluedoGame> {
+    return this.game().then(game => {
+      const rGamer = this.getRoundGamer(game);
+      if (rGamer.assumptions) {
+        rGamer.assumptions[rGamer.assumptions?.length - 1].confutation?.push({
+          gamer,
+          card,
+        });
+      }
+      return game.save().then(sGame => sGame.toObject());
+    });
+  }
+
   takeNote(gamer: string, notes: Notes): Promise<boolean> {
     return CluedoGameModel.updateOne(
       {
@@ -210,11 +226,9 @@ export class MongoDBGameManager implements GameManager {
   silentGamerInRound(): Promise<Gamer> {
     return this.game().then(game => {
       const _gamerRound = this.getRoundGamer(game);
-      const index =
-        _gamerRound.role?.findIndex(r => r === GamerRole.PARTICIPANT) || -1;
-      if (index > 0 && _gamerRound.role) {
-        _gamerRound.role[index] = GamerRole.SILENT;
-      }
+      _gamerRound.role = _gamerRound.role?.map(r =>
+        r === GamerRole.PARTICIPANT ? GamerRole.SILENT : r
+      );
       return game.save().then(() => _gamerRound);
     });
   }
@@ -224,9 +238,7 @@ export class MongoDBGameManager implements GameManager {
       const _gamerId = gamerId || game.roundGamer;
       const cardsGamerInRound =
         game.gamers?.find(g => g.identifier === _gamerId)?.cards || [];
-      const _gamers = game.gamers?.filter(
-        g => g.identifier !== game.roundGamer
-      );
+      const _gamers = game.gamers?.filter(g => g.identifier !== _gamerId);
       this.dealCards(cardsGamerInRound, _gamers);
       game.gamers = _gamers;
       return game.save().then(() => _gamers);
@@ -239,6 +251,12 @@ export class MongoDBGameManager implements GameManager {
       const gamerRoundId = game.roundGamer;
       if (gamerId && gamerId !== gamerRoundId) {
         throw new NotInRoundError(gamerId);
+      }
+      if (
+        game.gamers.filter(gm => gm.role?.includes(GamerRole.PARTICIPANT))
+          .length <= 1
+      ) {
+        return undefined;
       }
       let _nextPosition = game.gamers?.findIndex(
         g => g.identifier === gamerRoundId

@@ -1,5 +1,5 @@
 import {AxiosInstance} from 'axios';
-import {RestAPIRouteName} from '../../../src/routes';
+import {RestAPIRouteName} from '../../../src/routes/routesNames';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {should as shouldFunc} from 'chai';

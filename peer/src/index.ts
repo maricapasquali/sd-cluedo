@@ -21,6 +21,7 @@ import {PeerServerManager} from './managers/peers-servers';
 import {connectAndListenOnDiscoveryServer} from './socket/client';
 import {createServerStub} from '@utils/socket';
 import {machineIdSync} from 'node-machine-id';
+import * as history from 'connect-history-api-fallback';
 
 const internalPort: number = Number(process.env.PORT) || 3001;
 const externalPort: number = Number(process.env.EXTERNAL_PORT) || internalPort;
@@ -49,7 +50,7 @@ const peersSockets = new PeerServerManager();
 
 const serverConfig: HTTPSServerConfig = {
   options: httpsOptions,
-  uses: [express.json(), express.query({}), loggerHttp],
+  uses: [express.json(), express.text(), loggerHttp, history()],
   routes,
   sets: {
     tokensManager: BasicTokenManager.create({
@@ -57,7 +58,7 @@ const serverConfig: HTTPSServerConfig = {
       publicKey: httpsOptions.cert,
       privateKey: httpsOptions.key,
     }),
-    peersSockets,
+    peerServerManager: peersSockets,
   },
 };
 

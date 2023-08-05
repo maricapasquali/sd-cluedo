@@ -2,18 +2,14 @@ import * as express from 'express';
 import * as controller from './controller';
 import * as middleware from './middleware';
 import {pathNotFound, serverError} from '@utils/rest-api/middlewares';
-export enum RestAPIRouteName {
-  GAMES = '/api/v1/games',
-  GAME = '/api/v1/games/:id',
-  GAMERS = '/api/v1/games/:id/gamers',
-  GAMER = '/api/v1/games/:id/gamers/:gamerId',
-}
+import * as serveStatic from 'serve-static';
+import * as path from 'path';
+import {RestAPIRouteName} from './routesNames';
 
-export enum PeerRouteName {
-  BASE = '/',
-}
 export default function (app: express.Application): void {
-  app.route(PeerRouteName.BASE).get(controller.baseHandler);
+  if (process.env.NODE_ENV === 'production') {
+    app.use(serveStatic(path.resolve('..', 'build', 'peer', 'ui', 'dist')));
+  }
 
   app
     .route(RestAPIRouteName.GAMES)
@@ -25,6 +21,7 @@ export default function (app: express.Application): void {
     .get(
       middleware.games.handlerBadRequest,
       middleware.games.handlerNotFoundRequest,
+      middleware.games.extractAccessToken,
       controller.restApi.getGame
     )
     .patch(

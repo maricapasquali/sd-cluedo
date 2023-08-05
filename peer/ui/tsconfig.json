@@ -1,0 +1,39 @@
+{
+  "extends": "../../tsconfig.json",
+  "compilerOptions": {
+    "types": [
+      "webpack-env"
+    ],
+    "typeRoots": ["node_modules/@types"],
+    "baseUrl": ".",
+    "paths": {
+      "@/*": [
+        "src/*"
+      ],
+      "@model": [
+        "../../libs/model"
+      ],
+      "@utils/*": [
+        "../../libs/utils/*"
+      ],
+      "@peer/*": [
+        "../src/*"
+      ]
+    },
+    "lib": [
+      "esnext",
+      "dom",
+      "dom.iterable",
+      "scripthost"
+    ]
+  },
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.vue",
+    "../../@types/**/*.d.ts",
+    "components.d.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

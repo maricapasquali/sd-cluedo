@@ -4,7 +4,7 @@ import {Socket} from 'socket.io-client';
 import {Server} from 'socket.io';
 import {logger} from '@utils/logger';
 import {HTTPSServerWithSocket} from '@utils/https-server';
-import {RestAPIRouteName} from '../../src/routes';
+import {RestAPIRouteName} from '../../src/routes/routesNames';
 import mongoose from 'mongoose';
 import {AxiosInstance} from 'axios';
 import {createAxiosInstance} from '@utils/axios';

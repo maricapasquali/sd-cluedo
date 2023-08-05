@@ -1,5 +1,5 @@
 import {NextFunction, Request, Response} from 'express';
-import {RestAPIRouteName} from '../index';
+import {RestAPIRouteName} from '../routesNames';
 import * as Checkers from '@model/checker';
 import {
   BadRequestSender,
@@ -61,8 +61,11 @@ export function handlerBadRequest(
       req.method === 'GET' &&
       new RegExp(RestAPIRouteName.GAMES + '/.*').test(req.path)
     ) {
-      logger.debug('[handlerBadRequest]: retrieve game');
-      if (!Object.values(GameStatus).includes(req.query.status as GameStatus)) {
+      logger.debug('[handlerBadRequest]: retrieve game ');
+      if (
+        req.query.status &&
+        !Object.values(GameStatus).includes(req.query.status as GameStatus)
+      ) {
         return BadRequestSender.json(res, {
           message:
             'Game status is not valid. Available are ' +
@@ -73,7 +76,7 @@ export function handlerBadRequest(
       req.method === 'PATCH' &&
       new RegExp(RestAPIRouteName.GAMES + '/.*').test(req.path)
     ) {
-      logger.debug('[handlerBadRequest]: perform action');
+      logger.debug(`[handlerBadRequest]: perform action '${req.query.action}'`);
       if (!(req.query.gamer && req.query.action)) {
         return BadRequestSender.json(res, {
           message: 'Query is not valid. Required gamer=...&action=...',
@@ -149,6 +152,23 @@ export function handlerNotFoundRequest(
     });
 }
 
+export function extractAccessToken(
+  req: Request,
+  res: Response,
+  next: NextFunction
+): void {
+  catchableHandlerRequestPromise(() => {
+    const authorization = HeadersFormatter.authorization(req);
+    const accessTokenPayload = (
+      AppGetter.tokensManger(req) as BasicTokenManager
+    ).payload(authorization.parameters);
+    res.locals.gamerId = accessTokenPayload?.identifier;
+    return;
+  })
+    .then(next)
+    .catch(next);
+}
+
 export function handlerUnauthorizedRequest(
   req: Request,
   res: Response,
@@ -209,7 +229,7 @@ export function handlerForbiddenRequest(
         Action.CONFUTATION_ASSUMPTION,
         Action.LEAVE,
         Action.END_ROUND,
-        Action.TAKE_NOTES,
+        Action.STOP_GAME,
       ];
       if (
         payload.role.includes(Gamers.Role.SILENT) &&
@@ -239,6 +259,19 @@ export function handlerForbiddenRequest(
                   ForbiddenSender.json(res, {
                     message:
                       "You can't perform this operation because you can't disprove your assumption",
+                  });
+                } else if (
+                  !inRound &&
+                  ![
+                    Action.CONFUTATION_ASSUMPTION,
+                    Action.LEAVE,
+                    Action.STOP_GAME,
+                    Action.TAKE_NOTES,
+                  ].includes(action)
+                ) {
+                  ForbiddenSender.json(res, {
+                    message:
+                      "You can't perform this operation because you is not in round",
                   });
                 } else next();
               })

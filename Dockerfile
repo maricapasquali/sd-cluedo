@@ -58,6 +58,8 @@ WORKDIR /cluedo
 
 RUN npm install
 
+RUN npm run install:peer-ui
+
 COPY ./peer.entrypoint.sh /cluedo
 
 RUN npm run build

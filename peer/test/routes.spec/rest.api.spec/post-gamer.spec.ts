@@ -1,5 +1,5 @@
 import {AxiosInstance} from 'axios';
-import {RestAPIRouteName} from '../../../src/routes';
+import {RestAPIRouteName} from '../../../src/routes/routesNames';
 import {v4 as uuid} from 'uuid';
 import {GamerElements} from '@model';
 import {should as shouldFunc} from 'chai';

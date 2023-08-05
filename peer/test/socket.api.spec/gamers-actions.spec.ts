@@ -1,4 +1,4 @@
-import {RestAPIRouteName} from '../../src/routes';
+import {RestAPIRouteName} from '../../src/routes/routesNames';
 import {
   connectSomeGamerClient,
   gamersAuthenticationTokens,
@@ -789,9 +789,10 @@ export default function ({axiosInstance}: Config): void {
         })
         .catch(done);
     });
-    it('stops game, other gamers and peers should receive it', done => {
+    it('stops game, other gamers, peers and no gamers should receive it', done => {
       const receivers = promises(
         [
+          ...noGamersClientSocket(game.identifier),
           ...gamersClientSocket(game.identifier, gamerInRound),
           ...peerLikeClients,
         ],
@@ -799,12 +800,15 @@ export default function ({axiosInstance}: Config): void {
           return (resolve, reject) => {
             client.once(
               GameActionEvent.CLUEDO_STOP_GAME.action(game.identifier),
-              (message: StopGameMessage) => {
+              (message: CluedoGameMessage) => {
                 try {
                   logger.debug(
                     getReceiverInfo(client) + ' receive stop message'
                   );
-                  message.should.be.a('string').and.be.equal(game.identifier);
+                  message.should.have
+                    .property('identifier')
+                    .equal(game.identifier);
+                  message.should.have.property('solution');
                   resolve();
                 } catch (err) {
                   reject(err);

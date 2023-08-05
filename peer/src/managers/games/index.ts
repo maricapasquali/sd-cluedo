@@ -11,6 +11,10 @@ export interface GameManager {
   rollDie(): Promise<string>;
   useSecretPassage(): Promise<string>;
   makeAssumption(suggestion: Suggestion): Promise<boolean>;
+  confuteLastAssumptionOfRoundedGamer(
+    gamer: string,
+    card: string
+  ): Promise<CluedoGame>;
   takeNote(gamer: string, notes: Notes): Promise<boolean>;
   makeAccusation(suggestion: Suggestion): Promise<Suggestion>;
   silentGamerInRound(): Promise<Gamer>;

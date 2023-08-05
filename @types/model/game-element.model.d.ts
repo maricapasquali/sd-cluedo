@@ -23,3 +23,12 @@ declare interface Suggestion {
   weapon: string;
   room: string;
 }
+
+declare interface ConfutationItem {
+  gamer: string;
+  card: string | boolean;
+}
+
+declare interface Assumption extends Suggestion {
+  confutation?: ConfutationItem[];
+}

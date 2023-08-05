@@ -1,7 +1,7 @@
 import gamerActionsSpec from './gamer-actions.spec';
 
 import {AxiosInstance} from 'axios';
-import {RestAPIRouteName} from '../../../../src/routes';
+import {RestAPIRouteName} from '../../../../src/routes/routesNames';
 import {QueryParameters} from '../../../../src/routes/parameters';
 import {gamersAuthenticationTokens, games} from '../../../helper';
 import {handlerResponseErrorCheck} from '@utils/test-helper';

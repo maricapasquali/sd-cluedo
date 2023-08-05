@@ -38,9 +38,9 @@ export namespace HeadersFormatter {
     parameters: string | any;
   } {
     const authorization = req.headers.authorization;
-    const authorizationSplit = authorization?.split(' ') || [];
+    const authorizationSplit = authorization?.split(' ') || ['', ''];
     return {
-      scheme: authorizationSplit[0] || '',
+      scheme: authorizationSplit[0],
       parameters: authorizationSplit[1],
     };
   }

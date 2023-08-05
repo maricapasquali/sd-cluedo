@@ -4,7 +4,7 @@ declare interface Gamer {
   characterToken: string;
   role?: string[];
   device?: Device;
-  assumptions?: Suggestion[];
+  assumptions?: Assumption[];
   accusation?: Suggestion;
   cards?: string[];
   notes?: Notes;
@@ -13,6 +13,7 @@ declare interface Gamer {
 declare interface StructuredNoteItem {
   name: string;
   suspectState: string;
+  confutation?: true;
 }
 
 declare interface Notes {
