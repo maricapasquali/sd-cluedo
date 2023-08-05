@@ -238,9 +238,7 @@ export class MongoDBGameManager implements GameManager {
       const _gamerId = gamerId || game.roundGamer;
       const cardsGamerInRound =
         game.gamers?.find(g => g.identifier === _gamerId)?.cards || [];
-      const _gamers = game.gamers?.filter(
-        g => g.identifier !== game.roundGamer
-      );
+      const _gamers = game.gamers?.filter(g => g.identifier !== _gamerId);
       this.dealCards(cardsGamerInRound, _gamers);
       game.gamers = _gamers;
       return game.save().then(() => _gamers);

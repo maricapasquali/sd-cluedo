@@ -76,7 +76,7 @@ export function handlerBadRequest(
       req.method === 'PATCH' &&
       new RegExp(RestAPIRouteName.GAMES + '/.*').test(req.path)
     ) {
-      logger.debug('[handlerBadRequest]: perform action');
+      logger.debug(`[handlerBadRequest]: perform action '${req.query.action}'`);
       if (!(req.query.gamer && req.query.action)) {
         return BadRequestSender.json(res, {
           message: 'Query is not valid. Required gamer=...&action=...',
@@ -265,7 +265,7 @@ export function handlerForbiddenRequest(
                   ![
                     Action.CONFUTATION_ASSUMPTION,
                     Action.LEAVE,
-                    Action.END_ROUND,
+                    Action.STOP_GAME,
                     Action.TAKE_NOTES,
                   ].includes(action)
                 ) {

@@ -1,8 +1,8 @@
 import {PropType, defineComponent} from 'vue';
 import {v4 as uuid} from 'uuid';
-import axios, {AxiosError} from 'axios';
-import {localStoreManager} from '@/services/localstore';
-import {GamerElements} from '@model';
+import axios, {AxiosResponse} from 'axios';
+import {sessionStoreManager} from '@/services/sessionstore';
+import {CluedoGames, GamerElements} from '@model';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
 import routesNames from '@/router/routesNames';
 
@@ -18,7 +18,7 @@ export default defineComponent({
       alert: false,
       loading: false,
       gamer: {identifier: uuid()} as Partial<Gamer>,
-      error: {} as Partial<AxiosError>,
+      error: {} as AxiosResponse,
     };
   },
   computed: {
@@ -32,13 +32,13 @@ export default defineComponent({
   },
   methods: {
     setLocalGame(game: {
-      game: {identifier: string};
+      game: {identifier: string; status: string};
       gamer: Gamer;
       accessToken: string;
     }) {
-      localStoreManager.game = game.game as CluedoGame;
-      localStoreManager.gamer = game.gamer as Gamer;
-      localStoreManager.accessToken = game.accessToken;
+      sessionStoreManager.game = game.game as CluedoGame;
+      sessionStoreManager.gamer = game.gamer as Gamer;
+      sessionStoreManager.accessToken = game.accessToken;
     },
     postGame() {
       console.debug(this.gamer.username);
@@ -51,21 +51,21 @@ export default defineComponent({
           this.modal = false;
           this.$emit('posted-game', response.data);
           this.setLocalGame({
-            game: {identifier: response.data.identifier},
+            game: response.data,
             gamer: this.gamer as Gamer,
             accessToken: response.headers['x-access-token'],
           });
         })
         .catch(err => {
-          console.error(err.response);
-          this.error = err;
+          this.error = err?.response || {};
+          console.error(this.error);
           this.alert = true;
         })
         .finally(() => (this.loading = false));
     },
     clickEnterInGame() {
       const gameId = this.game?.identifier || '';
-      if (localStoreManager.game.identifier === gameId) {
+      if (sessionStoreManager.game.identifier === gameId) {
         this.$router.replace({
           name: routesNames.WAITING_ROOM,
           params: {id: gameId},
@@ -83,7 +83,7 @@ export default defineComponent({
           this.modal = false;
           this.$emit('posted-gamer', gameId, response.data);
           this.setLocalGame({
-            game: {identifier: gameId},
+            game: {identifier: gameId, status: CluedoGames.Status.WAITING},
             gamer: response.data,
             accessToken: response.headers['x-access-token'],
           });

@@ -539,7 +539,7 @@ export const StopGameRequest: GamerManagerRequest =
                   );
                 });
               }
-              return OkSender.text(res, gameId);
+              return OkSender.json(res, game);
             });
           } else {
             return ServerErrorSender.json(res, {

@@ -1,6 +1,6 @@
 import {defineComponent} from 'vue';
 import axios from 'axios';
-import {localStoreManager} from '@/services/localstore';
+import {sessionStoreManager} from '@/services/sessionstore';
 import socket from '@/services/socket';
 import routesNames from '@/router/routesNames';
 import {CluedoGames} from '@model';
@@ -13,8 +13,7 @@ export default defineComponent({
     return {
       games: [] as CluedoGame[],
       loading: true,
-      noInGame: localStoreManager.isEmpty(),
-      filteredStatus: '' as '' | CluedoGames.Status,
+      filteredStatus: CluedoGames.Status.WAITING,
       optionsStatus: [
         {value: '', text: 'NO FILTER'},
         ...Object.values(CluedoGames.Status).map(s => ({
@@ -34,32 +33,41 @@ export default defineComponent({
         : this.games;
     },
   },
-  watch: {
-    noInGame(v) {
-      if (v) {
-        console.debug('Remove game in localStorage');
-        localStoreManager.remove();
+  methods: {
+    onPostedGame(game: CluedoGame, iEnterInGame = true) {
+      if (!this.games.find(g => g.identifier === game.identifier)) {
+        this.games.unshift(game);
+        console.debug('ADD NEW WAITING GAME ', game);
+      }
+      if (iEnterInGame) {
+        this.$router.replace({
+          name: routesNames.WAITING_ROOM,
+          params: {id: game.identifier},
+        });
       }
     },
-  },
-  methods: {
-    onPostedGame(game: CluedoGame) {
-      this.games.push(game);
-      this.$router.replace({
-        name: routesNames.WAITING_ROOM,
-        params: {id: game.identifier},
-      });
-    },
-    onPostedGamer(game: string, gamer: Gamer) {
+    onPostedGamer(game: string, gamer: Gamer, isOther = false) {
       const fGame: CluedoGame | undefined = this.games.find(
         (g: CluedoGame) => g.identifier === game
       );
       if (fGame) {
-        fGame.gamers.push(gamer);
-        this.$router.replace({
-          name: routesNames.WAITING_ROOM,
-          params: {id: fGame.identifier},
-        });
+        const _gamer = fGame.gamers.find(
+          (gm: Gamer) => gm.identifier === gamer.identifier
+        );
+        if (!_gamer) {
+          fGame.gamers.push(gamer);
+          console.debug(
+            'ADD NEW GAMER %s IN GAME %s',
+            JSON.stringify(gamer),
+            game
+          );
+        }
+        if (!isOther) {
+          this.$router.replace({
+            name: routesNames.WAITING_ROOM,
+            params: {id: fGame.identifier},
+          });
+        }
       }
     },
     onRemoveGamer(game: string, gamer: string) {
@@ -70,48 +78,23 @@ export default defineComponent({
         );
         if (fGameIndex > -1) {
           _game.gamers.splice(fGameIndex, 1);
-          this.noInGame = true;
+          console.debug('REMOVE GAMER %s IN GAME %s', gamer, game);
         }
       }
-    },
-    inGame(game: string): boolean {
-      return localStoreManager.game.identifier === game;
-    },
-    goTo(game: CluedoGame) {
-      this.$router.replace({
-        name:
-          game.status === CluedoGames.Status.STARTED
-            ? routesNames.STARTED_ROOM
-            : routesNames.WAITING_ROOM,
-        params: {id: game.identifier},
-      });
     },
     getGames() {
       axios
         .get(RestAPIRouteName.GAMES)
         .then(response => {
           console.debug(response);
-          if (!localStoreManager.isEmpty()) {
-            const game = response.data.find(
-              (g: CluedoGame) =>
-                g.identifier === localStoreManager.game.identifier &&
-                g.gamers.find(
-                  gm => gm.identifier === localStoreManager.gamer.identifier
-                )
-            );
-            console.debug('My game', game);
-            if (game) this.goTo(game);
-            else this.noInGame = true;
-          }
+          console.debug('Init home');
           this.games = response.data;
           (this.games as (CluedoGame & {createdAt: string})[]).sort(
             (g1, g2) => Date.parse(g2.createdAt) - Date.parse(g1.createdAt)
           );
           this.games.forEach(g => this.handlerSocketSingleGame(g.identifier));
         })
-        .catch(err => {
-          console.error(err);
-        })
+        .catch(err => console.error(err))
         .finally(() => (this.loading = false));
     },
     handlerSocketSingleGame(gameId: string): void {
@@ -130,44 +113,40 @@ export default defineComponent({
       );
     },
   },
+  beforeCreate() {
+    if (!sessionStoreManager.isEmpty()) {
+      console.debug('My game', sessionStoreManager.game);
+      this.$router.replace({
+        name:
+          sessionStoreManager.game.status === CluedoGames.Status.STARTED
+            ? routesNames.STARTED_ROOM
+            : routesNames.WAITING_ROOM,
+        params: {id: sessionStoreManager.game.identifier},
+      });
+      return;
+    }
+  },
   created() {
     socket
       .connectLike()
       .on('connect', () => {
-        console.debug('Connect socket with id ' + socket.id);
+        console.debug('[HOME]: Connect socket with id ' + socket.id);
       })
       .on(CluedoGameEvent.CLUEDO_NEW_GAME, (game: CluedoGame) => {
-        this.games.unshift(game);
+        this.onPostedGame(game, false);
         this.handlerSocketSingleGame(game.identifier);
-        console.debug('ADD NEW WAITING GAME ', game);
       })
-      .on(CluedoGameEvent.CLUEDO_NEW_GAMER, (message: GamerMessage) => {
-        this.games
-          .find(g => g.identifier === message.game)
-          ?.gamers.push(message.gamer);
-        console.debug(
-          `ADD NEW GAMER ${message.gamer} IN GAME %s `,
-          message.game
-        );
-      })
-      .on(CluedoGameEvent.CLUEDO_REMOVE_GAMER, (message: ExitGamerMessage) => {
-        const game = this.games.find(g => g.identifier === message.game);
-        if (game) {
-          const index =
-            game?.gamers.findIndex(gm => gm.identifier === message.gamer) || -1;
-          if (index > -1) {
-            game.gamers.splice(index, 1);
-            console.debug(
-              `REMOVE GAMER ${message.gamer} IN GAME %s `,
-              message.game
-            );
-          }
-        }
-      });
+      .on(CluedoGameEvent.CLUEDO_NEW_GAMER, (message: GamerMessage) =>
+        this.onPostedGamer(message.game, message.gamer, true)
+      )
+      .on(CluedoGameEvent.CLUEDO_REMOVE_GAMER, (message: ExitGamerMessage) =>
+        this.onRemoveGamer(message.game, message.gamer)
+      );
     this.getGames();
+    console.debug('current route ', this.$router.currentRoute.value);
   },
   unmounted() {
-    console.debug('UNMOUNTED ', this.games);
+    console.debug('unmounted HOME');
     socket.off(CluedoGameEvent.CLUEDO_NEW_GAME);
     socket.off(CluedoGameEvent.CLUEDO_NEW_GAMER);
     socket.off(CluedoGameEvent.CLUEDO_REMOVE_GAMER);

@@ -1,7 +1,7 @@
 import {defineComponent} from 'vue';
 import axios from 'axios';
 import socket from '@/services/socket';
-import {localStoreManager} from '@/services/localstore';
+import {sessionStoreManager} from '@/services/sessionstore';
 import {CluedoGameEvent} from '@peer/socket/events';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
 import {CluedoGames} from '@model';
@@ -11,10 +11,11 @@ import routesNames from '@/router/routesNames';
 export default defineComponent({
   name: 'WaitingRoom',
   data() {
+    const _gameId = this.$router.currentRoute.value.params.id as string;
     return {
-      gameId: this.$router.currentRoute.value.params.id as string,
+      gameId: _gameId,
       loading: true,
-      game: {} as CluedoGame,
+      game: {identifier: _gameId, gamers: []} as CluedoGame,
       maxGamers: CluedoGames.MAX_GAMERS,
       minGamers: CluedoGames.MIN_GAMERS,
     };
@@ -30,7 +31,8 @@ export default defineComponent({
           console.debug('Game in waiting = ', response.data);
           if (
             !response.data.gamers.find(
-              (g: Gamer) => localStoreManager.gamer.identifier === g.identifier
+              (g: Gamer) =>
+                sessionStoreManager.gamer.identifier === g.identifier
             )
           ) {
             this.$router.replace({name: routesNames.HOME});
@@ -38,9 +40,9 @@ export default defineComponent({
           }
           if (response.data.status === CluedoGames.Status.FINISHED) {
             if (
-              localStoreManager.game.identifier === response.data.identifier
+              sessionStoreManager.game.identifier === response.data.identifier
             ) {
-              localStoreManager.remove();
+              sessionStoreManager.remove();
             }
             this.$router.replace({name: routesNames.HOME});
             return;
@@ -53,15 +55,15 @@ export default defineComponent({
           }
           this.game = response.data;
           const gamerAuth = {
-            gamerId: localStoreManager.gamer.identifier,
-            gameId: localStoreManager.game.identifier,
-            accessToken: localStoreManager.accessToken,
+            gamerId: sessionStoreManager.gamer.identifier,
+            gameId: sessionStoreManager.game.identifier,
+            accessToken: sessionStoreManager.accessToken,
           };
           socket
             .connectLike(gamerAuth)
             .on('connect', () => {
               console.debug(
-                `RECONNECT ${socket.id} UPDATE CREDENTIAL `,
+                `[WAITING ROOM]: Connect socket with id ${socket.id} and credential `,
                 socket.auth
               );
             })
@@ -78,22 +80,15 @@ export default defineComponent({
               CluedoGameEvent.CLUEDO_REMOVE_GAMER,
               (message: ExitGamerMessage) => {
                 if (message.game === this.game.identifier) {
-                  const index =
-                    this.game.gamers.findIndex(
-                      gm => gm.identifier === message.gamer
-                    ) || -1;
+                  const index = this.game.gamers.findIndex(
+                    gm => gm.identifier === message.gamer
+                  );
                   if (index > -1) {
                     this.game.gamers.splice(index, 1);
                     console.debug(
                       `REMOVE GAMER ${message.gamer} IN GAME %s `,
                       message.game
                     );
-                    if (localStoreManager.gamer.identifier === message.gamer) {
-                      this.$router.replace({
-                        name: routesNames.WAITING_ROOM,
-                        params: {id: message.game},
-                      });
-                    }
                   }
                 }
               }
@@ -120,17 +115,17 @@ export default defineComponent({
           null,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: QueryParameters.Action.START_GAME,
             },
           }
         )
         .then(response => {
           console.debug(response.data);
-          localStoreManager.game = response.data;
+          sessionStoreManager.game = response.data;
           this.$router.replace({
             name: routesNames.STARTED_ROOM,
             params: {id: this.game.identifier},
@@ -139,7 +134,7 @@ export default defineComponent({
         .catch(err => console.error(err));
     },
   },
-  mounted() {
+  created() {
     this.getWaitingGame();
   },
   unmounted() {
@@ -147,7 +142,7 @@ export default defineComponent({
     socket.off(CluedoGameEvent.CLUEDO_NEW_GAMER);
     socket.off(CluedoGameEvent.CLUEDO_REMOVE_GAMER);
     socket.off(
-      CluedoGameEvent.GameActionEvent.CLUEDO_START.action(this.game.identifier)
+      CluedoGameEvent.GameActionEvent.CLUEDO_START.action(this.gameId)
     );
   },
 });

@@ -4,7 +4,7 @@
   <BOverlay :show="loading" rounded="md">
     <BContainer v-if="!loading" class="mb-3">
       <BRow class="d-flex justify-content-between">
-        <BCol v-if="noInGame || games.length == 0" class="d-flex justify-content-start">
+        <BCol class="d-flex justify-content-start">
           <post-new-game @posted-game="onPostedGame" />
         </BCol>
         <BCol v-if="games.length > 0" class="d-flex justify-content-end">
@@ -13,15 +13,21 @@
       </BRow>
     </BContainer>
     <BContainer>
-      <game-card v-for="game in filteredGames" :game="game">
-        <template #footer="{game}">
-          <BContainer class="d-flex justify-content-between">
-            <BButton v-if="inGame(game.identifier)" @click="goTo(game)">Go to game</BButton>
-            <btn-remove-gamer v-if="inGame(game.identifier)" @removed-gamer="onRemoveGamer" />
-            <post-new-game v-if="noInGame && game.status === CluedoGames.Status.WAITING" :game="game" @posted-gamer="onPostedGamer" />
-          </BContainer>
-        </template>
-      </game-card>
+      <BRow class="justify-content-start">
+        <BCol v-for="game in filteredGames" class="mb-2 col-12 col-md-6 col-lg-5 col-xl-4">
+          <game-card :game="game">
+            <template #footer="{game}">
+              <BContainer>
+                <BRow v-if="game.status === CluedoGames.Status.WAITING">
+                  <BCol class="d-flex justify-content-end">
+                    <post-new-game :game="game" @posted-gamer="onPostedGamer" />
+                  </BCol>
+                </BRow>
+              </BContainer>
+            </template>
+          </game-card>
+        </BCol>
+      </BRow>
     </BContainer>
     <p v-if="!loading && games.length == 0">No waiting games</p>
   </BOverlay>

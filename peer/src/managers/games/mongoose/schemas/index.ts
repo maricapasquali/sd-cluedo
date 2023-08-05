@@ -108,6 +108,7 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
               text: {
                 type: String,
                 required: false,
+                default: '',
               },
               structuredNotes: {
                 type: [
@@ -123,6 +124,7 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
                   },
                 ],
                 required: false,
+                default: [],
               },
             },
             default: {},

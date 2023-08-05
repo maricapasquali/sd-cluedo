@@ -5,9 +5,9 @@ import OperationErrorAlert from './alerts/operation-error-alert.vue';
 import emitter from '@/eventbus';
 import {ACTION_GAMER, CONFUTATION_CARD} from '@/eventbus/eventsName';
 import socket from '@/services/socket';
-import {localStoreManager} from '@/services/localstore';
+import {sessionStoreManager} from '@/services/sessionstore';
 
-import {GamerElements, Gamers} from '@model';
+import {CluedoGames, GamerElements, Gamers} from '@model';
 import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
 import LobbyName = GamerElements.LobbyName;
 import {MessageError, ResponseStatus} from '@utils/rest-api/responses';
@@ -31,6 +31,7 @@ export default defineComponent({
   },
   data() {
     return {
+      errorModalShow: false,
       denialOperationError: {
         show: false,
         action: '',
@@ -92,12 +93,12 @@ export default defineComponent({
       return QueryParameters.Action;
     },
     amIInRound(): boolean {
-      return this.game.roundGamer === localStoreManager.gamer.identifier;
+      return this.game.roundGamer === sessionStoreManager.gamer.identifier;
     },
     inRoomWithSecretPassage(): boolean {
       return !!RoomWithSecretPassage[
         this.game.characters?.find(
-          c => c.name === localStoreManager.gamer.characterToken
+          c => c.name === sessionStoreManager.gamer.characterToken
         )?.place || ''
       ];
     },
@@ -120,21 +121,21 @@ export default defineComponent({
     inLobby(): boolean {
       return Object.values(LobbyName).includes(
         this.game.characters?.find(
-          c => c.name === localStoreManager.gamer.characterToken
+          c => c.name === sessionStoreManager.gamer.characterToken
         )?.place as LobbyName
       );
     },
     myPositionInHouse(): string {
       return (
         this.game.characters?.find(
-          c => c.name === localStoreManager.gamer.characterToken
+          c => c.name === sessionStoreManager.gamer.characterToken
         )?.place || ''
       );
     },
     myCardOnAssumption() {
       return (
         this.game.gamers
-          ?.find(g => g.identifier === localStoreManager.gamer.identifier)
+          ?.find(g => g.identifier === sessionStoreManager.gamer.identifier)
           ?.cards?.filter(c =>
             Object.values(
               this.confutationAssumptionModal.arrivalAssumption.suggestion
@@ -167,7 +168,7 @@ export default defineComponent({
       return gamer ? `${gamer.characterToken} (${gamer.username})` : '';
     },
     moveCharacterTokenIn(place: string, character?: string) {
-      const _character = character || localStoreManager.gamer.characterToken;
+      const _character = character || sessionStoreManager.gamer.characterToken;
       const fCharacter = this.game.characters?.find(c => c.name === _character);
       if (fCharacter) {
         fCharacter.place = place;
@@ -189,7 +190,7 @@ export default defineComponent({
         error.response?.status === ResponseStatus.UNAUTHORIZED ||
         error.response?.status === ResponseStatus.FORBIDDEN
       ) {
-        this.denialOperationError.error.message = `${Action.MAKE_ASSUMPTION}: denial operation`;
+        this.denialOperationError.error.message = `'${action}' operation denied`;
       } else {
         this.denialOperationError.error.message = (
           error.response?.data as any
@@ -198,6 +199,18 @@ export default defineComponent({
     },
 
     /* END ROUND */
+    oneGamerLeft(solution: Suggestion) {
+      if (!this.endGameModal.show) {
+        this.endGameModal.show = true;
+        this.endGameModal.solution = solution;
+        emitter.emit(ACTION_GAMER, {
+          gamer: this.game?.roundGamer || '',
+          action: Action.END_ROUND,
+          message: solution,
+        });
+      }
+    },
+
     endRound(leave = false) {
       axios
         .patch(
@@ -205,42 +218,40 @@ export default defineComponent({
           null,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.END_ROUND,
             },
           }
         )
         .then(response => {
-          if (typeof response.data === 'string') {
+          console.debug('END ROUND ', response.data);
+          this.resetMakeAssumptionModal();
+          this.resetMakeAccusationModal();
+          if (leave) {
+            sessionStoreManager.remove();
+            this.$router.replace({name: routesNames.HOME});
+          } else if (typeof response.data === 'string') {
             emitter.emit(ACTION_GAMER, {
               gamer: this.game?.roundGamer || '',
               action: Action.END_ROUND,
               message: response.data,
             });
             this.game.roundGamer = response.data;
-
-            if (leave) {
-              this.$router.replace({name: routesNames.HOME});
-              localStoreManager.remove();
-            }
-            this.resetMakeAssumptionModal();
-            this.resetMakeAccusationModal();
           } else {
             // GAME OVER WITHOUT WINNER
-            this.endGameModal.show = true;
-            this.endGameModal.solution = response.data;
-            emitter.emit(ACTION_GAMER, {
-              gamer: this.game?.roundGamer || '',
-              action: Action.END_ROUND,
-              message: response.data,
-            });
+            this.oneGamerLeft(response.data);
             this.stopGame();
           }
         })
-        .catch(err => this.handlerError(err, Action.END_ROUND));
+        .catch(err => {
+          if (err?.resonse?.status === ResponseStatus.GONE) {
+            sessionStoreManager.remove();
+            this.$router.replace({name: routesNames.HOME});
+          } else this.handlerError(err, Action.END_ROUND);
+        });
     },
 
     /* ROLL DIE */
@@ -252,10 +263,10 @@ export default defineComponent({
           null,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.ROLL_DIE,
             },
           }
@@ -264,10 +275,10 @@ export default defineComponent({
           this.moveCharacterTokenIn(response.data);
 
           emitter.emit(ACTION_GAMER, {
-            gamer: localStoreManager.gamer.identifier,
+            gamer: sessionStoreManager.gamer.identifier,
             action: Action.ROLL_DIE,
             message: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               housePart: response.data,
             } as RollDiceMessage,
           });
@@ -281,7 +292,7 @@ export default defineComponent({
     /*MAKE ASSUMPTION*/
     checkIfMakingAssumptions() {
       if (
-        localStoreManager.gamer.identifier === this.inRoundGamer.identifier &&
+        sessionStoreManager.gamer.identifier === this.inRoundGamer.identifier &&
         this.lastAssumptionOfInRoundGamer
       ) {
         const conf = this.lastAssumptionOfInRoundGamer.confutation || [];
@@ -331,17 +342,17 @@ export default defineComponent({
           this.makeAssumptionModal.assumption,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.MAKE_ASSUMPTION,
             },
           }
         )
         .then(response => {
           emitter.emit(ACTION_GAMER, {
-            gamer: localStoreManager.gamer.identifier,
+            gamer: sessionStoreManager.gamer.identifier,
             action: Action.MAKE_ASSUMPTION,
             message: response.data,
           });
@@ -364,7 +375,7 @@ export default defineComponent({
         .filter(c => c && c.length > 0)
         .forEach(c => {
           const iGamer = this.game.gamers.find(
-            g => localStoreManager.gamer.identifier === g.identifier
+            g => sessionStoreManager.gamer.identifier === g.identifier
           );
           if (iGamer) {
             const excluded = {
@@ -403,9 +414,9 @@ export default defineComponent({
         this.makeAccusationModal.show = true;
         this.makeAccusationModal.accusation =
           this.inRoundGamer.accusation || ({} as Suggestion);
-        const resMakeAccusation = localStoreManager.history.find(
+        const resMakeAccusation = sessionStoreManager.history.find(
           i =>
-            i.gamer === localStoreManager.gamer.identifier &&
+            i.gamer === sessionStoreManager.gamer.identifier &&
             i.action === Action.MAKE_ACCUSATION
         );
         if (resMakeAccusation) {
@@ -449,17 +460,17 @@ export default defineComponent({
           this.makeAccusationModal.accusation,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.MAKE_ACCUSATION,
             },
           }
         )
         .then(response => {
           emitter.emit(ACTION_GAMER, {
-            gamer: localStoreManager.gamer.identifier,
+            gamer: sessionStoreManager.gamer.identifier,
             action: Action.MAKE_ACCUSATION,
             message: response.data,
           });
@@ -478,26 +489,39 @@ export default defineComponent({
 
     stopGame() {
       this.denialOperationError.show = false;
+      if (this.game.status === CluedoGames.Status.FINISHED) return;
       axios
         .patch(
           RestAPIRouteName.GAME.replace(':id', this.game.identifier),
           null,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.STOP_GAME,
             },
           }
         )
-        .then(() => console.debug(`Game ${this.game?.identifier} is finished.`))
-        .catch(err => this.handlerError(err, Action.STOP_GAME));
+        .then(response => {
+          if (response.data.gamers.length <= 1) {
+            this.oneGamerLeft(response.data.solution);
+          }
+          console.debug(`Game ${this.game?.identifier} is finished.`);
+        })
+        .catch(err => {
+          if (
+            this.game.status === CluedoGames.Status.FINISHED &&
+            err.response.status === ResponseStatus.FORBIDDEN
+          ) {
+            console.debug('Game has already stopped');
+          } else this.handlerError(err, Action.STOP_GAME);
+        });
     },
 
     finishedGameSoGoHomePage() {
-      localStoreManager.remove();
+      sessionStoreManager.remove();
       this.$router.replace({name: routesNames.HOME});
     },
 
@@ -509,18 +533,15 @@ export default defineComponent({
           null,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.LEAVE,
             },
           }
         )
-        .then(() => {
-          this.makeAccusationModal.show = false;
-          this.endRound(true);
-        })
+        .then(() => this.endRound(true))
         .catch(err => this.handlerError(err, Action.LEAVE));
     },
 
@@ -532,28 +553,28 @@ export default defineComponent({
           null,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.STAY,
             },
           }
         )
         .then(response => {
           emitter.emit(ACTION_GAMER, {
-            gamer: localStoreManager.gamer.identifier,
+            gamer: sessionStoreManager.gamer.identifier,
             action: Action.STAY,
             message: response.data,
           });
           const fGamer = this.game?.gamers.find(
-            g => g.identifier === localStoreManager.gamer.identifier
+            g => g.identifier === sessionStoreManager.gamer.identifier
           );
           if (fGamer) {
             fGamer.role = response.data;
-            localStoreManager.accessToken = response.headers['x-access-token'];
+            sessionStoreManager.accessToken =
+              response.headers['x-access-token'];
           }
-          this.makeAccusationModal.show = false;
           this.endRound();
         })
         .catch(err => this.handlerError(err, Action.STAY));
@@ -562,7 +583,7 @@ export default defineComponent({
     /* CONFUTATIONS */
     checkIfMakingConfutation() {
       if (
-        localStoreManager.gamer.identifier !== this.inRoundGamer.identifier &&
+        sessionStoreManager.gamer.identifier !== this.inRoundGamer.identifier &&
         this.lastAssumptionOfInRoundGamer
       ) {
         const conf = this.lastAssumptionOfInRoundGamer.confutation || [];
@@ -576,7 +597,7 @@ export default defineComponent({
           const roundConf = this.nextConfutationGamer(
             conf[conf.length - 1]?.gamer || this.inRoundGamer.identifier
           );
-          if (roundConf.identifier === localStoreManager.gamer.identifier) {
+          if (roundConf.identifier === sessionStoreManager.gamer.identifier) {
             this.confutationAssumptionModal.show = true;
             this.confutationAssumptionModal.arrivalAssumption = {
               gamer: this.inRoundGamer.identifier,
@@ -602,11 +623,11 @@ export default defineComponent({
           this.confutationAssumptionModal.confute,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
               'content-type': 'text/plain',
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.CONFUTATION_ASSUMPTION,
             },
           }
@@ -634,10 +655,10 @@ export default defineComponent({
           null,
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
             params: {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               action: Action.USE_SECRET_PASSAGE,
             },
           }
@@ -645,7 +666,7 @@ export default defineComponent({
         .then(response => {
           this.moveCharacterTokenIn(response.data);
           emitter.emit(ACTION_GAMER, {
-            gamer: localStoreManager.gamer.identifier,
+            gamer: sessionStoreManager.gamer.identifier,
             action: Action.USE_SECRET_PASSAGE,
             message: response.data,
           });
@@ -690,18 +711,14 @@ export default defineComponent({
               message,
             });
 
-            const roundGamerIndex = this.game.gamers.findIndex(
-              g => g.identifier === this.game?.roundGamer
+            const nextConfGamer = this.nextConfutationGamer(
+              this.game?.roundGamer || ''
             );
-            if (roundGamerIndex > -1) {
-              const nextIndex = (roundGamerIndex + 1) % this.game.gamers.length;
-              this.confutationAssumptionModal.arrivalAssumption = message;
-              if (
-                this.game.gamers[nextIndex].identifier ===
-                localStoreManager.gamer.identifier
-              ) {
-                this.confutationAssumptionModal.show = true;
-              }
+            this.confutationAssumptionModal.arrivalAssumption = message;
+            if (
+              nextConfGamer.identifier === sessionStoreManager.gamer.identifier
+            ) {
+              this.confutationAssumptionModal.show = true;
             }
           }
         )
@@ -715,7 +732,7 @@ export default defineComponent({
               action: Action.CONFUTATION_ASSUMPTION,
               message,
             });
-            if (localStoreManager.gamer.identifier === message.roundGamer) {
+            if (sessionStoreManager.gamer.identifier === message.roundGamer) {
               this.makeAssumptionModal.confutation[message.refuterGamer] =
                 message.card as string;
               if (
@@ -728,22 +745,15 @@ export default defineComponent({
                 this.clickOkOnReceiveConfutation();
               }
             } else if (!(message.card as unknown as boolean)) {
-              const refuterGamerIndex = this.game.gamers.findIndex(
-                g => g.identifier === message.refuterGamer
+              const nextConfGamer = this.nextConfutationGamer(
+                message.refuterGamer
               );
-              if (refuterGamerIndex > -1) {
-                const nextIndex =
-                  (refuterGamerIndex + 1) % this.game.gamers.length;
-                if (
-                  this.game?.gamers[nextIndex].identifier !==
-                  this.game?.roundGamer
-                ) {
-                  this.confutationAssumptionModal.show = true;
-                  this.confutationAssumptionModal.arrivalAssumption = {
-                    gamer: this.inRoundGamer.identifier,
-                    suggestion: this.lastAssumptionOfInRoundGamer as Assumption,
-                  };
-                }
+              if (nextConfGamer.identifier !== this.game?.roundGamer) {
+                this.confutationAssumptionModal.show = true;
+                this.confutationAssumptionModal.arrivalAssumption = {
+                  gamer: this.inRoundGamer.identifier,
+                  suggestion: this.lastAssumptionOfInRoundGamer as Assumption,
+                };
               }
             } else {
               this.resetConfutationAssumptionModal();
@@ -786,6 +796,7 @@ export default defineComponent({
         .on(
           CluedoGameEvent.GameActionEvent.CLUEDO_END_ROUND.action(gameId),
           (message: NextGamerMessage | Suggestion) => {
+            console.debug('END ROUND MESSAGE ', message);
             if (typeof message === 'string') {
               emitter.emit(ACTION_GAMER, {
                 gamer: this.game.roundGamer || '',
@@ -795,13 +806,7 @@ export default defineComponent({
               this.game.roundGamer = message;
             } else {
               // GAME OVER WITHOUT WINNER
-              this.endGameModal.show = true;
-              this.endGameModal.solution = message;
-              emitter.emit(ACTION_GAMER, {
-                gamer: this.game?.roundGamer || '',
-                action: Action.END_ROUND,
-                message,
-              });
+              this.oneGamerLeft(message);
             }
           }
         )
@@ -836,12 +841,20 @@ export default defineComponent({
               action: Action.LEAVE,
               message,
             });
+            if (
+              this.game?.gamers.filter(
+                g => !g.role?.includes(Gamers.Role.SILENT)
+              ).length <= 1
+            ) {
+              this.stopGame();
+            }
           }
         )
         .on(
           CluedoGameEvent.GameActionEvent.CLUEDO_STOP_GAME.action(gameId),
           (message: CluedoGameMessage) => {
             console.log('Stopped Game Message ', message);
+            this.game.status = message.status;
           }
         );
     },
@@ -851,7 +864,6 @@ export default defineComponent({
     this.rooms = this.game.rooms?.map(w => w.name) || [];
     this.weapons = this.game.weapons?.map(w => w.name) || [];
     this.setSocketListeners();
-
     this.checkIfMakingAssumptions();
     this.checkIfMakingAccusation();
     this.checkIfMakingConfutation();

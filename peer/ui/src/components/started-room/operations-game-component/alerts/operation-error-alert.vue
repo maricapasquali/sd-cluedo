@@ -17,8 +17,8 @@ export default defineComponent({
 <template>
   <BAlert dismissible :model-value="value" variant="danger" title="Error">
     <h4>{{opMessageError.error.code}} {{ opMessageError.error.codeText }}</h4>
-    <p>Message: {{opMessageError.error.message}}</p>
-    <p>Cause: {{opMessageError.error.cause}}</p>
+    <p><b>Message</b>: {{opMessageError.error.message}}</p>
+    <p><b>Cause</b>: {{opMessageError.error.cause}}</p>
   </BAlert>
 </template>
 

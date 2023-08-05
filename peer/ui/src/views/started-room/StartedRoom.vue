@@ -14,7 +14,7 @@
                 </template>
                 <BListGroup>
                   <BListGroupItem v-for="gamer in reactiveGame.gamers" :class="isSilentGamer(gamer)? 'disabled': ''"
-                  ><gamer-description id="list-gamer" :gamer="gamer" ></gamer-description
+                  ><gamer-description id="list-gamer" :gamer="gamer" online></gamer-description
                   ></BListGroupItem>
                 </BListGroup>
               </BCard>
@@ -43,7 +43,7 @@
           <BContainer fluid>
             <BRow>
               <BCol class="col-12 col-lg-6 mb-2">
-                <game-board  :game="reactiveGame" />
+                <game-board :game="reactiveGame" />
               </BCol>
               <BCol class="col-12 col-lg-6">
                 <BCard no-body class="p-1 pt-0">

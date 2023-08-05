@@ -8,7 +8,7 @@
             :variant="bgColor(toast.body.action)"
             dismissible>
       <BListGroupItem>
-        <gamer-description id="history" :gamer="gamer(toast.body.gamer)" />
+        <gamer-description id="history" :gamer="gamer(toast.body.gamer)" :online="!!gamer(toast.body.gamer).identifier" />
         <h5>{{toast.body.action.replace('_', ' ').toUpperCase()}}</h5>
         <p v-html="parseMessage(toast.body.action, toast.body.message)"></p>
         <p>{{dateString(toast.body.timestamp)}}</p>
@@ -18,7 +18,7 @@
 
   <BListGroup class="scroll">
     <BListGroupItem v-for="item in historyStore" :variant="bgColor(item.action)">
-      <gamer-description id="history" :gamer="gamer(item.gamer)" />
+      <gamer-description id="history" :gamer="gamer(item.gamer)" :online="!!gamer(item.gamer).identifier" />
       <h5>{{item.action.replace('_', ' ').toUpperCase()}}</h5>
       <p v-html="parseMessage(item.action, item.message)"></p>
       <p>{{dateString(item.timestamp)}}</p>

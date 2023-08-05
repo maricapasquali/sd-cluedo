@@ -1,6 +1,6 @@
 import {defineComponent} from 'vue';
 import axios from 'axios';
-import {localStoreManager} from '@/services/localstore';
+import {sessionStoreManager} from '@/services/sessionstore';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
 import routesNames from '@/router/routesNames';
@@ -15,14 +15,15 @@ export default defineComponent({
   },
   methods: {
     exit() {
-      localStoreManager.remove();
       if (this.$router.currentRoute.value.name === routesNames.HOME) {
         this.$emit(
           'removed-gamer',
-          localStoreManager.game.identifier,
-          localStoreManager.gamer.identifier
+          sessionStoreManager.game.identifier,
+          sessionStoreManager.gamer.identifier
         );
+        sessionStoreManager.remove();
       } else {
+        sessionStoreManager.remove();
         this.$router.replace({name: routesNames.HOME});
       }
     },
@@ -32,11 +33,11 @@ export default defineComponent({
         .delete(
           RestAPIRouteName.GAMER.replace(
             ':id',
-            localStoreManager.game.identifier
-          ).replace(':gamerId', localStoreManager.gamer.identifier),
+            sessionStoreManager.game.identifier
+          ).replace(':gamerId', sessionStoreManager.gamer.identifier),
           {
             headers: {
-              authorization: localStoreManager.accessToken,
+              authorization: sessionStoreManager.accessToken,
             },
           }
         )

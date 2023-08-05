@@ -1,6 +1,14 @@
 <script lang="ts" src="./script.ts"/>
 
 <template>
+  <BModal :model-value="!makeAssumptionModal.show &&!endGameModal.show && !makeAccusationModal.show && !confutationAssumptionModal.show && denialOperationError.show"
+          title="Error" centered hide-footer hide-header body-class="p-0">
+    <OperationErrorAlert class="mb-0"
+                         v-model="denialOperationError.show"
+                         :opMessageError="denialOperationError"
+    />
+  </BModal>
+
   <BModal centered v-model="makeAssumptionModal.show" hide-footer>
     <template #title>
       <h4 class="m-0 p-2 bg-primary rounded-3 text-white">

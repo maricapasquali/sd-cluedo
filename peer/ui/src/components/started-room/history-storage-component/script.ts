@@ -1,5 +1,5 @@
 import {PropType, defineComponent} from 'vue';
-import {HistoryItem, localStoreManager} from '@/services/localstore';
+import {HistoryItem, sessionStoreManager} from '@/services/sessionstore';
 import eventbus from '@/eventbus';
 import {ACTION_GAMER} from '@/eventbus/eventsName';
 import {QueryParameters} from '@peer/routes/parameters';
@@ -15,7 +15,7 @@ export default defineComponent({
   data() {
     return {
       toasts: [] as {dismissCountDown: number | boolean; body: HistoryItem}[],
-      historyStore: localStoreManager.history,
+      historyStore: sessionStoreManager.history,
     };
   },
   watch: {
@@ -23,7 +23,7 @@ export default defineComponent({
       deep: true,
       handler: function (newHistory) {
         console.debug('HISTORY STORE', newHistory);
-        localStoreManager.history = newHistory;
+        sessionStoreManager.history = newHistory;
       },
     },
   },

@@ -1,5 +1,5 @@
 import {QueryParameters} from '@peer/routes/parameters';
-type LocalStorageGame = {
+type SessionStorageGame = {
   game: CluedoGame;
   gamer: Gamer;
   accessToken: string;
@@ -13,13 +13,13 @@ export type HistoryItem = {
   timestamp?: number;
 };
 
-export class LocalGameStorageManager {
+export class SessionGameStorageManager {
   private readonly key: string = 'game';
-  private _store: LocalStorageGame;
+  private _store: SessionStorageGame;
   constructor() {
     this._store = JSON.parse(
-      window.localStorage.getItem(this.key) || '{}'
-    ) as LocalStorageGame;
+      window.sessionStorage.getItem(this.key) || '{}'
+    ) as SessionStorageGame;
   }
   isEmpty(): boolean {
     return Object.keys(this.storage).length === 0;
@@ -63,17 +63,17 @@ export class LocalGameStorageManager {
   }
 
   remove() {
-    this._store = {} as LocalStorageGame;
-    window.localStorage.removeItem(this.key);
+    this._store = {} as SessionStorageGame;
+    window.sessionStorage.removeItem(this.key);
   }
 
-  private get storage(): LocalStorageGame {
+  private get storage(): SessionStorageGame {
     return this._store;
   }
   private store() {
-    window.localStorage.setItem('game', JSON.stringify(this.storage));
+    window.sessionStorage.setItem('game', JSON.stringify(this.storage));
     console.debug('store ', this._store);
   }
 }
 
-export const localStoreManager = new LocalGameStorageManager();
+export const sessionStoreManager = new SessionGameStorageManager();

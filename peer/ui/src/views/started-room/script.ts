@@ -2,7 +2,7 @@ import {defineComponent} from 'vue';
 import * as _ from 'lodash';
 import axios, {AxiosError} from 'axios';
 import socket from '@/services/socket';
-import {localStoreManager} from '@/services/localstore';
+import {sessionStoreManager} from '@/services/sessionstore';
 
 import {CluedoGames, Gamers} from '@model';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
@@ -12,10 +12,8 @@ import GameActionEvent = CluedoGameEvent.GameActionEvent;
 import {QueryParameters} from '@peer/routes/parameters';
 import Action = QueryParameters.Action;
 import routesNames from '@/router/routesNames';
-import {BCol, BContainer, BRow} from 'bootstrap-vue-next';
 
 export default defineComponent({
-  components: {BRow, BContainer, BCol},
   data() {
     return {
       loading: true,
@@ -23,11 +21,11 @@ export default defineComponent({
     };
   },
   computed: {
-    iGamer(): Gamer {
+    iGamer(): Gamer | Partial<Gamer> {
       return (
         this.reactiveGame.gamers?.find(
-          (g: Gamer) => g.identifier === localStoreManager.gamer.identifier
-        ) || ({} as Gamer)
+          (g: Gamer) => g.identifier === sessionStoreManager.gamer.identifier
+        ) || ({notes: {text: '', structuredNotes: []}} as Partial<Gamer>)
       );
     },
     amISilent(): boolean {
@@ -47,16 +45,25 @@ export default defineComponent({
     },
     connectSocketLikeGamer() {
       const gamerAuth = {
-        gamerId: localStoreManager.gamer.identifier,
-        gameId: localStoreManager.game.identifier,
-        accessToken: localStoreManager.accessToken,
+        gamerId: sessionStoreManager.gamer.identifier,
+        gameId: sessionStoreManager.game.identifier,
+        accessToken: sessionStoreManager.accessToken,
       };
-      console.debug('Socket auth ', socket.auth);
-      console.debug('gamerAuth ', gamerAuth);
       if (!_.isEqual(socket.auth, gamerAuth)) {
         socket.connectLike(gamerAuth).on('connect', () => {
-          console.debug(`Started room: connect socket ${socket.id}`);
+          console.debug(
+            `[STARTED ROOM]: Connect socket with id ${socket.id} and credential `,
+            socket.auth
+          );
         });
+      }
+    },
+    unsetSessionStorage(gameId: string) {
+      if (
+        !sessionStoreManager.isEmpty() &&
+        sessionStoreManager.game.identifier === gameId
+      ) {
+        sessionStoreManager.remove();
       }
     },
     onWriteNotes(note: string | StructuredNoteItem[]) {
@@ -69,7 +76,7 @@ export default defineComponent({
               this.reactiveGame.identifier
             ),
             {
-              gamer: localStoreManager.gamer.identifier,
+              gamer: sessionStoreManager.gamer.identifier,
               note: this.iGamer.notes,
             },
             () => {
@@ -87,10 +94,10 @@ export default defineComponent({
               this.iGamer.notes,
               {
                 headers: {
-                  authorization: localStoreManager.accessToken,
+                  authorization: sessionStoreManager.accessToken,
                 },
                 params: {
-                  gamer: localStoreManager.gamer.identifier,
+                  gamer: sessionStoreManager.gamer.identifier,
                   action: Action.TAKE_NOTES,
                 },
               }
@@ -104,7 +111,7 @@ export default defineComponent({
       axios
         .get(RestAPIRouteName.GAME.replace(':id', gameId), {
           headers: {
-            authorization: localStoreManager.accessToken,
+            authorization: sessionStoreManager.accessToken,
           },
           params: {
             status: CluedoGames.Status.STARTED,
@@ -114,29 +121,21 @@ export default defineComponent({
           console.debug('Game in started = ', response.data);
           if (
             !response.data.gamers.find(
-              (g: Gamer) => localStoreManager.gamer.identifier === g.identifier
+              (g: Gamer) =>
+                sessionStoreManager.gamer.identifier === g.identifier
             )
           ) {
+            this.unsetSessionStorage(gameId);
             this.$router.replace({name: routesNames.HOME});
-          }
-          if (response.data.status === CluedoGames.Status.STARTED) {
-            this.$router.replace({
-              name: routesNames.STARTED_ROOM,
-              params: {id: response.data.identifier},
-            });
+            return;
           }
           this.reactiveGame = response.data;
-          this.connectSocketLikeGamer();
         })
         .catch((err: AxiosError) => {
           if (err.response?.status === ResponseStatus.NOT_FOUND) {
-            if (
-              !localStoreManager.isEmpty() &&
-              localStoreManager.game.identifier === gameId
-            ) {
-              localStoreManager.remove();
-            }
+            this.unsetSessionStorage(gameId);
             this.$router.replace({name: routesNames.HOME});
+            return;
           } else {
             console.error(err);
           }
@@ -149,15 +148,15 @@ export default defineComponent({
       deep: true,
       handler: function (newGame: CluedoGame) {
         console.debug('WATCH GAME ', newGame);
-        localStoreManager.game = newGame;
-        localStoreManager.gamer = this.iGamer;
+        sessionStoreManager.game = newGame;
+        sessionStoreManager.gamer = this.iGamer as Gamer;
       },
     },
   },
-  async created() {
-    await this.getStartedGame(
-      this.$router.currentRoute.value.params.id as string
-    );
+  created() {
+    this.connectSocketLikeGamer();
+    const gameId = (this.$router.currentRoute.value.params.id || '') as string;
+    this.getStartedGame(gameId);
   },
   unmounted() {
     console.debug('unmounted STARTED ROOM');

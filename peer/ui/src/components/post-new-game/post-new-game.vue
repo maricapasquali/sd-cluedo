@@ -7,9 +7,9 @@
     <b-overlay :show="loading" rounded="md">
       <BForm>
         <BAlert ref="error-alert" v-model="alert" variant="danger" title="Error" dismissible>
-          <p><b>{{error.response?.status}} - {{error.response?.statusText}}</b></p>
-          <p><b>Message</b> {{error.response?.data?.message}} </p>
-          <p v-if="error.response?.data?.cause"><b>Cause</b> <br/>{{error.response?.data?.cause}}</p>
+          <p><b>{{error.status}} - {{error.statusText}}</b></p>
+          <p><b>Message</b> {{error.data?.message}} </p>
+          <p v-if="error.data?.cause"><b>Cause</b> <br/>{{error.data?.cause}}</p>
         </BAlert>
         <BFormGroup label="Username" label-for="gamer-username" >
           <BFormInput id="gamer-username" v-model="gamer.username" placeholder="Enter username"></BFormInput>
@@ -23,7 +23,7 @@
           </BFormRadio>
         </BFormRadioGroup>
       </BForm>
-      <BContainer class="d-flex justify-content-end">
+      <BContainer class="d-flex justify-content-end" v-if="gamer.username?.length > 0 && gamer.characterToken?.length > 0">
         <b-button v-if="game" variant="primary" @click="enterInGame">Enter</b-button>
         <b-button v-else variant="success" @click="postGame">Create</b-button>
       </BContainer>
