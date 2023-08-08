@@ -79,7 +79,7 @@ export function mocksPeerClient(
     address: '127.0.0.' + (i + 1),
     port: 3000 + (i + 1),
     status: Peers.Status.ONLINE,
-    hostname: 'host-' + (i + 1),
+    hostname: 'localhost',
   };
   const clientPeer = createServerStub(discoveryServerAddress, {
     auth: {

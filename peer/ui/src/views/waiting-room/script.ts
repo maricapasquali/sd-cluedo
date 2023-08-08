@@ -52,6 +52,7 @@ export default defineComponent({
               name: routesNames.STARTED_ROOM,
               params: {id: response.data.identifier},
             });
+            return;
           }
           this.game = response.data;
           const gamerAuth = {
@@ -134,7 +135,7 @@ export default defineComponent({
         .catch(err => console.error(err));
     },
   },
-  created() {
+  mounted() {
     this.getWaitingGame();
   },
   unmounted() {

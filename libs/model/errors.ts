@@ -1,3 +1,5 @@
+import {CluedoGames} from './cluedo-game.model';
+
 export class GameRuleError extends Error {
   readonly code: string;
   constructor(message: string, code: string) {
@@ -9,7 +11,7 @@ export class GameRuleError extends Error {
 export class NoConformNumberOfGamersError extends GameRuleError {
   constructor() {
     super(
-      `Min ${Gamers.MIN} and max ${Gamers.MAX} gamers for game.`,
+      `Min ${CluedoGames.MIN_GAMERS} and max ${CluedoGames.MAX_GAMERS} gamers for game.`,
       GameRuleError.NO_CONFORM_GAMERS
     );
   }

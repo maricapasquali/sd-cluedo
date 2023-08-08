@@ -18,7 +18,7 @@ export default function (
     axiosInstance
       .patch(
         RestAPIRouteName.PEER,
-        {status: Peers.Status.SHAREABLE},
+        {status: Peers.Status.OFFLINE},
         {
           headers: {
             'X-Forwarded-For': peer.address,
@@ -31,8 +31,8 @@ export default function (
       .then(res => {
         res?.status?.should.equal(ResponseStatus.OK);
         const _peer: Peer = res.data;
-        _peer.should.have.property('status').equal(Peers.Status.SHAREABLE);
-        peer.status = Peers.Status.SHAREABLE;
+        _peer.should.have.property('status').equal(Peers.Status.OFFLINE);
+        peer.status = Peers.Status.OFFLINE;
         done();
       })
       .catch(done);

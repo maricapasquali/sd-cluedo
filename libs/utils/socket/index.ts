@@ -21,14 +21,15 @@ Socket.prototype.connectLike = function (auth?: SocketAuthorization): Socket {
 };
 
 export function createServerStub(
-  serverAddress: string,
+  serverAddress?: string,
   opts?: Partial<ManagerOptions & SocketOptions>
 ) {
-  return Client(serverAddress, {
+  const _opts = {
     secure: true,
     autoConnect: false,
     rejectUnauthorized: false,
     reconnection: true,
     ...opts,
-  });
+  };
+  return serverAddress ? Client(serverAddress, _opts) : Client(_opts);
 }

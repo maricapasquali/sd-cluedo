@@ -12,6 +12,8 @@ import {createAxiosInstance} from '@utils/axios';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {GamersSocket} from './clients';
 import {getAuth} from '../utils';
+import {SocketChecker} from '../checker';
+import {registerGamerHandlers} from '../handlers';
 
 function leaveGame(peer: Peer, socketServer: Server, socket: Socket) {
   const auth = getAuth(socket);
@@ -112,14 +114,20 @@ export default function createPeerClientStub(
         nDevices
       );
       logger.debug('%s: #devices = %s', peerAddress, nDevices);
-      if (auth.gameId && auth.gamerId && auth.accessToken) {
+      if (SocketChecker.isGamer(socket)) {
         GamersSocket.register(auth);
+        registerGamerHandlers(socketServer, socket, auth.gameId, {
+          peer,
+          peerServerManager,
+        });
       }
 
-      registerGameEventHandlers(socketServer, socket, {
-        peer,
-        peerServerManager,
-      });
+      if (SocketChecker.isPeer(socket)) {
+        registerGameEventHandlers(socketServer, socket, {
+          peer,
+          peerServerManager,
+        });
+      }
 
       socket.on('disconnect', reason => {
         logger.info(
@@ -129,7 +137,7 @@ export default function createPeerClientStub(
           reason
         );
 
-        if (auth.gameId && auth.gamerId && auth.accessToken) {
+        if (SocketChecker.isGamer(socket)) {
           GamersSocket.unregister(auth);
           setTimeout(() => leaveGame(peer, socketServer, socket), 5000); //TODO: REVIEW THE TIME (secs) OF REAL DISCONNECTION: 5 seconds ??
         }

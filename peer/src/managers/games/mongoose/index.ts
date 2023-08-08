@@ -20,6 +20,10 @@ export class MongoDBGameManager implements GameManager {
     this._gameId = gameId;
   }
 
+  get gameId(): string {
+    return this._gameId;
+  }
+
   game(filters?: {status?: string; gamer?: string}): Promise<DocCluedoGame> {
     const _filters: {
       identifier: string;
@@ -280,6 +284,19 @@ export class MongoDBGameManager implements GameManager {
       {identifier: this._gameId},
       {$set: {status: GameStatus.FINISHED}}
     ).then(result => result.modifiedCount === 1);
+  }
+
+  moveCharacterIn(gamerId: string, housePart: string): Promise<boolean> {
+    return this.game().then(game => {
+      const _gamer = game.gamers.find(g => g.identifier === gamerId);
+      const _character: Character =
+        game.characters?.find(c => c.name === _gamer?.characterToken) ||
+        ({} as Character);
+      _character.place = housePart;
+      return game
+        .save()
+        .then(newGame => !_.isEqual(newGame.toObject(), game.toObject()));
+    });
   }
 
   private randIndex(lengthOfArray: number): number {

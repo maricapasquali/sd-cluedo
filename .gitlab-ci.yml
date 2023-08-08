@@ -52,7 +52,6 @@ test-discovery:
 
 test-peer:
   stage: test
-  allow_failure: true
   services:
     - mongo:latest
   script:

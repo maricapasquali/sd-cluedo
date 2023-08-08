@@ -1,5 +1,5 @@
 import {createServerStub} from '@utils/socket';
 
-const socket = createServerStub(window.location.origin);
+const socket = createServerStub();
 
 export default socket;

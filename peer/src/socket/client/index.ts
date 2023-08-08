@@ -1,7 +1,6 @@
 import {Server} from 'socket.io';
 import {Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
-import {registerGameEventHandlers} from '../handlers';
 import {Peers} from '@model';
 import {PeerServerManager} from '../../managers/peers-servers';
 import {createServerStub} from '@utils/socket';
@@ -13,6 +12,7 @@ import {
   RestAPIRouteName as DiscoveryRestAPIRouteName,
 } from '@discovery-peers-routes';
 import {AxiosError} from 'axios';
+import {registerGameEventHandlers} from '../handlers';
 
 type PeerClientConfig = {
   myPeer: Peer;
@@ -36,7 +36,11 @@ export function createPeerServerStub(
         )}): Connected to ${serverAddress}: socket id ${peerClient.id}`
       );
       createAxiosInstance({baseURL: serverAddress})
-        .get(RestAPIRouteName.GAMES)
+        .get(RestAPIRouteName.GAMES, {
+          headers: {
+            'x-peer-address': Peers.url(myPeer),
+          },
+        })
         .then(response => response.data)
         .then(games =>
           Promise.all(
@@ -46,6 +50,7 @@ export function createPeerServerStub(
           )
         )
         .then(() => {
+          logger.info('Retrieve games from ' + serverAddress);
           registerGameEventHandlers(mySocketServer, peerClient, {
             peer: myPeer,
             peerServerManager,
@@ -88,7 +93,11 @@ export function connectAndListenOnDiscoveryServer(
           logger.info('List of other peers.');
           logger.debug(response.data);
           response.data.peers
-            .filter((p: Peer) => p.identifier !== myPeer.identifier)
+            .filter(
+              (p: Peer) =>
+                p.identifier !== myPeer.identifier &&
+                p.status === Peers.Status.ONLINE
+            )
             .map((peer: Peer) => ({
               peer,
               socket: createPeerServerStub(Peers.url(peer), {

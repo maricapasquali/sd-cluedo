@@ -12,12 +12,10 @@ import {
 } from '@utils/https-server';
 import handlerSocket from './socket';
 
-const internalPort: number = Number(process.env.PORT) || 3000;
-const externalPort: number = Number(process.env.EXTERNAL_PORT) || internalPort;
+const port: number = Number(process.env.PORT) || 3000;
 
 logger.debug('Discovery Server: index.ts');
-logger.debug('internalPort = ' + internalPort);
-logger.debug('externalPort = ' + externalPort);
+logger.debug('port = ' + port);
 
 const httpsOptions = {
   key: fs.readFileSync(path.resolve('sslcert', 'privatekey.pem')),
@@ -30,7 +28,7 @@ const serverConfig: HTTPSServerConfig = {
   routes,
   sets: {
     tokensManager: BasicTokenManager.create({
-      issuer: 'https://' + os.hostname() + ':' + externalPort,
+      issuer: 'https://' + os.hostname() + ':' + port,
       privateKey: httpsOptions.key,
       publicKey: httpsOptions.cert,
     }),
@@ -47,8 +45,8 @@ const {httpsServer} = createHTTPSServerWithSocketServer(
 );
 
 httpsServer
-  .listen(internalPort, () => {
-    logger.info('Listen on ' + internalPort);
+  .listen(port, () => {
+    logger.info('Listen on ' + port);
     if (process.env.ENV_CI === 'CI/CD') {
       httpsServer.close(() => {
         logger.info('Close server');

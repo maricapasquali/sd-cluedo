@@ -61,7 +61,7 @@ export function upPeer(peer: Peer): Promise<HTTPSServerWithSocket> {
   return new Promise((resolve, reject) => {
     const httpsServerWithSocket = createPeerServer(peer);
     httpsServerWithSocket.httpsServer
-      .listen(peer.port, peer.address, () => {
+      .listen(peer.port, peer.hostname, () => {
         logger.debug('Peer up on ' + Peers.url(peer));
         resolve(httpsServerWithSocket);
       })
@@ -113,7 +113,12 @@ export function gamersClientSocket(
 }
 
 export function noGamersClientSocket(gameId: string): Socket[] {
-  return actualClients.filter(s => !gamersClientSocket(gameId).includes(s));
+  return actualClients.filter(
+    s =>
+      !gamersClientSocket(gameId)
+        .map(s => s.id)
+        .includes(s.id)
+  );
 }
 export function connectionToPeerServer({
   myPeer,

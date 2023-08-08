@@ -32,5 +32,9 @@ export namespace CluedoGameEvent {
     action(gameId: string): string {
       return this._action.replace(':gameId', gameId);
     }
+
+    check(action: string): boolean {
+      return new RegExp(this._action.replace(':gameId', '.*')).test(action);
+    }
   }
 }

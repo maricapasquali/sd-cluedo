@@ -1,6 +1,6 @@
 FROM alpine:latest AS node-alpine
 
-RUN apk add bash openrc nodejs npm
+RUN apk add bash openrc nodejs npm curl
 
 WORKDIR /cluedo
 
@@ -42,7 +42,7 @@ RUN npm install
 
 COPY ./discovery.entrypoint.sh /cluedo
 
-RUN npm run build
+RUN npm run build:discovery
 
 EXPOSE 3000
 

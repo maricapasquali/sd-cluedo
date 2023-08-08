@@ -1,7 +1,6 @@
 export namespace Peers {
   export enum Status {
     ONLINE = 'online',
-    SHAREABLE = 'shareable',
     OFFLINE = 'offline',
   }
 
@@ -10,6 +9,6 @@ export namespace Peers {
   }
 
   export function url(peer: Peer): string {
-    return peer.protocol + '://' + peer.address + ':' + peer.port;
+    return peer.protocol + '://' + peer.hostname + ':' + peer.port;
   }
 }

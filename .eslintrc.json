@@ -9,7 +9,7 @@
         "chai", "uuid", "axios",
         "express", "runtypes", "jsonwebtoken",
         "socket.io", "socket.io-client",
-        "mongoose", "lodash", "ip",
+        "mongoose", "lodash",
         "node-machine-id", "serve-static",
         "connect-history-api-fallback"
       ]

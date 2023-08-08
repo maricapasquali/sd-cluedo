@@ -153,7 +153,7 @@ export default defineComponent({
       },
     },
   },
-  created() {
+  mounted() {
     this.connectSocketLikeGamer();
     const gameId = (this.$router.currentRoute.value.params.id || '') as string;
     this.getStartedGame(gameId);

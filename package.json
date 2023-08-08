@@ -5,6 +5,7 @@
   "scripts": {
     "install:peer-ui": "cd ./peer/ui && npm install && cd ../../",
     "build": "copyfiles -E **/sslcert/* build && cd ./peer/ui && npm run build && cd ../../ && tsc --build",
+    "build:discovery": "copyfiles -E **/sslcert/* build && tsc --build",
     "test": "npm test -ws",
     "coverage": "npm run coverage -ws",
     "lint": "gts lint",
@@ -27,7 +28,6 @@
     "@types/chai": "^4.3.5",
     "@types/connect-history-api-fallback": "^1.5.0",
     "@types/express": "^4.17.17",
-    "@types/ip": "^1.1.0",
     "@types/jsonwebtoken": "^9.0.2",
     "@types/lodash": "^4.14.195",
     "@types/mocha": "^10.0.1",
@@ -52,7 +52,6 @@
     "dotenv": "^16.3.1",
     "dotenv-expand": "^10.0.0",
     "express": "^4.18.2",
-    "ip": "^2.0.0",
     "jsonwebtoken": "^9.0.0",
     "lodash": "^4.17.21",
     "mongoose": "^7.3.3",

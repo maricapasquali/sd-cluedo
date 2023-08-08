@@ -1,6 +1,7 @@
 import {DocCluedoGame} from './mongoose/schemas';
 
 export interface GameManager {
+  gameId: string;
   game(filters?: {status?: string; gamer?: string}): Promise<DocCluedoGame>;
   findGamer(gamerId: string): Promise<Gamer | undefined>;
   isInRound(gamerId: string): Promise<boolean>;
@@ -21,6 +22,7 @@ export interface GameManager {
   leave(gamerId?: string): Promise<Gamer[]>;
   passRoundToNext(gamerId?: string): Promise<string | undefined>;
   stopGame(): Promise<boolean>;
+  moveCharacterIn(gamerId: string, housePart: string): Promise<boolean>;
 }
 
 export interface GamesManager {

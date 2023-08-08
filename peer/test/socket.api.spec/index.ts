@@ -68,7 +68,7 @@ describe('Socket API', function () {
         uppedServers.push(httpsWithSocket);
         socketServer = httpsWithSocket.socketServer;
         httpsWithSocket.httpsServer
-          .listen(port, mePeer.address, () => {
+          .listen(port, mePeer.hostname, () => {
             logger.debug('Listening on ' + peerServerAddress);
             connectionToPeerServer({
               myPeer: mePeer,

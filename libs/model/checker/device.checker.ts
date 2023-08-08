@@ -14,7 +14,7 @@ export const CDevice = Record({
 });
 
 export const CPeer = Record({
-  identifier: identifierConstraint,
+  identifier: String,
   hostname: String,
   address: addressConstraint,
   protocol: String.withConstraint(s => s === Peers.Protocol.HTTPS, {

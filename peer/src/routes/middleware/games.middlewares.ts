@@ -105,6 +105,7 @@ export function handlerBadRequest(
             message: 'content-type must be text/plain',
           });
         }
+        req.body = JSON.stringify(req.body) === '{}' ? '' : req.body;
         const possibleCards: string[] = [
           '',
           ...Object.values(RoomName),

@@ -72,18 +72,21 @@ export function getGames(
   res: Response,
   next: NextFunction
 ): void {
+  const isPeer = !!req.headers['x-peer-address'];
   MongoDBGamesManager.getGames(req.query.status as string)
-    .then(games =>
+    .then(games => {
       OkSender.json(
         res,
-        games.map(g =>
-          (g.status as CluedoGames.Status.STARTED) ===
-          CluedoGames.Status.STARTED
-            ? getStartedCluedoGame(g)
-            : g
-        )
-      )
-    )
+        isPeer
+          ? games
+          : games.map(g =>
+              (g.status as CluedoGames.Status.STARTED) ===
+              CluedoGames.Status.STARTED
+                ? getStartedCluedoGame(g)
+                : g
+            )
+      );
+    })
     .catch(next);
 }
 

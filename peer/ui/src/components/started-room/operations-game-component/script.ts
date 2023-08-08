@@ -859,7 +859,7 @@ export default defineComponent({
         );
     },
   },
-  created() {
+  mounted() {
     this.characters = this.game.characters?.map(w => w.name) || [];
     this.rooms = this.game.rooms?.map(w => w.name) || [];
     this.weapons = this.game.weapons?.map(w => w.name) || [];

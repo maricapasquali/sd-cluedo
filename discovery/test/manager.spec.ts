@@ -27,11 +27,11 @@ describe('Discovery Manager', () => {
 
   it('#updatePeer()', () => {
     should.exist(PeersManager.findPeer(peer.identifier));
-    PeersManager.updatePeer(peer.identifier, Peers.Status.SHAREABLE);
+    PeersManager.updatePeer(peer.identifier, Peers.Status.OFFLINE);
     PeersManager.peers.should.have.lengthOf(1);
     PeersManager.findPeer(peer.identifier)
       ?.should.have.property('status')
-      .equal(Peers.Status.SHAREABLE);
+      .equal(Peers.Status.OFFLINE);
   });
 
   it('#removePeer()', () => {

@@ -71,7 +71,7 @@ export default function ({
               "Event '%s' (update status peer)",
               DiscoveryPeerEvent.PEER
             );
-            _peer.should.have.property('status').equal(Peers.Status.SHAREABLE);
+            _peer.should.have.property('status').equal(Peers.Status.OFFLINE);
             resolve(200);
           } catch (err) {
             logger.error(err);
@@ -83,7 +83,7 @@ export default function ({
     const updateStatusPromise = axiosInstance
       .patch(
         RestAPIRouteName.PEER,
-        {status: Peers.Status.SHAREABLE},
+        {status: Peers.Status.OFFLINE},
         {
           headers: {'x-forwarded-for': peer.address},
           urlParams: {
@@ -92,7 +92,7 @@ export default function ({
         }
       )
       .then(res => {
-        peer.status = Peers.Status.SHAREABLE;
+        peer.status = Peers.Status.OFFLINE;
         return res.status;
       });
     Promise.all([...receiver, updateStatusPromise])

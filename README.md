@@ -5,7 +5,7 @@ The project consists in the design and implementation of a distributed version o
 
 In this version of the game, users can create or join games created by other users.
 Initially a waiting "room" is created, in which users wait for the arrival of other users.
-As soon as the minimum number of gamers is reached, i.e. 3, the game can be started by the gamer who entered first.
+As soon as the minimum number of gamers is reached, i.e. 3, the game can be started by any gamer in the game.
 The game can have up to 6 players.
 
 During his turn, a gamer can:
@@ -33,6 +33,7 @@ RESTful API and socket event specifications are provided via Swagger:
 
 - [CluedoSocketAPI](https://app.swaggerhub.com/apis/marica.pasquali/CluedoSocketAPI/1.0.0) (AsyncAPI)
 
+Internally the peers have a client server architecture, so they can work in standalone mode.
 ### Peer
 
 Each peer consists of a server side and a client side.
@@ -44,13 +45,17 @@ The client side allows the user to play through a graphical interface, which com
 
 The Discovery Server allows newly started peers to know the addresses of other peers and after that, the peer can communicate with other peers through REST API and/or socket connections.
 Registration of peers (in an 'online' state) to the server occurs immediately after the server side of the peer is started.
-Upon creation of a game, the status of the peer changes to 'shareable'.
-The peer's status changes back to 'online' if they have no more games to share.
 In case of connection errors and therefore in case the peer is no longer reachable, the status of the peer will be set to 'offline'.
 
 ## Deployment in production mode
 
 ### Local
+
+#### Requirement
+- [Node.JS](https://nodejs.org/en/download)
+- [MongoDB](https://www.mongodb.com/try/download/community)
+
+#### Installation and build
 
 ```bash
 npm install
@@ -58,7 +63,8 @@ npm run install:peer-ui
 npm run build
 ```
 
-Discovery server
+#### Run
+##### Discovery server
 
 ```bash
 PORT=<some-free-port> npm start -w discovery
@@ -68,19 +74,24 @@ Defaults:
 
 - ```PORT=3000```
 
-Peer
+##### Peer
 
 ```bash
-PORT=<some-free-port> DISCOVERY_ADDRESS=<https-address-of-discovery-server> npm start -w peer
+MONGODB_ADDRESS=<database-uri-connection> PORT=<some-free-port> DISCOVERY_SERVER_ADDRESS=<https-address-of-discovery-server> npm start -w peer
 ```
 
 Defaults:
-
+- ```MONGODB_ADDRESS=mongodb://localhost:27017/cluedo```
 - ```PORT=3001```
 
-- ```DISCOVERY_ADDRESS=https://localhost:3000```
+- ```DISCOVERY_SERVER_ADDRESS=https://localhost:3000```
 
-### Docker
+
+### Docker 
+
+Being a p2p architecture, the applications (discovery peers and peers) should be installed on different machines.
+To simulate this type of installation is used _**[Docker](https://docs.docker.com/)**_.
+
 
 #### Build and start all project
 
@@ -98,7 +109,7 @@ Defaults:
 
 #### Build and start single components
 
-Discovery server
+##### Discovery server
 
 ```bash
 bash ./deploy-scripts/discovery.build.sh
@@ -110,7 +121,7 @@ Defaults:
 
 - ```<host-port-discovery-server> = 3000```
 
-Peer
+##### Peer
 
 ```bash
 bash ./deploy-scripts/peer.build.sh

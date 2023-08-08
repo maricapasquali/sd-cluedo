@@ -114,7 +114,7 @@ describe('Discovery Endpoint', () => {
             const peersWithMinDevices = peers
               .map((p, i) => Object.assign(p, {nDevices: nDevices[i]}))
               .filter(p => p.nDevices === minDevices)
-              .map(p => p.address);
+              .map(p => p.hostname);
             res.request.host.should.be.oneOf(peersWithMinDevices);
             done();
           })

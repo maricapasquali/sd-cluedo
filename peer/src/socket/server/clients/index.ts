@@ -18,7 +18,7 @@ export namespace Clients {
   export function real(server: Server): Socket[] {
     const connectedSocket: Socket[] = all(server);
     const _peerSocket: Socket[] = peer(server);
-    return connectedSocket.filter(s => !_peerSocket.includes(s));
+    return connectedSocket.filter(s => !sids(_peerSocket).includes(s.id));
   }
   export function gamer(server: Server, gameId: string): Socket[] {
     return real(server).filter(

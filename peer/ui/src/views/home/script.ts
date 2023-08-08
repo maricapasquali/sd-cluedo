@@ -126,7 +126,7 @@ export default defineComponent({
       return;
     }
   },
-  created() {
+  mounted() {
     socket
       .connectLike()
       .on('connect', () => {

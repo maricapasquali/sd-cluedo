@@ -22,7 +22,7 @@ describe('Socket API', () => {
     address: '127.0.0.8',
     port: 3010,
     status: Peers.Status.ONLINE,
-    hostname: 'host-7',
+    hostname: 'localhost',
   };
   const port: number = Number(process.env.PORT) || 3000;
   const discoveryServerAddress: string = 'https://localhost:' + port;
