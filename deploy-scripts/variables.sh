@@ -8,6 +8,8 @@ prefix_image=cluedo/
 
 network_name=sd-cluedo-network
 
+host_hostname=$(hostname)
+
 discovery_image_name=$prefix_image'discovery'
 discovery_container_name=cluedo-discovery
 discovery_hostname=discovery

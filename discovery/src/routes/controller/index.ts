@@ -40,7 +40,9 @@ export function baseHandler(
           baseURL: url,
           timeout: 2000,
         }).head(url);
-        return Promise.resolve(url);
+        return Promise.resolve(
+          process.env.DOCKER_BIND_PORT ? (connectedPeer as any).hostUrl : url
+        );
       } catch (err: any) {
         if (!(err instanceof AxiosError)) {
           return Promise.reject(err);

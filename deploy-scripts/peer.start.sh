@@ -38,7 +38,7 @@ do
     echo 'Run container '$container_name' with hostname '$hostname' to port '$peer_external_port':'$peer_internal_port
 
     docker run --rm --name $container_name -d --network $network_name --hostname $hostname -p $peer_external_port:$peer_internal_port \
-    -e DISCOVERY_SERVER_ADDRESS=$discovery_address $peer_image_name
+    -e DOCKER_BIND_HOSTNAME=$host_hostname -e DOCKER_BIND_PORT=$peer_external_port -e DISCOVERY_SERVER_ADDRESS=$discovery_address $peer_image_name
 
     ((peer_external_port+=1))
 done

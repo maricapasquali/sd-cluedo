@@ -49,6 +49,13 @@ dns.resolve4(os.hostname(), (err, addresses) => {
     status: Peers.Status.ONLINE,
   };
 
+  if (process.env.DOCKER_BIND_PORT) {
+    const bindPort = Number(process.env.DOCKER_BIND_PORT);
+    const bindHostname = process.env.DOCKER_BIND_HOSTNAME || 'localhost';
+    (myPeer as any).hostUrl =
+      myPeer.protocol + '://' + bindHostname + ':' + bindPort;
+  }
+
   logger.debug(myPeer);
 
   mongoose.connect(mongodbAddress).then(
