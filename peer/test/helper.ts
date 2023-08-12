@@ -10,7 +10,7 @@ import {
 import * as express from 'express';
 import routes from '../src/routes';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
-import {Peers} from '@model';
+import {CluedoGames, GamerElements, Peers} from '@model';
 import {PeerServerManager} from '../src/managers/peers-servers';
 import {v4 as uuid} from 'uuid';
 import {Server} from 'socket.io';
@@ -19,6 +19,89 @@ import {createPeerServerStub} from '../src/socket/client';
 import {SocketChecker} from '../src/socket/checker';
 import {getAuth} from '../src/socket/utils';
 import {createServerStub} from '@utils/socket';
+import {CluedoGameModel} from '../src/managers/games/mongoose/schemas';
+
+export function setSomeGamesInDB(peer: Peer): Promise<CluedoGame[]> {
+  const games: CluedoGame[] = [];
+  games.push({
+    identifier: uuid(),
+    gamers: [
+      {
+        identifier: uuid(),
+        characterToken: GamerElements.CharacterName.MRS_WHITE,
+        username: 'mario',
+        device: peer,
+      } as Gamer,
+      {
+        identifier: uuid(),
+        characterToken: GamerElements.CharacterName.MRS_PEACOCK,
+        username: 'carlo',
+        device: {
+          identifier: uuid(),
+          protocol: Peers.Protocol.HTTPS,
+          hostname: 'localhost',
+          port: 3001,
+        } as Peer,
+      } as Gamer,
+    ],
+    status: CluedoGames.Status.FINISHED,
+  } as CluedoGame);
+  games.push({
+    identifier: uuid(),
+    gamers: [
+      {
+        identifier: uuid(),
+        characterToken: GamerElements.CharacterName.MISS_SCARLET,
+        username: 'jake',
+        device: {
+          identifier: uuid(),
+          protocol: Peers.Protocol.HTTPS,
+          hostname: 'localhost',
+          port: 3002,
+        } as Peer,
+      } as Gamer,
+      {
+        identifier: uuid(),
+        characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+        username: 'gino',
+        device: peer,
+      } as Gamer,
+      {
+        identifier: uuid(),
+        characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+        username: 'gino',
+        device: peer,
+      } as Gamer,
+    ],
+    status: CluedoGames.Status.STARTED,
+  } as CluedoGame);
+
+  games.push({
+    identifier: uuid(),
+    gamers: [
+      {
+        identifier: uuid(),
+        characterToken: GamerElements.CharacterName.MRS_WHITE,
+        username: 'anna',
+        device: peer,
+      } as Gamer,
+      {
+        identifier: uuid(),
+        characterToken: GamerElements.CharacterName.MRS_PEACOCK,
+        username: 'carlo',
+        device: {
+          identifier: uuid(),
+          protocol: Peers.Protocol.HTTPS,
+          hostname: 'localhost',
+          port: 3001,
+        } as Peer,
+      } as Gamer,
+    ],
+    status: CluedoGames.Status.WAITING,
+  } as CluedoGame);
+
+  return CluedoGameModel.insertMany(games).then(() => games);
+}
 
 export const gamersAuthenticationTokens: {[gamerId: string]: string} = {};
 
@@ -43,7 +126,7 @@ export function createPeerServer(peer: Peer): HTTPSServerWithSocket {
     {
       options: httpsOptions,
       uses: [express.json(), express.text(), loggerHttp],
-      routes,
+      routes: routes({peer}),
       sets: {
         tokensManager: BasicTokenManager.create({
           issuer: Peers.url(peer),

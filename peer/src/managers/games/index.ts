@@ -29,4 +29,12 @@ export interface GamesManager {
   gameManagers(identifier: string): GameManager;
   createGame(game: CluedoGame): Promise<CluedoGame>;
   getGames(status?: string | string[]): Promise<CluedoGame[]>;
+  removeGamersOf(
+    deviceURL: string,
+    callback?: (
+      newGame: CluedoGame,
+      removedGamers: Gamer[],
+      oldRoundGamer: string
+    ) => void
+  ): Promise<CluedoGame[]>;
 }

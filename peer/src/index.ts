@@ -73,7 +73,7 @@ dns.resolve4(os.hostname(), (err, addresses) => {
   const serverConfig: HTTPSServerConfig = {
     options: httpsOptions,
     uses: [express.json(), express.text(), loggerHttp, history()],
-    routes,
+    routes: routes({peer: myPeer}),
     sets: {
       tokensManager: BasicTokenManager.create({
         issuer: Peers.url(myPeer),

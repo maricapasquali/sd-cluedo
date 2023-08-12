@@ -1,6 +1,5 @@
 import gamersActionsSpec from './gamers-actions.spec';
 
-import {Socket} from 'socket.io-client';
 import {Server} from 'socket.io';
 import {logger} from '@utils/logger';
 import {HTTPSServerWithSocket} from '@utils/https-server';
@@ -221,32 +220,32 @@ describe('Socket API', function () {
     });
   });
 
-  after(done => {
-    mongoose
-      .disconnect()
-      .then(() => {
-        logger.debug('Close connection with mongodb');
-        Object.values([...actualClients, ...peerLikeClients]).forEach(c =>
-          c.disconnect()
-        );
-        peerServerManager.sockets().forEach((s: Socket) => s.disconnect());
-        return Promise.all(
-          promises(
-            uppedServers.map(hs => hs.socketServer),
-            s => {
-              return resolve => {
-                s.close(() => {
-                  logger.debug('Close socket server');
-                  resolve();
-                });
-              };
-            }
-          )
-        );
-      })
-      .then(() => {
-        done();
-      })
-      .catch(done);
+  after(async () => {
+    await Promise.all(
+      promises(
+        [...actualClients, ...peerLikeClients, ...peerServerManager.sockets()],
+        s => resolve => s.on('disconnect', () => resolve()).disconnect()
+      )
+    );
+    logger.debug('Close sockets');
+    await new Promise<void>(resolve => setTimeout(() => resolve(), 100));
+    await Promise.all(
+      promises(
+        uppedServers.map(hs => hs.socketServer),
+        (s: Server) => {
+          return (resolve, reject) => {
+            s.close(err => {
+              if (err) reject(err);
+              else {
+                logger.debug('Close socket server');
+                resolve();
+              }
+            });
+          };
+        }
+      )
+    );
+    await mongoose.disconnect();
+    logger.debug('Close connection with mongodb');
   });
 });

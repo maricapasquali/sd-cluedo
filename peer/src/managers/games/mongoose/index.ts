@@ -1,4 +1,4 @@
-import {CluedoGames, GamerElements, Gamers} from '@model';
+import {CluedoGames, GamerElements, Gamers, Peers} from '@model';
 import {CluedoGameModel, DocCluedoGame} from './schemas';
 import {GameManager, GamesManager} from '../index';
 import * as _ from 'lodash';
@@ -372,5 +372,79 @@ export const MongoDBGamesManager = new (class implements GamesManager {
     return CluedoGameModel.find(filters).then(
       games => games.map(gs => gs.toObject()) as CluedoGame[]
     );
+  }
+
+  removeGamersOf(
+    deviceURL: string,
+    callback?: (
+      newGame: CluedoGame,
+      removedGamers: Gamer[],
+      oldRoundGamer: string
+    ) => void
+  ): Promise<CluedoGame[]> {
+    return CluedoGameModel.find({
+      status: {
+        $in: [CluedoGames.Status.WAITING, CluedoGames.Status.STARTED],
+      },
+    }).then(games => {
+      return Promise.all(
+        games
+          .filter(
+            g =>
+              g.gamers.filter(
+                gm => gm.device && Peers.url(gm.device as Peer) === deviceURL
+              ).length > 0
+          )
+          .map((game: DocCluedoGame) => {
+            const gamersToRemove = game.gamers.filter(
+              gm => Peers.url(gm.device as Peer) === deviceURL
+            );
+            const remainedGamers = game.gamers.filter(
+              gm => Peers.url(gm.device as Peer) !== deviceURL
+            );
+
+            if (
+              (game.status as CluedoGames.Status) ===
+                CluedoGames.Status.STARTED &&
+              remainedGamers.filter(gm =>
+                gm.role?.includes(Gamers.Role.PARTICIPANT)
+              ).length <= 1
+            ) {
+              game.status = CluedoGames.Status.FINISHED;
+            }
+
+            const _roundGame = game.roundGamer || '';
+            if (
+              (game.status as CluedoGames.Status) ===
+                CluedoGames.Status.STARTED &&
+              gamersToRemove.map(gm => gm.identifier).includes(_roundGame) &&
+              remainedGamers.filter(gm =>
+                gm.role?.includes(Gamers.Role.PARTICIPANT)
+              ).length > 1
+            ) {
+              let _nextPosition = game.gamers?.findIndex(
+                g => g.identifier === _roundGame
+              );
+              do {
+                _nextPosition = (_nextPosition + 1) % game.gamers.length;
+              } while (
+                game.gamers[_nextPosition].role?.includes(Gamers.Role.SILENT) ||
+                gamersToRemove
+                  .map(gm => gm.identifier)
+                  .includes(game.gamers[_nextPosition].identifier)
+              );
+              game.roundGamer = game.gamers[_nextPosition].identifier;
+            }
+
+            game.gamers = remainedGamers;
+            return game.save().then(newGame => {
+              const _newGame = newGame.toObject();
+              if (typeof callback === 'function')
+                callback(_newGame, gamersToRemove, _roundGame);
+              return _newGame;
+            });
+          })
+      );
+    });
   }
 })();

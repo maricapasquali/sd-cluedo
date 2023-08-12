@@ -29,42 +29,45 @@ import {PeerServerManager} from '../../../managers/peers-servers';
 import Action = QueryParameters.Action;
 import {CluedoGames} from '@model';
 import {getStartedCluedoGame} from '../../../utils';
+import {logger} from '@utils/logger';
 
 export function postGames(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  MongoDBGamesManager.createGame({
-    identifier: uuid(),
-    gamers: [req.body],
-  } as CluedoGame)
-    .then(waitingGame => {
-      const socketIo = AppGetter.socketServer(req);
-      if (socketIo) {
-        [
-          ...Clients.all(socketIo),
-          ...PeerServerManager.from(req).sockets(),
-        ].forEach(s => {
-          s.emit(
-            CluedoGameEvent.CLUEDO_NEW_GAME,
-            waitingGame as CluedoGameMessage
+  myPeer: Peer
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const _gamer: Gamer = {...req.body, device: myPeer};
+    MongoDBGamesManager.createGame({
+      identifier: uuid(),
+      gamers: [_gamer],
+    } as CluedoGame)
+      .then(waitingGame => {
+        logger.debug(`Add game ${JSON.stringify(waitingGame)}`);
+        const socketIo = AppGetter.socketServer(req);
+        if (socketIo) {
+          [
+            ...Clients.all(socketIo),
+            ...PeerServerManager.from(req).sockets(),
+          ].forEach(s => {
+            s.emit(
+              CluedoGameEvent.CLUEDO_NEW_GAME,
+              waitingGame as CluedoGameMessage
+            );
+          });
+        }
+        return catchableHandlerRequestPromise(() => {
+          const token: string = createTokenOf(
+            req,
+            waitingGame.gamers[0],
+            waitingGame.identifier
+          );
+          return CreatedSender.json(
+            res.header('x-access-token', ['Bearer', token].join(' ')),
+            waitingGame
           );
         });
-      }
-      return catchableHandlerRequestPromise(() => {
-        const token: string = createTokenOf(
-          req,
-          waitingGame.gamers[0],
-          waitingGame.identifier
-        );
-        return CreatedSender.json(
-          res.header('x-access-token', ['Bearer', token].join(' ')),
-          waitingGame
-        );
-      });
-    })
-    .catch(next);
+      })
+      .catch(next);
+  };
 }
 
 export function getGames(
@@ -161,35 +164,36 @@ export function patchGame(
 }
 
 export function postGamers(
-  req: Request,
-  res: Response,
-  next: NextFunction
-): void {
-  MongoDBGamesManager.gameManagers(req.params.id)
-    .addGamer(req.body)
-    .then(gamer => {
-      const socketIo = AppGetter.socketServer(req);
-      if (socketIo) {
-        [
-          ...Clients.all(socketIo),
-          ...PeerServerManager.from(req).sockets(),
-        ].forEach(s => {
-          s.emit(CluedoGameEvent.CLUEDO_NEW_GAMER, {
-            game: req.params.id,
-            gamer,
-          } as GamerMessage);
+  myPeer: Peer
+): (req: Request, res: Response, next: NextFunction) => void {
+  return (req: Request, res: Response, next: NextFunction) => {
+    const _gamer: Gamer = {...req.body, device: myPeer};
+    MongoDBGamesManager.gameManagers(req.params.id)
+      .addGamer(_gamer)
+      .then(gamer => {
+        logger.debug(`add gamer ${JSON.stringify(gamer)}`);
+        const socketIo = AppGetter.socketServer(req);
+        if (socketIo) {
+          [
+            ...Clients.all(socketIo),
+            ...PeerServerManager.from(req).sockets(),
+          ].forEach(s => {
+            s.emit(CluedoGameEvent.CLUEDO_NEW_GAMER, {
+              game: req.params.id,
+              gamer,
+            } as GamerMessage);
+          });
+        }
+        return catchableHandlerRequestPromise(() => {
+          const token: string = createTokenOf(req, gamer, req.params.id);
+          return CreatedSender.json(
+            res.header('x-access-token', ['Bearer', token].join(' ')),
+            gamer
+          );
         });
-      }
-
-      return catchableHandlerRequestPromise(() => {
-        const token: string = createTokenOf(req, gamer, req.params.id);
-        return CreatedSender.json(
-          res.header('x-access-token', ['Bearer', token].join(' ')),
-          gamer
-        );
-      });
-    })
-    .catch(next);
+      })
+      .catch(next);
+  };
 }
 
 export function deleteGamer(

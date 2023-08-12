@@ -1,5 +1,5 @@
 import {Document, model, Model, Schema} from 'mongoose';
-import {CluedoGames, Gamers, GamerElements} from '@model';
+import {CluedoGames, Gamers, GamerElements, Peers} from '@model';
 import * as net from 'net';
 
 export type DocCluedoGame = CluedoGame & Document;
@@ -70,6 +70,7 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
           },
           device: {
             type: {
+              _id: false,
               identifier: {
                 type: String,
                 required: true,
@@ -88,6 +89,15 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
                   message: props =>
                     `${props.value} is not a valid device address!`,
                 },
+              },
+              port: {
+                type: Number,
+                required: true,
+              },
+              protocol: {
+                type: String,
+                required: true,
+                enum: Object.values(Peers.Protocol),
               },
             },
             required: false,

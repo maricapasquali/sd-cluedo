@@ -1,11 +1,13 @@
 import mongoose from 'mongoose';
 import {MongoDBGamesManager} from '../../src/managers/games/mongoose';
 import {v4 as uuid} from 'uuid';
-import {Gamers, CluedoGames} from '@model';
+import {Gamers, CluedoGames, Peers} from '@model';
 import {logger} from '@utils/logger';
 import {should as shouldFunc} from 'chai';
 import gameManagerSpec from './game-manager.spec';
 import {GamerElements} from '@model';
+import {setSomeGamesInDB} from '../helper';
+import * as _ from 'lodash';
 
 const should = shouldFunc();
 
@@ -23,7 +25,9 @@ describe('Games Manager', function () {
       identifier: uuid(),
       hostname: 'pc mario',
       address: '192.168.1.3',
-    },
+      port: 3000,
+      protocol: Peers.Protocol.HTTPS,
+    } as Peer,
   };
 
   let game: CluedoGame = {
@@ -81,6 +85,39 @@ describe('Games Manager', function () {
 
   describe('#gameManagers(..)', () => {
     gameManagerSpec({game});
+  });
+
+  describe('#removeGamersOf(..)', () => {
+    const peer: Peer = {
+      identifier: uuid(),
+      hostname: 'localhost',
+      port: 3000,
+      protocol: Peers.Protocol.HTTPS,
+      status: Peers.Status.ONLINE,
+    };
+    const address = Peers.url(peer);
+    before(done => {
+      setSomeGamesInDB(peer)
+        .then(games => {
+          logger.debug(games);
+          _.flatten(
+            games.map(g => g.gamers.map(gm => gm.device))
+          ).should.deep.contain(peer);
+          done();
+        })
+        .catch(done);
+    });
+    it('should remove all gamers (in the waiting/started games) of the given peer', done => {
+      MongoDBGamesManager.removeGamersOf(address)
+        .then(games => {
+          logger.debug(games);
+          _.flatten(
+            games.map(g => g.gamers.map(gm => gm.device))
+          ).should.not.deep.contain(peer);
+          done();
+        })
+        .catch(done);
+    });
   });
 
   after(done => {

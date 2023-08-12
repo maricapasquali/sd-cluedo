@@ -12,7 +12,7 @@ import {
   RestAPIRouteName as DiscoveryRestAPIRouteName,
 } from '@discovery-peers-routes';
 import {AxiosError} from 'axios';
-import {registerGameEventHandlers} from '../handlers';
+import {registerGameEventHandlers, onDisconnection} from '../handlers/peer';
 
 type PeerClientConfig = {
   myPeer: Peer;
@@ -57,6 +57,10 @@ export function createPeerServerStub(
           });
         })
         .catch(err => logger.error(err));
+    })
+    .on('disconnect', () => {
+      logger.info(Peers.url(myPeer) + ': Disconnect from ' + serverAddress);
+      onDisconnection(serverAddress, mySocketServer);
     })
     .on('connect_error', err => {
       logger.error(err);

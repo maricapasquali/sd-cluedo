@@ -22,7 +22,7 @@ import mongoose from 'mongoose';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {CluedoGames, GamerElements} from '@model';
+import {CluedoGames, GamerElements, Peers} from '@model';
 import {gamersAuthenticationTokens} from '../../helper';
 import {MongoDBGamesManager} from '../../../src/managers/games/mongoose';
 
@@ -39,6 +39,13 @@ describe('Rest API', function () {
   const axiosInstance: AxiosInstance = createAxiosInstance({
     baseURL: peerServerAddress,
   });
+  const peer: Peer = {
+    identifier: uuid(),
+    protocol: Peers.Protocol.HTTPS,
+    hostname: 'localhost',
+    port,
+    status: Peers.Status.ONLINE,
+  };
   let httpsServer: Server;
 
   before(done => {
@@ -53,7 +60,9 @@ describe('Rest API', function () {
         httpsServer = createHTTPSServer({
           options: httpsOptions,
           uses: [express.json(), express.text(), loggerHttp],
-          routes,
+          routes: routes({
+            peer,
+          }),
           sets: {
             tokensManager: BasicTokenManager.create({
               issuer: peerServerAddress,
