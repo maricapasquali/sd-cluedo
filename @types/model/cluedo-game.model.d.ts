@@ -1,3 +1,6 @@
+/**
+ * It represents a generic cluedo game.
+ */
 declare interface CluedoGame {
   identifier: string;
   gamers: Gamer[];

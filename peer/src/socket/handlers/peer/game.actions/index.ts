@@ -183,7 +183,9 @@ export function onConfutation(
         card:
           s.handshake.auth.gamerId === message.roundGamer
             ? message.card
-            : message.card.length > 0,
+            : typeof message.card === 'string'
+            ? message.card.length > 0
+            : message.card,
       } as ConfutationMessage
     )
   );
