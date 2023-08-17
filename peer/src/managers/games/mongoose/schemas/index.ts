@@ -238,7 +238,7 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
 );
 
 CluedoGameSchema.set('toObject', {
-  transform: function (doc, ret) {
+  transform: (doc, ret) => {
     delete ret._id;
     delete ret.__v;
   },

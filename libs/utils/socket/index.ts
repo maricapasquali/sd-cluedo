@@ -10,10 +10,17 @@ type SocketAuthorization =
 
 declare module 'socket.io-client' {
   interface Socket {
+    /**
+     * Updates the authorization information on the socket and reconnects it.
+     * @param auth new authorization information
+     */
     connectLike: (auth?: SocketAuthorization) => Socket;
   }
 }
 
+/**
+ * Implementation of the method: _{@link connectLike}_.
+ */
 Socket.prototype.connectLike = function (auth?: SocketAuthorization): Socket {
   this.auth = auth || {};
   this.disconnect().connect();

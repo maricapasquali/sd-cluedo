@@ -4,13 +4,41 @@ import {Request} from 'express';
 import {Peers} from '@model';
 
 export type PeerServer = {peer: Peer; socket: Socket};
+
+/**
+ * It represents a generic peer server manager, that is a peer
+ * on startup it connects (via sockets) to other peers which in
+ * this case act as servers.
+ */
 export interface IPeerServerManager {
+  /**
+   * Add a pair peer-socket of the given peer.
+   * @param peer peer to add.
+   * @param socket socket to add.
+   */
   addPeer(peer: Peer, socket: Socket): void;
+
+  /**
+   * Remove a pair peer-socket of the given peer.
+   * @param id identifier of the peer to remove.
+   */
   removePeer(id: string): void;
+
+  /**
+   * Retrieve all sockets of all peers acting as a server.
+   */
   sockets(): Socket[];
+
+  /**
+   * Find a pair peer-socket given a peer identifier.
+   * @param identifier identifier of the peer to find.
+   */
   find(identifier: string): PeerServer | undefined;
 }
 
+/**
+ * Implementation of _IPeerServerManager_.
+ */
 export class PeerServerManager implements IPeerServerManager {
   readonly peers: PeerServer[] = [];
   addPeer(peer: Peer, socket: Socket) {
@@ -44,6 +72,11 @@ export class PeerServerManager implements IPeerServerManager {
 }
 
 export namespace PeerServerManager {
+  /**
+   * Retrieve a peer server manager from express request.
+   * @param req express request.
+   * @throws Error when a peer server manager is not set.
+   */
   export function from(req: Request): IPeerServerManager {
     const peerServerManager: IPeerServerManager =
       req.app.get('peerServerManager');
