@@ -13,6 +13,10 @@ import CardsDeck = GamerElements.CardsDeck;
 import GameStatus = CluedoGames.Status;
 import GamerRole = Gamers.Role;
 
+/**
+ * Implementation of _{@link GameManager}_.
+ * This particular implementation uses MongoDB as storage.
+ */
 export class MongoDBGameManager implements GameManager {
   private readonly _gameId: string;
 
@@ -330,6 +334,10 @@ export class MongoDBGameManager implements GameManager {
   }
 }
 
+/**
+ * Implementation and instantiation of _{@link GamesManager}_.
+ * This particular implementation uses MongoDB as storage.
+ */
 export const MongoDBGamesManager = new (class implements GamesManager {
   readonly _gameManagers: {[gameId: string]: GameManager} = {};
 
