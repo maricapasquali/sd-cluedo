@@ -62,7 +62,6 @@ export function handlerUnauthorizedRequest(
   next: NextFunction
 ): void {
   catchableHandlerRequestPromise(() => {
-    const {id} = req.params;
     const authorization = req.headers.authorization;
     if (!authorization) {
       return UnauthorizedSender.json(res, {
@@ -72,7 +71,7 @@ export function handlerUnauthorizedRequest(
     const {scheme, parameters} = HeadersFormatter.authorization(req);
     if (
       scheme !== 'Bearer' ||
-      !AppGetter.tokensManger(req).checker(id, parameters)
+      !AppGetter.tokensManger(req).checker(parameters)
     ) {
       return UnauthorizedSender.json(res, {
         message: 'token is not a bearer token or it is not present on server',

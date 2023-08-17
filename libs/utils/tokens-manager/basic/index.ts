@@ -7,6 +7,12 @@ export type BasicTokenManagerConfig = {
   publicKey: Buffer;
   privateKey: Buffer;
 };
+
+/**
+ * Implementation of _{@link ITokensManager}_ that uses JSON Web Tokens as
+ * access token.
+ * @see https://jwt.io/introduction
+ */
 export class BasicTokenManager implements ITokensManager {
   private readonly privateKey: any;
   private readonly publicKey: any;
@@ -16,7 +22,6 @@ export class BasicTokenManager implements ITokensManager {
     this.publicKey = publicKey;
     this.privateKey = privateKey;
     this.signOptions = {
-      // algorithm: 'RS256',
       header: {
         alg: 'RS256',
         typ: 'JWT',
@@ -54,7 +59,7 @@ export class BasicTokenManager implements ITokensManager {
     }
   }
 
-  checker(id: string, accessToken: string): boolean {
+  checker(accessToken: string): boolean {
     try {
       verify(accessToken, this.publicKey);
       return true;
@@ -63,25 +68,23 @@ export class BasicTokenManager implements ITokensManager {
     }
   }
   validity(id: string, accessToken: string): boolean {
-    try {
-      const payload = decode(accessToken, this.publicKey) as unknown as Payload;
-      return payload.identifier === id;
-    } catch (e) {
-      return false;
-    }
+    return this.payload(accessToken).identifier === id;
   }
 
+  /**
+   * Retrieve the decoded access token (i.e. payload data) of _id_
+   * if access token is valid as token.
+   * @param id identifier of token.
+   * @param accessToken access token to decode.
+   */
   decode(id: string, accessToken: string): Payload | false {
-    try {
-      const payload = this.payload(accessToken);
-      return (payload as unknown as Payload).identifier === id
-        ? (payload as unknown as Payload)
-        : false;
-    } catch (e) {
-      return false;
-    }
+    return this.validity(id, accessToken) ? this.payload(accessToken) : false;
   }
 
+  /**
+   * Returns the decoded payload without verifying if the signature of token is valid.
+   * @param accessToken access token to decode.
+   */
   payload(accessToken: string): Payload {
     try {
       return decode(accessToken, this.publicKey) as unknown as Payload;
