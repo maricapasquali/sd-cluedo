@@ -1,7 +1,7 @@
 import {Server, Socket} from 'socket.io';
 import {logger} from '@utils/logger';
 
-import PeersManager from '../managers/peers';
+import DiscoveryPeersManager from '../managers/peers';
 import PeersDevicesManager from '../managers/peers/devices';
 import {Peers} from '@model';
 import {DiscoveryPeerEvent} from '@discovery-peers-routes';
@@ -34,11 +34,13 @@ export default function handlerSocket(socketServer: Server): void {
         PeersDevicesManager.removeNumberOfPeerDevices(
           socket.handshake.auth.peerId
         );
-        PeersManager.updatePeer(
+        DiscoveryPeersManager.updatePeer(
           socket.handshake.auth.peerId,
           Peers.Status.OFFLINE
         );
-        const peer = PeersManager.findPeer(socket.handshake.auth.peerId);
+        const peer = DiscoveryPeersManager.findPeer(
+          socket.handshake.auth.peerId
+        );
         if (peer) {
           socketServer.emit(DiscoveryPeerEvent.PEER, peer as PeerMessage);
         }

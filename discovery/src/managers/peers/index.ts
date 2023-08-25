@@ -1,7 +1,7 @@
 /**
  * It represents a generic manager of peers.
  */
-interface IPeersManager {
+interface DiscoveryManager {
   /**
    * List of registered peer on discovery server.
    */
@@ -34,9 +34,11 @@ interface IPeersManager {
 }
 
 /**
- * Implementation and instantiation of _IPeersManager_.
+ * Implementation and instantiation of _DiscoveryManager_.
  */
-const PeersManager: IPeersManager = new (class implements IPeersManager {
+const DiscoveryPeersManager: DiscoveryManager = new (class
+  implements DiscoveryManager
+{
   private readonly _peers: Peer[] = [];
 
   get peers(): Peer[] {
@@ -75,4 +77,4 @@ const PeersManager: IPeersManager = new (class implements IPeersManager {
   }
 })();
 
-export default PeersManager;
+export default DiscoveryPeersManager;

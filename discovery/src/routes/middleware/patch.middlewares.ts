@@ -6,7 +6,7 @@ import {
 } from '@utils/rest-api';
 import * as net from 'net';
 import {Peers} from '@model';
-import PeersManager from '../../managers/peers';
+import DiscoveryPeersManager from '../../managers/peers';
 
 import {
   BadRequestSender,
@@ -56,7 +56,7 @@ export function handlerNotFoundRequest(
 ): void {
   catchableHandlerRequestPromise(() => {
     const {id} = req.params;
-    res.locals.peer = PeersManager.findPeer(id);
+    res.locals.peer = DiscoveryPeersManager.findPeer(id);
     if (!res.locals.peer) {
       return NotFoundSender.json(res, {
         message: 'resource ' + id + ' not found',
