@@ -19,7 +19,7 @@ then
 fi
 
 # Run a new discovery container
-docker run --rm --name $discovery_container_name -d \
+docker run --name $discovery_container_name -d \
 --network $network_name --hostname $discovery_hostname \
 -e DOCKER_BIND_HOSTNAME=$host_hostname -e DOCKER_BIND_PORT=$discovery_external_port -p $discovery_external_port:$discovery_internal_port $discovery_image_name
 
