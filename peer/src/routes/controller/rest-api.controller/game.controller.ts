@@ -179,7 +179,7 @@ export const EndRoundRequest: GamerManagerRequest =
       gameId,
     }: ActionOptions): void {
       gameManager
-        .passRoundToNext(gamer)
+        .passRoundToNext()
         .then(nextGamer => {
           const serverIo = AppGetter.socketServer(req);
           if (nextGamer) {

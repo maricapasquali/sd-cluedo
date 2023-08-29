@@ -2,7 +2,7 @@ import {CluedoGames, GamerElements, Gamers, Peers} from '@model';
 import {CluedoGameModel, DocCluedoGame} from './schemas';
 import {GameManager, GamesManager} from '../index';
 import * as _ from 'lodash';
-import {NotFoundError, NotInRoundError} from './errors';
+import {NotFoundError} from './errors';
 import HousePart = GamerElements.HousePart;
 import RoomName = GamerElements.RoomName;
 import CharacterName = GamerElements.CharacterName;
@@ -256,23 +256,18 @@ export class MongoDBGameManager implements GameManager {
   passRoundToNext(gamerId?: string): Promise<string | undefined> {
     return this.game().then(game => {
       const _gameObj = game.toObject();
-      const gamerRoundId = game.roundGamer;
-      if (gamerId && gamerId !== gamerRoundId) {
-        throw new NotInRoundError(gamerId);
-      }
       if (
         game.gamers.filter(gm => gm.role?.includes(GamerRole.PARTICIPANT))
           .length <= 1
       ) {
         return undefined;
       }
-      let _nextPosition = game.gamers?.findIndex(
-        g => g.identifier === gamerRoundId
-      );
-      do {
-        _nextPosition = (_nextPosition + 1) % game.gamers.length;
-      } while (game.gamers[_nextPosition].role?.includes(GamerRole.SILENT));
-      game.roundGamer = game.gamers[_nextPosition].identifier;
+      if (gamerId) {
+        game.roundGamer = gamerId;
+      } else {
+        const _nextPosition = this.indexOfNextGamerOf(game.roundGamer, game);
+        game.roundGamer = game.gamers[_nextPosition].identifier;
+      }
       return game
         .save()
         .then(newGame =>
@@ -303,6 +298,16 @@ export class MongoDBGameManager implements GameManager {
     });
   }
 
+  private indexOfNextGamerOf(
+    gamerId: string | undefined,
+    game: CluedoGame
+  ): number {
+    let _nextPosition = game.gamers?.findIndex(g => g.identifier === gamerId);
+    do {
+      _nextPosition = (_nextPosition + 1) % game.gamers.length;
+    } while (game.gamers[_nextPosition].role?.includes(GamerRole.SILENT));
+    return _nextPosition;
+  }
   private randIndex(lengthOfArray: number): number {
     return Math.floor(Math.random() * (lengthOfArray - 1));
   }
