@@ -1,4 +1,4 @@
-import {CluedoGames, GamerElements, Gamers} from '@model';
+import {CluedoGame, GameElements, Gamer} from '@model';
 import {QueryParameters} from '../../../../src/routes/parameters';
 import {logger} from '@utils/logger';
 import {MongoDBGamesManager} from '../../../../src/managers/games/mongoose';
@@ -8,8 +8,8 @@ import {ResponseStatus} from '@utils/rest-api/responses';
 import {NotFoundError} from '../../../../src/managers/games/mongoose/errors';
 import {AxiosInstance} from 'axios';
 import {should as shouldFunc} from 'chai';
-import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
-import CharacterName = GamerElements.CharacterName;
+import RoomWithSecretPassage = GameElements.RoomWithSecretPassage;
+import CharacterName = GameElements.CharacterName;
 const should = shouldFunc();
 
 type PatchGameActionConfig = {
@@ -40,9 +40,9 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
   }
 
   const assumption: Suggestion = {
-    character: GamerElements.CharacterName.MISS_SCARLET,
-    weapon: GamerElements.WeaponName.CANDLESTICK,
-    room: GamerElements.RoomName.LIVING_ROOM,
+    character: GameElements.CharacterName.MISS_SCARLET,
+    weapon: GameElements.WeaponName.CANDLESTICK,
+    room: GameElements.RoomName.LIVING_ROOM,
   };
 
   before(() => {
@@ -58,7 +58,7 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
         should.exist(startedGame);
         startedGame.should.have
           .property('status')
-          .equal(CluedoGames.Status.STARTED);
+          .equal(CluedoGame.Status.STARTED);
         startedGame.should.not.have.property('solution');
         startedGame.should.have.property('weapons').that.is.a('array').and.is
           .not.empty;
@@ -78,8 +78,8 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
         response.data.should.be
           .a('string')
           .and.oneOf([
-            ...Object.values(GamerElements.RoomName),
-            ...Object.values(GamerElements.LobbyName),
+            ...Object.values(GameElements.RoomName),
+            ...Object.values(GameElements.LobbyName),
           ]);
         done();
       })
@@ -91,7 +91,7 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
       structuredNotes: [
         {
           name: CharacterName.MRS_PEACOCK,
-          suspectState: GamerElements.SuspectState.EXCLUDED,
+          suspectState: GameElements.SuspectState.EXCLUDED,
           confutation: true,
         },
       ] as StructuredNoteItem[],
@@ -152,9 +152,9 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
   });
   it(QueryParameters.Action.MAKE_ACCUSATION + ' action', done => {
     const accusation: Suggestion = {
-      character: GamerElements.CharacterName.MRS_PEACOCK,
-      weapon: GamerElements.WeaponName.LEAD_PIPE,
-      room: GamerElements.RoomName.BALLROOM,
+      character: GameElements.CharacterName.MRS_PEACOCK,
+      weapon: GameElements.WeaponName.LEAD_PIPE,
+      room: GameElements.RoomName.BALLROOM,
     };
     performActionInRound(QueryParameters.Action.MAKE_ACCUSATION, accusation)
       .then(response => {
@@ -201,8 +201,8 @@ export default function ({axiosInstance}: PatchGameActionConfig): void {
         accessToken.should.contain('Bearer');
         response.data.should.be
           .a('array')
-          .that.contain(Gamers.Role.SILENT)
-          .and.not.contain(Gamers.Role.PARTICIPANT);
+          .that.contain(Gamer.Role.SILENT)
+          .and.not.contain(Gamer.Role.PARTICIPANT);
 
         const _roundGamer = game.gamers?.find(
           g => gamerInRound === g.identifier

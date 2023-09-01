@@ -3,7 +3,7 @@ import axios from 'axios';
 import {sessionStoreManager} from '@/services/sessionstore';
 import socket from '@/services/socket';
 import routesNames from '@/router/routesNames';
-import {CluedoGames} from '@model';
+import {CluedoGame} from '@model';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
 import {CluedoGameEvent} from '@peer/socket/events';
 
@@ -13,10 +13,10 @@ export default defineComponent({
     return {
       games: [] as CluedoGame[],
       loading: true,
-      filteredStatus: CluedoGames.Status.WAITING,
+      filteredStatus: CluedoGame.Status.WAITING,
       optionsStatus: [
         {value: '', text: 'NO FILTER'},
-        ...Object.values(CluedoGames.Status).map(s => ({
+        ...Object.values(CluedoGame.Status).map(s => ({
           value: s,
           text: s.toUpperCase(),
         })),
@@ -24,8 +24,8 @@ export default defineComponent({
     };
   },
   computed: {
-    CluedoGames() {
-      return CluedoGames;
+    CluedoGame() {
+      return CluedoGame;
     },
     filteredGames(): CluedoGame[] {
       return this.filteredStatus.length > 0
@@ -118,7 +118,7 @@ export default defineComponent({
       console.debug('My game', sessionStoreManager.game);
       this.$router.replace({
         name:
-          sessionStoreManager.game.status === CluedoGames.Status.STARTED
+          sessionStoreManager.game.status === CluedoGame.Status.STARTED
             ? routesNames.STARTED_ROOM
             : routesNames.WAITING_ROOM,
         params: {id: sessionStoreManager.game.identifier},

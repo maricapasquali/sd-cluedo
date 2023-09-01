@@ -1,12 +1,12 @@
 import {Array, Record, String, Boolean} from 'runtypes';
 import {characterConstraint, identifierConstraint} from './constraints';
-import {GamerElements} from '../game-element.model';
-import {Gamers} from '../gamer.model';
+import {GameElements} from '../game-element.model';
+import {Gamer} from '../gamer.model';
 import {CDevice} from './device.checker';
-import SuspectState = GamerElements.SuspectState;
+import SuspectState = GameElements.SuspectState;
 import {CSuggestion} from './game-element.checker';
-import Card = GamerElements.Card;
-import CardsDeck = GamerElements.CardsDeck;
+import Card = GameElements.Card;
+import CardsDeck = GameElements.CardsDeck;
 
 export const CStructuredNoteItem = Record({
   name: String.withConstraint(s => CardsDeck.includes(s as Card), {
@@ -37,10 +37,10 @@ export const CGamer = Record({
       roles => {
         if (!roles) return true;
         return roles?.every(r =>
-          Object.values(Gamers.Role).includes(r as Gamers.Role)
+          Object.values(Gamer.Role).includes(r as Gamer.Role)
         );
       },
-      {name: 'Gamer roles available ' + Object.values(Gamers.Role)}
+      {name: 'Gamer roles available ' + Object.values(Gamer.Role)}
     )
     .optional(),
   device: CDevice.optional(),

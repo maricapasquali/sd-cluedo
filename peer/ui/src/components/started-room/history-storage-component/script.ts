@@ -4,8 +4,8 @@ import eventbus from '@/eventbus';
 import {ACTION_GAMER} from '@/eventbus/eventsName';
 import {QueryParameters} from '@peer/routes/parameters';
 import Action = QueryParameters.Action;
-import {GamerElements} from '@model';
-import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
+import {GameElements} from '@model';
+import RoomWithSecretPassage = GameElements.RoomWithSecretPassage;
 
 export default defineComponent({
   props: {

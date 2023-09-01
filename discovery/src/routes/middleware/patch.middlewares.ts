@@ -5,7 +5,7 @@ import {
   HeadersFormatter,
 } from '@utils/rest-api';
 import * as net from 'net';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import DiscoveryPeersManager from '../../managers/peers';
 
 import {
@@ -34,11 +34,11 @@ export function handlerBadRequest(
       });
     }
     const {status} = req.body;
-    if (!status || !Object.values(Peers.Status).includes(status)) {
+    if (!status || !Object.values(Peer.Status).includes(status)) {
       return BadRequestSender.json(res, {
         message:
           'body is wrong. Correct body is {status: ' +
-          Object.values(Peers.Status).join('|') +
+          Object.values(Peer.Status).join('|') +
           '}',
       });
     }

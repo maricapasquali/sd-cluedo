@@ -3,7 +3,7 @@ import {logger} from '@utils/logger';
 
 import DiscoveryPeersManager from '../managers/peers';
 import PeersDevicesManager from '../managers/peers/devices';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import {DiscoveryPeerEvent} from '@discovery-peers-routes';
 
 export default function handlerSocket(socketServer: Server): void {
@@ -36,7 +36,7 @@ export default function handlerSocket(socketServer: Server): void {
         );
         DiscoveryPeersManager.updatePeer(
           socket.handshake.auth.peerId,
-          Peers.Status.OFFLINE
+          Peer.Status.OFFLINE
         );
         const peer = DiscoveryPeersManager.findPeer(
           socket.handshake.auth.peerId

@@ -2,7 +2,7 @@ import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
 import {RestAPIRouteName} from '@discovery-peers-routes';
 import {v4 as uuid} from 'uuid';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
 
@@ -18,7 +18,7 @@ export default function (
     axiosInstance
       .patch(
         RestAPIRouteName.PEER,
-        {status: Peers.Status.OFFLINE},
+        {status: Peer.Status.OFFLINE},
         {
           headers: {
             'X-Forwarded-For': peer.address,
@@ -31,8 +31,8 @@ export default function (
       .then(res => {
         res?.status?.should.equal(ResponseStatus.OK);
         const _peer: Peer = res.data;
-        _peer.should.have.property('status').equal(Peers.Status.OFFLINE);
-        peer.status = Peers.Status.OFFLINE;
+        _peer.should.have.property('status').equal(Peer.Status.OFFLINE);
+        peer.status = Peer.Status.OFFLINE;
         done();
       })
       .catch(done);
@@ -62,7 +62,7 @@ export default function (
     axiosInstance
       .patch(
         RestAPIRouteName.PEER,
-        {status: Peers.Status.ONLINE},
+        {status: Peer.Status.ONLINE},
         {
           headers: {
             'X-Forwarded-For': peer.address,
@@ -83,7 +83,7 @@ export default function (
     axiosInstance
       .patch(
         RestAPIRouteName.PEER,
-        {status: Peers.Status.ONLINE},
+        {status: Peer.Status.ONLINE},
         {
           headers: {
             'X-Forwarded-For': '192.168.1.2',
@@ -103,7 +103,7 @@ export default function (
     axiosInstance
       .patch(
         RestAPIRouteName.PEER,
-        {status: Peers.Status.ONLINE},
+        {status: Peer.Status.ONLINE},
         {
           headers: {
             'X-Forwarded-For': peer.address,

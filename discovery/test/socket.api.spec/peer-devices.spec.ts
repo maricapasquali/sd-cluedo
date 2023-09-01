@@ -1,7 +1,7 @@
 import {DiscoveryPeerEvent} from '@discovery-peers-routes';
 import {logger} from '@utils/logger';
 import {promises} from '@utils/test-helper';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import {Socket} from 'socket.io-client';
 
 type DevicesSpecOptions = {
@@ -32,7 +32,7 @@ export default function ({socketPeers}: DevicesSpecOptions): void {
                 "Event '%s' (offline peer) ",
                 DiscoveryPeerEvent.PEER
               );
-              _peer.should.have.property('status').equal(Peers.Status.OFFLINE);
+              _peer.should.have.property('status').equal(Peer.Status.OFFLINE);
               resolve(200);
             } catch (err) {
               logger.error(err);

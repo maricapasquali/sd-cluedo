@@ -11,17 +11,17 @@ import {v4 as uuid} from 'uuid';
 import {should as shouldFunc} from 'chai';
 import {AxiosInstance} from 'axios';
 import {createAxiosInstance} from '@utils/axios';
-import {Peers} from '@model';
+import {Peer} from '@model';
 
 const should = shouldFunc();
 
 describe('Socket API', () => {
   const peer: Peer = {
     identifier: uuid(),
-    protocol: Peers.Protocol.HTTPS,
+    protocol: Peer.Protocol.HTTPS,
     address: '127.0.0.8',
     port: 3010,
-    status: Peers.Status.ONLINE,
+    status: Peer.Status.ONLINE,
     hostname: 'localhost',
   };
   const port: number = Number(process.env.PORT) || 3000;

@@ -1,4 +1,4 @@
-export {Peers} from './device.model';
-export {GamerElements} from './game-element.model';
-export {Gamers} from './gamer.model';
-export {CluedoGames} from './cluedo-game.model';
+export {Peers, Peer} from './device.model';
+export {GameElements} from './game-element.model';
+export {Gamer} from './gamer.model';
+export {CluedoGames, CluedoGame} from './cluedo-game.model';

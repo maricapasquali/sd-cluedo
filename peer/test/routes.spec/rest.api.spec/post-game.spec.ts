@@ -2,7 +2,7 @@ import {AxiosInstance} from 'axios';
 import {RestAPIRouteName} from '../../../src/routes/routesNames';
 import {logger} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
-import {GamerElements, CluedoGames} from '@model';
+import {GameElements, CluedoGame} from '@model';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {gamersAuthenticationTokens, games} from '../../helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
@@ -17,7 +17,7 @@ export default function ({axiosInstance}: PostGameConfig): void {
   const creator: Gamer = {
     identifier: uuid(),
     username: 'mario03',
-    characterToken: GamerElements.CharacterName.MISS_SCARLET,
+    characterToken: GameElements.CharacterName.MISS_SCARLET,
   };
 
   it('400 error', done => {
@@ -42,7 +42,7 @@ export default function ({axiosInstance}: PostGameConfig): void {
         should.exist(waitingGame);
         waitingGame.should.have
           .property('status')
-          .equal(CluedoGames.Status.WAITING);
+          .equal(CluedoGame.Status.WAITING);
         waitingGame.gamers.should.a('array').not.empty;
         waitingGame.gamers
           .map((g: Gamer) => g.identifier)

@@ -10,7 +10,7 @@ import {
 import * as express from 'express';
 import routes from '../src/routes';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
-import {CluedoGames, GamerElements, Peers} from '@model';
+import {CluedoGame, GameElements, Peers, Peer} from '@model';
 import {PeerServerManager} from '../src/managers/peers-servers';
 import {v4 as uuid} from 'uuid';
 import {Server} from 'socket.io';
@@ -28,52 +28,52 @@ export function setSomeGamesInDB(peer: Peer): Promise<CluedoGame[]> {
     gamers: [
       {
         identifier: uuid(),
-        characterToken: GamerElements.CharacterName.MRS_WHITE,
+        characterToken: GameElements.CharacterName.MRS_WHITE,
         username: 'mario',
         device: peer,
       } as Gamer,
       {
         identifier: uuid(),
-        characterToken: GamerElements.CharacterName.MRS_PEACOCK,
+        characterToken: GameElements.CharacterName.MRS_PEACOCK,
         username: 'carlo',
         device: {
           identifier: uuid(),
-          protocol: Peers.Protocol.HTTPS,
+          protocol: Peer.Protocol.HTTPS,
           hostname: 'localhost',
           port: 3001,
         } as Peer,
       } as Gamer,
     ],
-    status: CluedoGames.Status.FINISHED,
+    status: CluedoGame.Status.FINISHED,
   } as CluedoGame);
   games.push({
     identifier: uuid(),
     gamers: [
       {
         identifier: uuid(),
-        characterToken: GamerElements.CharacterName.MISS_SCARLET,
+        characterToken: GameElements.CharacterName.MISS_SCARLET,
         username: 'jake',
         device: {
           identifier: uuid(),
-          protocol: Peers.Protocol.HTTPS,
+          protocol: Peer.Protocol.HTTPS,
           hostname: 'localhost',
           port: 3002,
         } as Peer,
       } as Gamer,
       {
         identifier: uuid(),
-        characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+        characterToken: GameElements.CharacterName.REVEREND_GREEN,
         username: 'gino',
         device: peer,
       } as Gamer,
       {
         identifier: uuid(),
-        characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+        characterToken: GameElements.CharacterName.REVEREND_GREEN,
         username: 'gino',
         device: peer,
       } as Gamer,
     ],
-    status: CluedoGames.Status.STARTED,
+    status: CluedoGame.Status.STARTED,
   } as CluedoGame);
 
   games.push({
@@ -81,23 +81,23 @@ export function setSomeGamesInDB(peer: Peer): Promise<CluedoGame[]> {
     gamers: [
       {
         identifier: uuid(),
-        characterToken: GamerElements.CharacterName.MRS_WHITE,
+        characterToken: GameElements.CharacterName.MRS_WHITE,
         username: 'anna',
         device: peer,
       } as Gamer,
       {
         identifier: uuid(),
-        characterToken: GamerElements.CharacterName.MRS_PEACOCK,
+        characterToken: GameElements.CharacterName.MRS_PEACOCK,
         username: 'carlo',
         device: {
           identifier: uuid(),
-          protocol: Peers.Protocol.HTTPS,
+          protocol: Peer.Protocol.HTTPS,
           hostname: 'localhost',
           port: 3001,
         } as Peer,
       } as Gamer,
     ],
-    status: CluedoGames.Status.WAITING,
+    status: CluedoGame.Status.WAITING,
   } as CluedoGame);
 
   return CluedoGameModel.insertMany(games).then(() => games);
@@ -217,16 +217,16 @@ export function connectionToPeerServer({
       identifier: uuid(),
       hostname: 'localhost',
       address: '127.0.0.2',
-      protocol: Peers.Protocol.HTTPS,
-      status: Peers.Status.ONLINE,
+      protocol: Peer.Protocol.HTTPS,
+      status: Peer.Status.ONLINE,
       port: myPeer.port + 1,
     },
     {
       identifier: uuid(),
       hostname: 'localhost',
       address: '127.0.0.3',
-      protocol: Peers.Protocol.HTTPS,
-      status: Peers.Status.ONLINE,
+      protocol: Peer.Protocol.HTTPS,
+      status: Peer.Status.ONLINE,
       port: myPeer.port + 2,
     },
   ];
@@ -282,8 +282,8 @@ export function upSomePeersLikeClientsToMe(
       identifier: uuid(),
       hostname: 'localhost',
       address: '127.0.0.' + (i + 4),
-      protocol: Peers.Protocol.HTTPS,
-      status: Peers.Status.ONLINE,
+      protocol: Peer.Protocol.HTTPS,
+      status: Peer.Status.ONLINE,
       port: myPeer.port + (i + 3),
     };
     peers.push(peer);

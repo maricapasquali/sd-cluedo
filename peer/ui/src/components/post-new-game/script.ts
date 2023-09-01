@@ -2,7 +2,7 @@ import {PropType, defineComponent} from 'vue';
 import {v4 as uuid} from 'uuid';
 import axios, {AxiosResponse} from 'axios';
 import {sessionStoreManager} from '@/services/sessionstore';
-import {CluedoGames, GamerElements} from '@model';
+import {CluedoGame, GameElements} from '@model';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
 import routesNames from '@/router/routesNames';
 
@@ -24,10 +24,10 @@ export default defineComponent({
   computed: {
     cluedoCharacters() {
       return this.game
-        ? Object.values(GamerElements.CharacterName).filter(
+        ? Object.values(GameElements.CharacterName).filter(
             c => !this.game?.gamers.map(g => g.characterToken).includes(c)
           )
-        : GamerElements.CharacterName;
+        : GameElements.CharacterName;
     },
   },
   methods: {
@@ -83,7 +83,7 @@ export default defineComponent({
           this.modal = false;
           this.$emit('posted-gamer', gameId, response.data);
           this.setLocalGame({
-            game: {identifier: gameId, status: CluedoGames.Status.WAITING},
+            game: {identifier: gameId, status: CluedoGame.Status.WAITING},
             gamer: response.data,
             accessToken: response.headers['x-access-token'],
           });

@@ -14,17 +14,17 @@ import {
   catchableHandlerRequestPromise,
   HeadersFormatter,
 } from '@utils/rest-api';
-import {CluedoGames, GamerElements, Gamers} from '@model';
+import {CluedoGame, CluedoGames, GameElements, Gamer} from '@model';
 import {logger} from '@utils/logger';
 import {QueryParameters} from '../parameters';
 import {MongoDBGamesManager} from '../../managers/games/mongoose';
 import {NotFoundError} from '../../managers/games/mongoose/errors';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import Action = QueryParameters.Action;
-import RoomName = GamerElements.RoomName;
-import CharacterName = GamerElements.CharacterName;
-import WeaponName = GamerElements.WeaponName;
-import GameStatus = CluedoGames.Status;
+import RoomName = GameElements.RoomName;
+import CharacterName = GameElements.CharacterName;
+import WeaponName = GameElements.WeaponName;
+import GameStatus = CluedoGame.Status;
 
 export function handlerBadRequest(
   req: Request,
@@ -232,7 +232,7 @@ export function handlerForbiddenRequest(
         Action.STOP_GAME,
       ];
       if (
-        payload.role.includes(Gamers.Role.SILENT) &&
+        payload.role.includes(Gamer.Role.SILENT) &&
         !_availableActionForSilent.includes(action)
       ) {
         return ForbiddenSender.json(res, {
@@ -286,7 +286,7 @@ export function handlerForbiddenRequest(
           } else {
             if (!CluedoGames.checkNumberOfGamers(game)) {
               ForbiddenSender.json(res, {
-                message: `You can't perform this operation because number of gamers are not in [${CluedoGames.MIN_GAMERS}, ${CluedoGames.MAX_GAMERS}] for game ${gameId}`,
+                message: `You can't perform this operation because number of gamers are not in [${CluedoGame.MIN_GAMERS}, ${CluedoGame.MAX_GAMERS}] for game ${gameId}`,
               });
             } else next();
           }

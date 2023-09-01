@@ -1,7 +1,7 @@
 import {Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
 import {Request} from 'express';
-import {Peers} from '@model';
+import {Peer} from '@model';
 
 export type PeerServer = {peer: Peer; socket: Socket};
 
@@ -60,7 +60,7 @@ export class PeerServerManager implements IPeerServerManager {
   }
   sockets(): Socket[] {
     return this.peers
-      .filter(i => i.peer.status !== Peers.Status.OFFLINE)
+      .filter(i => i.peer.status !== Peer.Status.OFFLINE)
       .map(i => i.socket);
   }
   find(identifier: string): PeerServer | undefined {

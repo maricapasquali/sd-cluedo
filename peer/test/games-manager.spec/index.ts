@@ -1,11 +1,11 @@
 import mongoose from 'mongoose';
 import {MongoDBGamesManager} from '../../src/managers/games/mongoose';
 import {v4 as uuid} from 'uuid';
-import {Gamers, CluedoGames, Peers} from '@model';
+import {Gamer, CluedoGame, Peers, Peer} from '@model';
 import {logger} from '@utils/logger';
 import {should as shouldFunc} from 'chai';
 import gameManagerSpec from './game-manager.spec';
-import {GamerElements} from '@model';
+import {GameElements} from '@model';
 import {setSomeGamesInDB} from '../helper';
 import * as _ from 'lodash';
 
@@ -20,13 +20,13 @@ describe('Games Manager', function () {
   const creator: Gamer = {
     identifier: uuid(),
     username: 'mario03',
-    characterToken: GamerElements.CharacterName.COLONEL_MUSTARD,
+    characterToken: GameElements.CharacterName.COLONEL_MUSTARD,
     device: {
       identifier: uuid(),
       hostname: 'pc mario',
       address: '192.168.1.3',
       port: 3000,
-      protocol: Peers.Protocol.HTTPS,
+      protocol: Peer.Protocol.HTTPS,
     } as Peer,
   };
 
@@ -52,10 +52,10 @@ describe('Games Manager', function () {
           .deep.equal(game.identifier);
         cluedoGame.gamers[0].should.have
           .property('role')
-          .deep.equal([Gamers.Role.CREATOR, Gamers.Role.PARTICIPANT]);
+          .deep.equal([Gamer.Role.CREATOR, Gamer.Role.PARTICIPANT]);
         cluedoGame.should.have
           .property('status')
-          .deep.equal(CluedoGames.Status.WAITING);
+          .deep.equal(CluedoGame.Status.WAITING);
         game = cluedoGame;
         done();
       })
@@ -73,7 +73,7 @@ describe('Games Manager', function () {
         .catch(done);
     });
     it('filter with status = started', done => {
-      MongoDBGamesManager.getGames(CluedoGames.Status.STARTED)
+      MongoDBGamesManager.getGames(CluedoGame.Status.STARTED)
         .then(cluedoGames => {
           logger.debug(cluedoGames);
           cluedoGames.should.have.lengthOf(0);
@@ -92,8 +92,8 @@ describe('Games Manager', function () {
       identifier: uuid(),
       hostname: 'localhost',
       port: 3000,
-      protocol: Peers.Protocol.HTTPS,
-      status: Peers.Status.ONLINE,
+      protocol: Peer.Protocol.HTTPS,
+      status: Peer.Status.ONLINE,
     };
     const address = Peers.url(peer);
     before(done => {

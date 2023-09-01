@@ -6,7 +6,7 @@ import {AxiosInstance} from 'axios';
 import {createAxiosInstance} from '@utils/axios';
 import {logger} from '@utils/logger';
 import {v4 as uuid} from 'uuid';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import {RestAPIRouteName} from '@discovery-peers-routes';
 import {Server} from 'https';
 import {ResponseStatus} from '@utils/rest-api/responses';
@@ -19,9 +19,9 @@ describe('Rest API', () => {
     baseURL: 'https://localhost:' + port,
   });
   const peer: Peer = {
-    protocol: Peers.Protocol.HTTPS,
+    protocol: Peer.Protocol.HTTPS,
     port: 3000,
-    status: Peers.Status.ONLINE,
+    status: Peer.Status.ONLINE,
     identifier: uuid(),
     hostname: 'localhost',
     address: '192.198.1.1',

@@ -1,6 +1,6 @@
 import {defineComponent, PropType} from 'vue';
 import WeaponsSvg from './svg';
-import {GamerElements} from '@model';
+import {GameElements} from '@model';
 
 export default defineComponent({
   props: {
@@ -15,7 +15,7 @@ export default defineComponent({
   },
   computed: {
     WeaponName() {
-      return GamerElements.WeaponName;
+      return GameElements.WeaponName;
     },
   },
 });

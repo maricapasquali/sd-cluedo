@@ -1,15 +1,15 @@
 import {should as shouldFunc} from 'chai';
 import DiscoveryPeersManager from '../src/managers/peers';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import {v4 as uuid} from 'uuid';
 
 const should = shouldFunc();
 
 describe('Discovery Manager', () => {
   const peer: Peer = {
-    protocol: Peers.Protocol.HTTPS,
+    protocol: Peer.Protocol.HTTPS,
     port: 3000,
-    status: Peers.Status.ONLINE,
+    status: Peer.Status.ONLINE,
     identifier: uuid(),
     hostname: 'localhost',
   };
@@ -27,11 +27,11 @@ describe('Discovery Manager', () => {
 
   it('#updatePeer()', () => {
     should.exist(DiscoveryPeersManager.findPeer(peer.identifier));
-    DiscoveryPeersManager.updatePeer(peer.identifier, Peers.Status.OFFLINE);
+    DiscoveryPeersManager.updatePeer(peer.identifier, Peer.Status.OFFLINE);
     DiscoveryPeersManager.peers.should.have.lengthOf(1);
     DiscoveryPeersManager.findPeer(peer.identifier)
       ?.should.have.property('status')
-      .equal(Peers.Status.OFFLINE);
+      .equal(Peer.Status.OFFLINE);
   });
 
   it('#removePeer()', () => {

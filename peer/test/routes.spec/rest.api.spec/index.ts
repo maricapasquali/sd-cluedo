@@ -22,7 +22,7 @@ import mongoose from 'mongoose';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {CluedoGames, GamerElements, Peers} from '@model';
+import {CluedoGame, GameElements, Peer} from '@model';
 import {gamersAuthenticationTokens} from '../../helper';
 import {MongoDBGamesManager} from '../../../src/managers/games/mongoose';
 
@@ -41,10 +41,10 @@ describe('Rest API', function () {
   });
   const peer: Peer = {
     identifier: uuid(),
-    protocol: Peers.Protocol.HTTPS,
+    protocol: Peer.Protocol.HTTPS,
     hostname: 'localhost',
     port,
-    status: Peers.Status.ONLINE,
+    status: Peer.Status.ONLINE,
   };
   let httpsServer: Server;
 
@@ -111,7 +111,7 @@ describe('Rest API', function () {
       MongoDBGamesManager.getGames()
         .then(games => {
           startedGame =
-            games.find(g => g.status !== CluedoGames.Status.WAITING) ||
+            games.find(g => g.status !== CluedoGame.Status.WAITING) ||
             ({} as CluedoGame);
           done();
         })
@@ -126,7 +126,7 @@ describe('Rest API', function () {
             {
               identifier: uuid(),
               username: 'hiro',
-              characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+              characterToken: GameElements.CharacterName.REVEREND_GREEN,
             },
             {
               urlParams: {

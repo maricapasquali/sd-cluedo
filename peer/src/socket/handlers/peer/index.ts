@@ -1,4 +1,4 @@
-import {CluedoGames, Gamers, Peers} from '@model';
+import {CluedoGame, Gamer, Peers} from '@model';
 import _gameHandlers from './game.handlers';
 import {Clients} from '../../server/clients';
 import {Server, Socket as PeerClient} from 'socket.io';
@@ -22,7 +22,7 @@ function callbackAfterSaveGame(
     removedGamers: Gamer[],
     oldRoundGamer: string
   ) => {
-    if ((newGame.status as CluedoGames.Status) === CluedoGames.Status.WAITING) {
+    if ((newGame.status as CluedoGame.Status) === CluedoGame.Status.WAITING) {
       removedGamers.forEach(gm => {
         Clients.real(server).forEach(s =>
           s.emit(CluedoGameEvent.CLUEDO_REMOVE_GAMER, {
@@ -54,7 +54,7 @@ function callbackAfterSaveGame(
         if (gm.identifier === oldRoundGamer) {
           const message =
             newGame.gamers.filter(gm =>
-              gm.role?.includes(Gamers.Role.PARTICIPANT)
+              gm.role?.includes(Gamer.Role.PARTICIPANT)
             ).length <= 1
               ? newGame.solution
               : newGame.roundGamer;
@@ -68,7 +68,7 @@ function callbackAfterSaveGame(
       });
 
       if (
-        (newGame.status as CluedoGames.Status) === CluedoGames.Status.FINISHED
+        (newGame.status as CluedoGame.Status) === CluedoGame.Status.FINISHED
       ) {
         Clients.real(server).forEach(s =>
           s.emit(

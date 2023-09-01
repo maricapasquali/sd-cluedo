@@ -6,7 +6,7 @@ import {QueryParameters} from '../../../../src/routes/parameters';
 import {gamersAuthenticationTokens, games} from '../../../helper';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
-import {CluedoGames, GamerElements} from '@model';
+import {CluedoGame, GameElements} from '@model';
 import {v4 as uuid} from 'uuid';
 import {should as shouldFunc} from 'chai';
 import {logger} from '@utils/logger';
@@ -28,7 +28,7 @@ export default function ({axiosInstance}: PatchGameConfig): void {
       .post(RestAPIRouteName.GAMES, {
         identifier: uuid(),
         username: 'lollo',
-        characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+        characterToken: GameElements.CharacterName.REVEREND_GREEN,
       } as Gamer)
       .then(response => {
         game = response.data;
@@ -42,7 +42,7 @@ export default function ({axiosInstance}: PatchGameConfig): void {
           {
             identifier: uuid(),
             username: 'cicco',
-            characterToken: GamerElements.CharacterName.MRS_PEACOCK,
+            characterToken: GameElements.CharacterName.MRS_PEACOCK,
           },
           {
             urlParams: {
@@ -61,7 +61,7 @@ export default function ({axiosInstance}: PatchGameConfig): void {
           {
             identifier: uuid(),
             username: 'anna#1',
-            characterToken: GamerElements.CharacterName.MRS_WHITE,
+            characterToken: GameElements.CharacterName.MRS_WHITE,
           },
           {
             urlParams: {
@@ -239,7 +239,7 @@ export default function ({axiosInstance}: PatchGameConfig): void {
     before(done => {
       CluedoGameModel.updateOne(
         {identifier: game.identifier},
-        {$set: {status: CluedoGames.Status.STARTED}}
+        {$set: {status: CluedoGame.Status.STARTED}}
       )
         .then(() => done())
         .catch(done);
@@ -266,7 +266,7 @@ export default function ({axiosInstance}: PatchGameConfig): void {
     after(done => {
       CluedoGameModel.updateOne(
         {identifier: game.identifier},
-        {$set: {status: CluedoGames.Status.WAITING}}
+        {$set: {status: CluedoGame.Status.WAITING}}
       )
         .then(() => done())
         .catch(done);
@@ -278,7 +278,7 @@ export default function ({axiosInstance}: PatchGameConfig): void {
   });
 
   after(done => {
-    MongoDBGamesManager.getGames(CluedoGames.Status.FINISHED)
+    MongoDBGamesManager.getGames(CluedoGame.Status.FINISHED)
       .then(games => {
         logger.debug(games);
         games.should.be.a('array').not.empty;

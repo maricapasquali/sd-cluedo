@@ -18,7 +18,7 @@
           <game-card :game="game">
             <template #footer="{game}">
               <BContainer>
-                <BRow v-if="game.status === CluedoGames.Status.WAITING">
+                <BRow v-if="game.status === CluedoGame.Status.WAITING">
                   <BCol class="d-flex justify-content-end">
                     <post-new-game :game="game" @posted-gamer="onPostedGamer" />
                   </BCol>

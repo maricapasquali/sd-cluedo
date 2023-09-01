@@ -15,7 +15,7 @@ import routes from '../src/routes';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import handlerSocket from '../src/socket';
 import {v4 as uuid} from 'uuid';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import {Socket} from 'socket.io-client';
 import {createAxiosInstance} from '@utils/axios';
 import {createServerStub} from '@utils/socket';
@@ -75,10 +75,10 @@ export function mocksPeerClient(
 ) {
   const peer: Peer = {
     identifier: uuid(),
-    protocol: Peers.Protocol.HTTPS,
+    protocol: Peer.Protocol.HTTPS,
     address: '127.0.0.' + (i + 1),
     port: 3000 + (i + 1),
-    status: Peers.Status.ONLINE,
+    status: Peer.Status.ONLINE,
     hostname: 'localhost',
   };
   const clientPeer = createServerStub(discoveryServerAddress, {

@@ -14,7 +14,7 @@ import {
 } from '@utils/rest-api/responses';
 import {ValidationError} from 'runtypes';
 import {MongoDBGamesManager} from '../../managers/games/mongoose';
-import {CluedoGames} from '@model';
+import {CluedoGame} from '@model';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 
 export function handlerBadRequest(
@@ -131,7 +131,7 @@ export function handlerGoneRequest(
   next: NextFunction
 ): void {
   MongoDBGamesManager.gameManagers(req.params.id)
-    .game({status: CluedoGames.Status.WAITING})
+    .game({status: CluedoGame.Status.WAITING})
     .then(() => next())
     .catch(err => {
       if (err) {

@@ -7,7 +7,7 @@ import {
   ResponseStatus,
 } from '@utils/rest-api/responses';
 import DiscoveryPeersManager from '../../managers/peers';
-import {Peers} from '@model';
+import {Peers, Peer} from '@model';
 import {createAxiosInstance} from '@utils/axios';
 import {AxiosError} from 'axios';
 
@@ -25,7 +25,7 @@ export function baseHandler(
       return Promise.reject(messageError);
     }
     const connectedPeers = DiscoveryPeersManager.peers
-      .filter(p => p && p.status !== Peers.Status.OFFLINE)
+      .filter(p => p && p.status !== Peer.Status.OFFLINE)
       .map(p =>
         Object.assign(p, {
           nDevices: PeersDevicesManager.numberOfPeerDevices[p.identifier],

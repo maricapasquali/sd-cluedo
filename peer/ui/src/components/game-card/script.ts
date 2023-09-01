@@ -1,6 +1,6 @@
 import {defineComponent, PropType} from 'vue';
 import * as _ from 'lodash';
-import {CluedoGames} from '@model';
+import {CluedoGame} from '@model';
 
 export default defineComponent({
   props: {
@@ -14,8 +14,8 @@ export default defineComponent({
     return {};
   },
   computed: {
-    CluedoGames() {
-      return CluedoGames;
+    CluedoGame() {
+      return CluedoGame;
     },
     winner() {
       const winner = this.game.gamers.find(g =>

@@ -2,15 +2,15 @@ import {MongoDBGamesManager} from '../../src/managers/games/mongoose';
 import {v4 as uuid} from 'uuid';
 import {should as shouldFunc} from 'chai';
 import {logger} from '@utils/logger';
-import {Gamers, CluedoGames, GamerElements} from '@model';
+import {Gamer, CluedoGame, GameElements} from '@model';
 import {GameManager} from '../../src/managers/games';
 import {CluedoGameModel} from '../../src/managers/games/mongoose/schemas';
 import * as _ from 'lodash';
-import GamerRole = Gamers.Role;
-import CharacterName = GamerElements.CharacterName;
-import RoomName = GamerElements.RoomName;
-import WeaponName = GamerElements.WeaponName;
-import HousePart = GamerElements.HousePart;
+import GamerRole = Gamer.Role;
+import CharacterName = GameElements.CharacterName;
+import RoomName = GameElements.RoomName;
+import WeaponName = GameElements.WeaponName;
+import HousePart = GameElements.HousePart;
 
 const should = shouldFunc();
 
@@ -98,7 +98,7 @@ export default function ({game}: GameManagerOptions): void {
         should.exist(startedGame);
         startedGame.should.have
           .property('status')
-          .equal(CluedoGames.Status.STARTED);
+          .equal(CluedoGame.Status.STARTED);
         startedGame.should.have.property('solution').not.undefined;
         const dealCard = _.flatten(startedGame.gamers.map(g => g.cards));
         dealCard.should.not.empty;
@@ -225,7 +225,7 @@ export default function ({game}: GameManagerOptions): void {
   it('#takeNote(..)', done => {
     const structuredNoteItem: StructuredNoteItem = {
       name: RoomName.STUDY,
-      suspectState: GamerElements.SuspectState.MAYBE,
+      suspectState: GameElements.SuspectState.MAYBE,
     };
     const text =
       'Lorem ipsum dolor sit amet, consectetur adipisci elit, sed eiusmod tempor incidunt ut labore et dolore magna aliqua';

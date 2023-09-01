@@ -1,7 +1,7 @@
 import {defineComponent, PropType} from 'vue';
 import * as _ from 'lodash';
-import {GamerElements} from '@model';
-import LobbyName = GamerElements.LobbyName;
+import {GameElements} from '@model';
+import LobbyName = GameElements.LobbyName;
 
 export default defineComponent({
   props: {
