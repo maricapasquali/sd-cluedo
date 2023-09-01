@@ -6,6 +6,12 @@ variables:
   MONGO_DB: "mongodb://mongo:27017/cluedo"
   MONGO_DB_TEST: "mongodb://mongo:27017/cluedo-test"
 
+workflow:
+  rules:
+  - if: '$CI_COMMIT_BRANCH =~ /^master|develop|feature_.*$/'
+    when: always
+  - when: never
+
 before_script:
   - echo 'Install dependencies'
   - npm install

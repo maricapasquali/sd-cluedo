@@ -2,7 +2,7 @@ import {Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
 import {promises} from '@utils/test-helper';
 import {DiscoveryPeerEvent, RestAPIRouteName} from '@discovery-peers-routes';
-import {Peers} from '@model';
+import {Peer} from '@model';
 import {AxiosInstance} from 'axios';
 import {createServerStub} from '@utils/socket';
 
@@ -71,7 +71,7 @@ export default function ({
               "Event '%s' (update status peer)",
               DiscoveryPeerEvent.PEER
             );
-            _peer.should.have.property('status').equal(Peers.Status.OFFLINE);
+            _peer.should.have.property('status').equal(Peer.Status.OFFLINE);
             resolve(200);
           } catch (err) {
             logger.error(err);
@@ -83,7 +83,7 @@ export default function ({
     const updateStatusPromise = axiosInstance
       .patch(
         RestAPIRouteName.PEER,
-        {status: Peers.Status.OFFLINE},
+        {status: Peer.Status.OFFLINE},
         {
           headers: {'x-forwarded-for': peer.address},
           urlParams: {
@@ -92,7 +92,7 @@ export default function ({
         }
       )
       .then(res => {
-        peer.status = Peers.Status.OFFLINE;
+        peer.status = Peer.Status.OFFLINE;
         return res.status;
       });
     Promise.all([...receiver, updateStatusPromise])

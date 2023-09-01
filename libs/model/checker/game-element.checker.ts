@@ -1,7 +1,7 @@
 import {Record, String} from 'runtypes';
-import {GamerElements} from '../game-element.model';
-import WeaponName = GamerElements.WeaponName;
-import RoomName = GamerElements.RoomName;
+import {GameElements} from '../game-element.model';
+import WeaponName = GameElements.WeaponName;
+import RoomName = GameElements.RoomName;
 import {characterConstraint} from './constraints';
 
 export const CSuggestion = Record({

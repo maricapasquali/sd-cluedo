@@ -1,7 +1,7 @@
 import {AxiosInstance} from 'axios';
 import {RestAPIRouteName} from '../../../src/routes/routesNames';
 import {v4 as uuid} from 'uuid';
-import {GamerElements} from '@model';
+import {GameElements} from '@model';
 import {should as shouldFunc} from 'chai';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
@@ -17,7 +17,7 @@ export default function ({axiosInstance}: PostGamerConfig): void {
   const gamer: Gamer = {
     identifier: uuid(),
     username: 'jake-green',
-    characterToken: GamerElements.CharacterName.COLONEL_MUSTARD,
+    characterToken: GameElements.CharacterName.COLONEL_MUSTARD,
   };
   let game: CluedoGame;
 
@@ -91,7 +91,7 @@ export default function ({axiosInstance}: PostGamerConfig): void {
           {
             identifier: uuid(),
             username: 'antony-yellow',
-            characterToken: GamerElements.CharacterName.MISS_SCARLET,
+            characterToken: GameElements.CharacterName.MISS_SCARLET,
           },
           {
             urlParams: {

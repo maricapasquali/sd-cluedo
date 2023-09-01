@@ -6,8 +6,8 @@ import {
   NotFoundSender,
   ResponseStatus,
 } from '@utils/rest-api/responses';
-import PeersManager from '../../managers/peers';
-import {Peers} from '@model';
+import DiscoveryPeersManager from '../../managers/peers';
+import {Peers, Peer} from '@model';
 import {createAxiosInstance} from '@utils/axios';
 import {AxiosError} from 'axios';
 
@@ -24,8 +24,8 @@ export function baseHandler(
     if (Object.keys(PeersDevicesManager.numberOfPeerDevices).length === 0) {
       return Promise.reject(messageError);
     }
-    const connectedPeers = PeersManager.peers
-      .filter(p => p && p.status !== Peers.Status.OFFLINE)
+    const connectedPeers = DiscoveryPeersManager.peers
+      .filter(p => p && p.status !== Peer.Status.OFFLINE)
       .map(p =>
         Object.assign(p, {
           nDevices: PeersDevicesManager.numberOfPeerDevices[p.identifier],

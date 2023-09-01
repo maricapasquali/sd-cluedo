@@ -4,7 +4,7 @@ import axios, {AxiosError} from 'axios';
 import socket from '@/services/socket';
 import {sessionStoreManager} from '@/services/sessionstore';
 
-import {CluedoGames, Gamers} from '@model';
+import {CluedoGame, Gamer} from '@model';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
 import {ResponseStatus} from '@utils/rest-api/responses';
 import {CluedoGameEvent} from '@peer/socket/events';
@@ -29,7 +29,7 @@ export default defineComponent({
       );
     },
     amISilent(): boolean {
-      return this.iGamer.role?.includes(Gamers.Role.SILENT) || false;
+      return this.iGamer.role?.includes(Gamer.Role.SILENT) || false;
     },
     gameBoardElements(): {name: string}[] {
       return [
@@ -41,7 +41,7 @@ export default defineComponent({
   },
   methods: {
     isSilentGamer(gamer: Gamer): boolean | undefined {
-      return gamer.role?.includes(Gamers.Role.SILENT);
+      return gamer.role?.includes(Gamer.Role.SILENT);
     },
     connectSocketLikeGamer() {
       const gamerAuth = {
@@ -114,7 +114,7 @@ export default defineComponent({
             authorization: sessionStoreManager.accessToken,
           },
           params: {
-            status: CluedoGames.Status.STARTED,
+            status: CluedoGame.Status.STARTED,
           },
         })
         .then(response => {

@@ -1,7 +1,7 @@
 import {String} from 'runtypes';
 import {validate} from 'uuid';
-import {GamerElements} from '../game-element.model';
-import CharacterName = GamerElements.CharacterName;
+import {GameElements} from '../game-element.model';
+import CharacterName = GameElements.CharacterName;
 
 export const identifierConstraint = String.withConstraint(s => validate(s), {
   name: 'uuid format',

@@ -27,7 +27,7 @@ import {CluedoGameEvent} from '../../../socket/events';
 import {Clients} from '../../../socket/server/clients';
 import {PeerServerManager} from '../../../managers/peers-servers';
 import Action = QueryParameters.Action;
-import {CluedoGames} from '@model';
+import {CluedoGame} from '@model';
 import {getStartedCluedoGame} from '../../../utils';
 import {logger} from '@utils/logger';
 
@@ -83,8 +83,8 @@ export function getGames(
         isPeer
           ? games
           : games.map(g =>
-              (g.status as CluedoGames.Status.STARTED) ===
-              CluedoGames.Status.STARTED
+              (g.status as CluedoGame.Status.STARTED) ===
+              CluedoGame.Status.STARTED
                 ? getStartedCluedoGame(g)
                 : g
             )
@@ -109,8 +109,8 @@ export function getGame(req: Request, res: Response, next: NextFunction): void {
       .then(game =>
         OkSender.json(
           res,
-          (game.status as CluedoGames.Status.STARTED) ===
-            CluedoGames.Status.STARTED
+          (game.status as CluedoGame.Status.STARTED) ===
+            CluedoGame.Status.STARTED
             ? getStartedCluedoGame(game.toObject(), gamerId)
             : game
         )

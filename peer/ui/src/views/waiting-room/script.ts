@@ -4,7 +4,7 @@ import socket from '@/services/socket';
 import {sessionStoreManager} from '@/services/sessionstore';
 import {CluedoGameEvent} from '@peer/socket/events';
 import {RestAPIRouteName} from '@peer/routes/routesNames';
-import {CluedoGames} from '@model';
+import {CluedoGame} from '@model';
 import {QueryParameters} from '@peer/routes/parameters';
 import routesNames from '@/router/routesNames';
 
@@ -16,8 +16,8 @@ export default defineComponent({
       gameId: _gameId,
       loading: true,
       game: {identifier: _gameId, gamers: []} as CluedoGame,
-      maxGamers: CluedoGames.MAX_GAMERS,
-      minGamers: CluedoGames.MIN_GAMERS,
+      maxGamers: CluedoGame.MAX_GAMERS,
+      minGamers: CluedoGame.MIN_GAMERS,
     };
   },
   methods: {
@@ -38,7 +38,7 @@ export default defineComponent({
             this.$router.replace({name: routesNames.HOME});
             return;
           }
-          if (response.data.status === CluedoGames.Status.FINISHED) {
+          if (response.data.status === CluedoGame.Status.FINISHED) {
             if (
               sessionStoreManager.game.identifier === response.data.identifier
             ) {
@@ -47,7 +47,7 @@ export default defineComponent({
             this.$router.replace({name: routesNames.HOME});
             return;
           }
-          if (response.data.status === CluedoGames.Status.STARTED) {
+          if (response.data.status === CluedoGame.Status.STARTED) {
             this.$router.replace({
               name: routesNames.STARTED_ROOM,
               params: {id: response.data.identifier},

@@ -5,8 +5,8 @@ import {
   HeadersFormatter,
 } from '@utils/rest-api';
 import * as net from 'net';
-import {Peers} from '@model';
-import PeersManager from '../../managers/peers';
+import {Peer} from '@model';
+import DiscoveryPeersManager from '../../managers/peers';
 
 import {
   BadRequestSender,
@@ -34,11 +34,11 @@ export function handlerBadRequest(
       });
     }
     const {status} = req.body;
-    if (!status || !Object.values(Peers.Status).includes(status)) {
+    if (!status || !Object.values(Peer.Status).includes(status)) {
       return BadRequestSender.json(res, {
         message:
           'body is wrong. Correct body is {status: ' +
-          Object.values(Peers.Status).join('|') +
+          Object.values(Peer.Status).join('|') +
           '}',
       });
     }
@@ -56,7 +56,7 @@ export function handlerNotFoundRequest(
 ): void {
   catchableHandlerRequestPromise(() => {
     const {id} = req.params;
-    res.locals.peer = PeersManager.findPeer(id);
+    res.locals.peer = DiscoveryPeersManager.findPeer(id);
     if (!res.locals.peer) {
       return NotFoundSender.json(res, {
         message: 'resource ' + id + ' not found',

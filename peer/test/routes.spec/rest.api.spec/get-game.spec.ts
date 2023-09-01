@@ -1,6 +1,6 @@
 import {AxiosInstance} from 'axios';
 import {RestAPIRouteName} from '../../../src/routes/routesNames';
-import {CluedoGames} from '@model';
+import {CluedoGame} from '@model';
 import {should as shouldFunc} from 'chai';
 import {handlerResponseErrorCheck} from '@utils/test-helper';
 import {ResponseStatus} from '@utils/rest-api/responses';
@@ -23,7 +23,7 @@ export default function ({axiosInstance}: GetGameConfig): void {
           id: game.identifier,
         },
         params: {
-          status: CluedoGames.Status.WAITING,
+          status: CluedoGame.Status.WAITING,
         },
       })
       .then(response => {
@@ -32,7 +32,7 @@ export default function ({axiosInstance}: GetGameConfig): void {
         singleGame.should.have.property('identifier').equal(game.identifier);
         singleGame.should.have
           .property('status')
-          .equal(CluedoGames.Status.WAITING);
+          .equal(CluedoGame.Status.WAITING);
         done();
       })
       .catch(done);
@@ -61,7 +61,7 @@ export default function ({axiosInstance}: GetGameConfig): void {
           id: game.identifier,
         },
         params: {
-          status: CluedoGames.Status.STARTED,
+          status: CluedoGame.Status.STARTED,
         },
       })
       .then(done)

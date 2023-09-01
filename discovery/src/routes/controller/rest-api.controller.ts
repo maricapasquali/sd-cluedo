@@ -1,5 +1,5 @@
 import {Response, Request, NextFunction} from 'express';
-import PeersManager from '../../managers/peers';
+import DiscoveryPeersManager from '../../managers/peers';
 import {CreatedSender, OkSender} from '@utils/rest-api/responses';
 import {AppGetter, catchableHandlerRequestPromise} from '@utils/rest-api';
 import {DiscoveryPeerEvent} from '@discovery-peers-routes';
@@ -11,7 +11,7 @@ export function postPeer(
 ): void {
   catchableHandlerRequestPromise(() => {
     const {peer} = res.locals;
-    PeersManager.addPeer(peer);
+    DiscoveryPeersManager.addPeer(peer);
     const accessToken: string = AppGetter.tokensManger(req).createToken(
       peer.identifier,
       peer
@@ -22,7 +22,7 @@ export function postPeer(
     );
     return CreatedSender.json(
       res.setHeader('x-access-token', ['Bearer', accessToken].join(' ')),
-      {newPeer: peer, peers: PeersManager.peers}
+      {newPeer: peer, peers: DiscoveryPeersManager.peers}
     );
   })
     .then(next)
@@ -35,7 +35,7 @@ export function getPeers(
   next: NextFunction
 ): void {
   catchableHandlerRequestPromise(() => {
-    return OkSender.json(res, PeersManager.peers);
+    return OkSender.json(res, DiscoveryPeersManager.peers);
   })
     .then(next)
     .catch(next);
@@ -48,7 +48,7 @@ export function updateStatusPeer(
 ): void {
   catchableHandlerRequestPromise(() => {
     const {peer} = res.locals;
-    PeersManager.updatePeer(peer.identifier, req.body.status);
+    DiscoveryPeersManager.updatePeer(peer.identifier, req.body.status);
     peer.status = req.body.status;
     AppGetter.socketServer(req)?.emit(
       DiscoveryPeerEvent.PEER,
@@ -67,7 +67,7 @@ export function deletePeer(
 ): void {
   catchableHandlerRequestPromise(() => {
     const {peer} = res.locals;
-    PeersManager.removePeer(peer.identifier);
+    DiscoveryPeersManager.removePeer(peer.identifier);
     AppGetter.tokensManger(req).removeToken(peer.identifier);
     AppGetter.socketServer(req)?.emit(
       DiscoveryPeerEvent.PEER_DELETE,

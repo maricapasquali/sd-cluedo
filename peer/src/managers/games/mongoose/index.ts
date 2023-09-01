@@ -1,17 +1,17 @@
-import {CluedoGames, GamerElements, Gamers, Peers} from '@model';
+import {CluedoGame, GameElements, Gamer, Peers} from '@model';
 import {CluedoGameModel, DocCluedoGame} from './schemas';
 import {GameManager, GamesManager} from '../index';
 import * as _ from 'lodash';
-import {NotFoundError, NotInRoundError} from './errors';
-import HousePart = GamerElements.HousePart;
-import RoomName = GamerElements.RoomName;
-import CharacterName = GamerElements.CharacterName;
-import WeaponName = GamerElements.WeaponName;
-import LobbyName = GamerElements.LobbyName;
-import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
-import CardsDeck = GamerElements.CardsDeck;
-import GameStatus = CluedoGames.Status;
-import GamerRole = Gamers.Role;
+import {NotFoundError} from './errors';
+import HousePart = GameElements.HousePart;
+import RoomName = GameElements.RoomName;
+import CharacterName = GameElements.CharacterName;
+import WeaponName = GameElements.WeaponName;
+import LobbyName = GameElements.LobbyName;
+import RoomWithSecretPassage = GameElements.RoomWithSecretPassage;
+import CardsDeck = GameElements.CardsDeck;
+import GameStatus = CluedoGame.Status;
+import GamerRole = Gamer.Role;
 
 /**
  * Implementation of _{@link GameManager}_.
@@ -256,23 +256,18 @@ export class MongoDBGameManager implements GameManager {
   passRoundToNext(gamerId?: string): Promise<string | undefined> {
     return this.game().then(game => {
       const _gameObj = game.toObject();
-      const gamerRoundId = game.roundGamer;
-      if (gamerId && gamerId !== gamerRoundId) {
-        throw new NotInRoundError(gamerId);
-      }
       if (
         game.gamers.filter(gm => gm.role?.includes(GamerRole.PARTICIPANT))
           .length <= 1
       ) {
         return undefined;
       }
-      let _nextPosition = game.gamers?.findIndex(
-        g => g.identifier === gamerRoundId
-      );
-      do {
-        _nextPosition = (_nextPosition + 1) % game.gamers.length;
-      } while (game.gamers[_nextPosition].role?.includes(GamerRole.SILENT));
-      game.roundGamer = game.gamers[_nextPosition].identifier;
+      if (gamerId) {
+        game.roundGamer = gamerId;
+      } else {
+        const _nextPosition = this.indexOfNextGamerOf(game.roundGamer, game);
+        game.roundGamer = game.gamers[_nextPosition].identifier;
+      }
       return game
         .save()
         .then(newGame =>
@@ -303,6 +298,16 @@ export class MongoDBGameManager implements GameManager {
     });
   }
 
+  private indexOfNextGamerOf(
+    gamerId: string | undefined,
+    game: CluedoGame
+  ): number {
+    let _nextPosition = game.gamers?.findIndex(g => g.identifier === gamerId);
+    do {
+      _nextPosition = (_nextPosition + 1) % game.gamers.length;
+    } while (game.gamers[_nextPosition].role?.includes(GamerRole.SILENT));
+    return _nextPosition;
+  }
   private randIndex(lengthOfArray: number): number {
     return Math.floor(Math.random() * (lengthOfArray - 1));
   }
@@ -392,7 +397,7 @@ export const MongoDBGamesManager = new (class implements GamesManager {
   ): Promise<CluedoGame[]> {
     return CluedoGameModel.find({
       status: {
-        $in: [CluedoGames.Status.WAITING, CluedoGames.Status.STARTED],
+        $in: [CluedoGame.Status.WAITING, CluedoGame.Status.STARTED],
       },
     }).then(games => {
       return Promise.all(
@@ -412,22 +417,22 @@ export const MongoDBGamesManager = new (class implements GamesManager {
             );
 
             if (
-              (game.status as CluedoGames.Status) ===
-                CluedoGames.Status.STARTED &&
+              (game.status as CluedoGame.Status) ===
+                CluedoGame.Status.STARTED &&
               remainedGamers.filter(gm =>
-                gm.role?.includes(Gamers.Role.PARTICIPANT)
+                gm.role?.includes(Gamer.Role.PARTICIPANT)
               ).length <= 1
             ) {
-              game.status = CluedoGames.Status.FINISHED;
+              game.status = CluedoGame.Status.FINISHED;
             }
 
             const _roundGame = game.roundGamer || '';
             if (
-              (game.status as CluedoGames.Status) ===
-                CluedoGames.Status.STARTED &&
+              (game.status as CluedoGame.Status) ===
+                CluedoGame.Status.STARTED &&
               gamersToRemove.map(gm => gm.identifier).includes(_roundGame) &&
               remainedGamers.filter(gm =>
-                gm.role?.includes(Gamers.Role.PARTICIPANT)
+                gm.role?.includes(Gamer.Role.PARTICIPANT)
               ).length > 1
             ) {
               let _nextPosition = game.gamers?.findIndex(
@@ -436,7 +441,7 @@ export const MongoDBGamesManager = new (class implements GamesManager {
               do {
                 _nextPosition = (_nextPosition + 1) % game.gamers.length;
               } while (
-                game.gamers[_nextPosition].role?.includes(Gamers.Role.SILENT) ||
+                game.gamers[_nextPosition].role?.includes(Gamer.Role.SILENT) ||
                 gamersToRemove
                   .map(gm => gm.identifier)
                   .includes(game.gamers[_nextPosition].identifier)

@@ -13,8 +13,8 @@ import mongoose from 'mongoose';
 import {BasicTokenManager} from '@utils/tokens-manager/basic';
 import * as os from 'os';
 import createPeerClientStub from './socket/server';
-import {Peers} from '@model';
-import Protocol = Peers.Protocol;
+import {Peers, Peer} from '@model';
+import Protocol = Peer.Protocol;
 import {v4 as uuid} from 'uuid';
 import {PeerServerManager} from './managers/peers-servers';
 import {connectAndListenOnDiscoveryServer} from './socket/client';
@@ -46,7 +46,7 @@ dns.resolve4(os.hostname(), (err, addresses) => {
     hostname: os.hostname(),
     port: port,
     address: addresses[0],
-    status: Peers.Status.ONLINE,
+    status: Peer.Status.ONLINE,
   };
 
   if (process.env.DOCKER_BIND_PORT) {

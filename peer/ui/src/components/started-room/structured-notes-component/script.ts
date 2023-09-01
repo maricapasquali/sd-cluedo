@@ -1,10 +1,10 @@
 import emitter from '@/eventbus';
 import {CONFUTATION_CARD} from '@/eventbus/eventsName';
 import {defineComponent, PropType} from 'vue';
-import {GamerElements} from '@model';
-import RoomName = GamerElements.RoomName;
-import WeaponName = GamerElements.WeaponName;
-import CharacterName = GamerElements.CharacterName;
+import {GameElements} from '@model';
+import RoomName = GameElements.RoomName;
+import WeaponName = GameElements.WeaponName;
+import CharacterName = GameElements.CharacterName;
 
 export default defineComponent({
   props: {
@@ -30,7 +30,7 @@ export default defineComponent({
   name: 'structured-notes-component',
   data() {
     return {
-      suspectStates: ['', ...Object.values(GamerElements.SuspectState)],
+      suspectStates: ['', ...Object.values(GameElements.SuspectState)],
     };
   },
   watch: {
@@ -38,11 +38,11 @@ export default defineComponent({
       newMyCards.forEach(card => {
         const note = this.modelValue.find(i => i.name === card);
         if (note) {
-          note.suspectState = GamerElements.SuspectState.EXCLUDED;
+          note.suspectState = GameElements.SuspectState.EXCLUDED;
         } else {
           this.modelValue.push({
             name: card,
-            suspectState: GamerElements.SuspectState.EXCLUDED,
+            suspectState: GameElements.SuspectState.EXCLUDED,
           });
         }
       });
@@ -62,12 +62,12 @@ export default defineComponent({
               .forEach(c => {
                 const note = this.modelValue.find(i => i.name === c);
                 if (note) {
-                  note.suspectState = GamerElements.SuspectState.EXCLUDED;
+                  note.suspectState = GameElements.SuspectState.EXCLUDED;
                   note.confutation = true;
                 } else {
                   this.modelValue.push({
                     name: c as string,
-                    suspectState: GamerElements.SuspectState.EXCLUDED,
+                    suspectState: GameElements.SuspectState.EXCLUDED,
                     confutation: true,
                   });
                 }
@@ -129,23 +129,23 @@ export default defineComponent({
               .forEach((c: string) => {
                 const note = this.modelValue.find(i => i.name === c);
                 if (note) {
-                  note.suspectState = GamerElements.SuspectState.MAYBE;
+                  note.suspectState = GameElements.SuspectState.MAYBE;
                 } else {
                   this.modelValue.push({
                     name: c,
-                    suspectState: GamerElements.SuspectState.MAYBE,
+                    suspectState: GameElements.SuspectState.MAYBE,
                   });
                 }
               });
           } else if (this.options?.map(i => i.name).includes(card)) {
             const note = this.modelValue.find(i => i.name === card);
             if (note) {
-              note.suspectState = GamerElements.SuspectState.EXCLUDED;
+              note.suspectState = GameElements.SuspectState.EXCLUDED;
               note.confutation = true;
             } else {
               this.modelValue.push({
                 name: card,
-                suspectState: GamerElements.SuspectState.EXCLUDED,
+                suspectState: GameElements.SuspectState.EXCLUDED,
                 confutation: true,
               });
             }
@@ -167,7 +167,7 @@ export default defineComponent({
           name: item.name,
           suspectState:
             this.isInMyHand(item) || this.isConfuted(item)
-              ? GamerElements.SuspectState.EXCLUDED
+              ? GameElements.SuspectState.EXCLUDED
               : '',
         };
         if (this.isConfuted(item)) _note.confutation = true;

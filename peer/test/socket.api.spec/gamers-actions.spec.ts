@@ -15,19 +15,19 @@ import {ResponseStatus} from '@utils/rest-api/responses';
 import {NotFoundError} from '../../src/managers/games/mongoose/errors';
 import {CluedoGameEvent} from '../../src/socket/events';
 import {MongoDBGamesManager} from '../../src/managers/games/mongoose';
-import {GamerElements, Gamers} from '@model';
+import {GameElements, Gamer} from '@model';
 import * as _ from 'lodash';
-import CharacterName = GamerElements.CharacterName;
-import RoomName = GamerElements.RoomName;
-import WeaponName = GamerElements.WeaponName;
+import CharacterName = GameElements.CharacterName;
+import RoomName = GameElements.RoomName;
+import WeaponName = GameElements.WeaponName;
 import {v4 as uuid} from 'uuid';
 import {AxiosInstance} from 'axios';
 import {should as shouldFunc} from 'chai';
 import GameActionEvent = CluedoGameEvent.GameActionEvent;
 import Action = QueryParameters.Action;
-import HousePart = GamerElements.HousePart;
-import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
-import CardsDeck = GamerElements.CardsDeck;
+import HousePart = GameElements.HousePart;
+import RoomWithSecretPassage = GameElements.RoomWithSecretPassage;
+import CardsDeck = GameElements.CardsDeck;
 import {getAuth} from '../../src/socket/utils';
 import {SocketChecker} from '../../src/socket/checker';
 
@@ -40,17 +40,17 @@ export default function ({axiosInstance}: Config): void {
   const gamer1: Gamer = {
     identifier: uuid(),
     username: 'lollo',
-    characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+    characterToken: GameElements.CharacterName.REVEREND_GREEN,
   };
   const gamer2: Gamer = {
     identifier: uuid(),
     username: 'cicco',
-    characterToken: GamerElements.CharacterName.MRS_PEACOCK,
+    characterToken: GameElements.CharacterName.MRS_PEACOCK,
   };
   const gamer3: Gamer = {
     identifier: uuid(),
     username: 'anna#1',
-    characterToken: GamerElements.CharacterName.MRS_WHITE,
+    characterToken: GameElements.CharacterName.MRS_WHITE,
   };
   let gInRound: Gamer;
   let gamerInRound: string;
@@ -656,8 +656,8 @@ export default function ({axiosInstance}: Config): void {
                   );
                   message.gamer.should.equal(gamerInRound);
                   message.roles.should
-                    .contain(Gamers.Role.SILENT)
-                    .and.not.contain(Gamers.Role.PARTICIPANT);
+                    .contain(Gamer.Role.SILENT)
+                    .and.not.contain(Gamer.Role.PARTICIPANT);
                   resolve();
                 } catch (err) {
                   reject(err);

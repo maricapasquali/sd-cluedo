@@ -104,7 +104,7 @@ export interface GameManager {
   /**
    * Pass the turn to the next gamer and return the next gamer identifier,
    * otherwise if there is no available gamer, return undefined.
-   * @param gamerId identifier of gamer.
+   * @param gamerId (optional) identifier of next gamer.
    */
   passRoundToNext(gamerId?: string): Promise<string | undefined>;
 

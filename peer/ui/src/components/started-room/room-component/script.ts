@@ -1,7 +1,7 @@
 import {defineComponent, PropType} from 'vue';
-import {GamerElements} from '@model';
-import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
-import RoomName = GamerElements.RoomName;
+import {GameElements} from '@model';
+import RoomWithSecretPassage = GameElements.RoomWithSecretPassage;
+import RoomName = GameElements.RoomName;
 import RoomComponentsSvg from './svg';
 export default defineComponent({
   props: {

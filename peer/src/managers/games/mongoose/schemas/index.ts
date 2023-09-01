@@ -1,5 +1,5 @@
 import {Document, model, Model, Schema} from 'mongoose';
-import {CluedoGames, Gamers, GamerElements, Peers} from '@model';
+import {CluedoGame, Gamer, GameElements, Peer} from '@model';
 import * as net from 'net';
 
 export type DocCluedoGame = CluedoGame & Document;
@@ -10,8 +10,8 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
     status: {
       type: String,
       required: false,
-      default: CluedoGames.Status.WAITING,
-      enum: Object.values(CluedoGames.Status),
+      default: CluedoGame.Status.WAITING,
+      enum: Object.values(CluedoGame.Status),
     },
     gamers: {
       type: [
@@ -32,8 +32,8 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
           role: {
             type: [String],
             required: false,
-            default: [Gamers.Role.PARTICIPANT],
-            enum: Object.values(Gamers.Role),
+            default: [Gamer.Role.PARTICIPANT],
+            enum: Object.values(Gamer.Role),
           },
           assumptions: {
             type: [
@@ -97,7 +97,7 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
               protocol: {
                 type: String,
                 required: true,
-                enum: Object.values(Peers.Protocol),
+                enum: Object.values(Peer.Protocol),
               },
             },
             required: false,
@@ -107,9 +107,9 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
             required: false,
             default: [],
             enum: [
-              ...Object.values(GamerElements.RoomName),
-              ...Object.values(GamerElements.CharacterName),
-              ...Object.values(GamerElements.WeaponName),
+              ...Object.values(GameElements.RoomName),
+              ...Object.values(GameElements.CharacterName),
+              ...Object.values(GameElements.WeaponName),
             ],
           },
           notes: {
@@ -143,8 +143,8 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
         },
       ],
       required: true,
-      min: CluedoGames.MIN_GAMERS,
-      max: CluedoGames.MAX_GAMERS,
+      min: CluedoGame.MIN_GAMERS,
+      max: CluedoGame.MAX_GAMERS,
     },
     roundGamer: {
       type: String,
@@ -166,12 +166,12 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
           name: {
             type: String,
             required: true,
-            enum: Object.values(GamerElements.WeaponName),
+            enum: Object.values(GameElements.WeaponName),
           },
           place: {
             type: String,
             required: false,
-            enum: Object.values(GamerElements.RoomName),
+            enum: Object.values(GameElements.RoomName),
           },
         },
       ],
@@ -185,14 +185,14 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
           name: {
             type: String,
             required: true,
-            enum: Object.values(GamerElements.CharacterName),
+            enum: Object.values(GameElements.CharacterName),
           },
           place: {
             type: String,
             required: false,
             enum: [
-              ...Object.values(GamerElements.RoomName),
-              ...Object.values(GamerElements.LobbyName),
+              ...Object.values(GameElements.RoomName),
+              ...Object.values(GameElements.LobbyName),
             ],
           },
         },
@@ -207,12 +207,12 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
           name: {
             type: String,
             required: true,
-            enum: Object.values(GamerElements.RoomName),
+            enum: Object.values(GameElements.RoomName),
           },
           secretPassage: {
             type: String,
             required: false,
-            enum: Object.values(GamerElements.RoomName),
+            enum: Object.values(GameElements.RoomName),
           },
         },
       ],
@@ -226,7 +226,7 @@ const CluedoGameSchema: Schema<DocCluedoGame> = new Schema<DocCluedoGame>(
           name: {
             type: String,
             required: true,
-            enum: Object.values(GamerElements.LobbyName),
+            enum: Object.values(GameElements.LobbyName),
           },
         },
       ],

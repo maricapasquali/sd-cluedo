@@ -1,7 +1,7 @@
 import {defineComponent, PropType} from 'vue';
 import {sessionStoreManager} from '@/services/sessionstore';
-import {GamerElements, Gamers} from '@model';
-import CharacterName = GamerElements.CharacterName;
+import {GameElements, Gamer} from '@model';
+import CharacterName = GameElements.CharacterName;
 export default defineComponent({
   props: {
     id: {type: String, required: true},
@@ -26,17 +26,17 @@ export default defineComponent({
     },
     variant() {
       switch ((this.gamer as Gamer).characterToken as CharacterName) {
-        case GamerElements.CharacterName.COLONEL_MUSTARD:
+        case GameElements.CharacterName.COLONEL_MUSTARD:
           return 'warning';
-        case GamerElements.CharacterName.MISS_SCARLET:
+        case GameElements.CharacterName.MISS_SCARLET:
           return 'danger';
-        case GamerElements.CharacterName.MRS_WHITE:
+        case GameElements.CharacterName.MRS_WHITE:
           return 'secondary';
-        case GamerElements.CharacterName.REVEREND_GREEN:
+        case GameElements.CharacterName.REVEREND_GREEN:
           return 'dark-success';
-        case GamerElements.CharacterName.MRS_PEACOCK:
+        case GameElements.CharacterName.MRS_PEACOCK:
           return 'primary';
-        case GamerElements.CharacterName.PROFESSOR_PLUM:
+        case GameElements.CharacterName.PROFESSOR_PLUM:
           return 'purple';
       }
     },
@@ -62,7 +62,7 @@ export default defineComponent({
       );
     },
     isSilentGamer(): boolean {
-      return this.gamer.role?.includes(Gamers.Role.SILENT) || false;
+      return this.gamer.role?.includes(Gamer.Role.SILENT) || false;
     },
   },
 });

@@ -1,4 +1,4 @@
-export namespace GamerElements {
+export namespace GameElements {
   export enum LobbyName {
     MAIN_LOBBY = 'main lobby',
     BACK_LOBBY = 'back lobby',
@@ -50,13 +50,13 @@ export namespace GamerElements {
   export type Card = RoomName | WeaponName | CharacterName;
 
   export const HousePart: string[] = [
-    ...Object.values(GamerElements.RoomName),
-    ...Object.values(GamerElements.LobbyName),
+    ...Object.values(GameElements.RoomName),
+    ...Object.values(GameElements.LobbyName),
   ];
 
   export const CardsDeck: string[] = [
-    ...Object.values(GamerElements.RoomName),
-    ...Object.values(GamerElements.WeaponName),
-    ...Object.values(GamerElements.CharacterName),
+    ...Object.values(GameElements.RoomName),
+    ...Object.values(GameElements.WeaponName),
+    ...Object.values(GameElements.CharacterName),
   ];
 }

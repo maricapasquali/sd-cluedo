@@ -7,9 +7,9 @@ import {ACTION_GAMER, CONFUTATION_CARD} from '@/eventbus/eventsName';
 import socket from '@/services/socket';
 import {sessionStoreManager} from '@/services/sessionstore';
 
-import {CluedoGames, GamerElements, Gamers} from '@model';
-import RoomWithSecretPassage = GamerElements.RoomWithSecretPassage;
-import LobbyName = GamerElements.LobbyName;
+import {CluedoGame, GameElements, Gamer} from '@model';
+import RoomWithSecretPassage = GameElements.RoomWithSecretPassage;
+import LobbyName = GameElements.LobbyName;
 import {MessageError, ResponseStatus} from '@utils/rest-api/responses';
 import {QueryParameters} from '@peer/routes/parameters';
 import Action = QueryParameters.Action;
@@ -150,7 +150,7 @@ export default defineComponent({
       let nextIndex = this.game.gamers.findIndex(g => g.identifier === id);
       do {
         nextIndex = (nextIndex + 1) % this.game.gamers.length;
-      } while (this.game.gamers[nextIndex].role?.includes(Gamers.Role.SILENT));
+      } while (this.game.gamers[nextIndex].role?.includes(Gamer.Role.SILENT));
       return this.game.gamers[nextIndex] || ({} as Gamer);
     },
     nextConfutationGamer(id: string): Gamer {
@@ -380,7 +380,7 @@ export default defineComponent({
           if (iGamer) {
             const excluded = {
               name: c,
-              suspectState: GamerElements.SuspectState.EXCLUDED,
+              suspectState: GameElements.SuspectState.EXCLUDED,
             };
             const itemCard = iGamer.notes?.structuredNotes?.find(
               i => i.name === excluded.name
@@ -489,7 +489,7 @@ export default defineComponent({
 
     stopGame() {
       this.denialOperationError.show = false;
-      if (this.game.status === CluedoGames.Status.FINISHED) return;
+      if (this.game.status === CluedoGame.Status.FINISHED) return;
       axios
         .patch(
           RestAPIRouteName.GAME.replace(':id', this.game.identifier),
@@ -512,7 +512,7 @@ export default defineComponent({
         })
         .catch(err => {
           if (
-            this.game.status === CluedoGames.Status.FINISHED &&
+            this.game.status === CluedoGame.Status.FINISHED &&
             err.response.status === ResponseStatus.FORBIDDEN
           ) {
             console.debug('Game has already stopped');
@@ -843,7 +843,7 @@ export default defineComponent({
             });
             if (
               this.game?.gamers.filter(
-                g => !g.role?.includes(Gamers.Role.SILENT)
+                g => !g.role?.includes(Gamer.Role.SILENT)
               ).length <= 1
             ) {
               this.stopGame();

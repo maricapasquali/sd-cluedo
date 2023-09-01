@@ -94,7 +94,7 @@ export function onMakeAssumption(
   logger.info(
     receiver + 'receive MAKE ASSUMPTION message ' + JSON.stringify(message)
   );
-  const sendToClients = () => {
+  const sendToGamers = () => {
     Clients.gamer(server, gameManager.gameId).forEach(s =>
       s.emit(
         GameActionEvent.CLUEDO_MAKE_ASSUMPTION.action(gameManager.gameId),
@@ -105,12 +105,12 @@ export function onMakeAssumption(
   gameManager
     .makeAssumption(message.suggestion)
     .then(() => {
-      sendToClients();
+      sendToGamers();
     })
     .catch((err: MongooseError) => {
-      //VersionError: it should only happen during testing
+      //VersionError: it should only happen during the local testing
       if (err.name === 'VersionError') {
-        sendToClients();
+        sendToGamers();
       } else {
         logger.error(err, 'MAKE ASSUMPTION');
       }
@@ -174,21 +174,42 @@ export function onConfutation(
     receiver + 'receive CONFUTATION ASSUMPTION  game' + JSON.stringify(message)
   );
 
-  Clients.gamer(server, gameManager.gameId).forEach(s =>
-    s.emit(
-      GameActionEvent.CLUEDO_CONFUTATION_ASSUMPTION.action(gameManager.gameId),
-      {
-        refuterGamer: message.refuterGamer,
-        roundGamer: message.roundGamer,
-        card:
-          s.handshake.auth.gamerId === message.roundGamer
-            ? message.card
-            : typeof message.card === 'string'
-            ? message.card.length > 0
-            : message.card,
-      } as ConfutationMessage
+  const sendToGamers = () => {
+    Clients.gamer(server, gameManager.gameId).forEach(s =>
+      s.emit(
+        GameActionEvent.CLUEDO_CONFUTATION_ASSUMPTION.action(
+          gameManager.gameId
+        ),
+        {
+          refuterGamer: message.refuterGamer,
+          roundGamer: message.roundGamer,
+          card:
+            s.handshake.auth.gamerId === message.roundGamer
+              ? message.card
+              : typeof message.card === 'string'
+              ? message.card.length > 0
+              : message.card,
+        } as ConfutationMessage
+      )
+    );
+  };
+
+  gameManager
+    .confuteLastAssumptionOfRoundedGamer(
+      message.refuterGamer,
+      message.card as string
     )
-  );
+    .then(() => {
+      sendToGamers();
+    })
+    .catch((err: MongooseError) => {
+      // VersionError: it should only happen during the local testing
+      if (err.name === 'VersionError') {
+        sendToGamers();
+      } else {
+        logger.error(err, 'CONFUTATION ASSUMPTION');
+      }
+    });
 }
 
 export function onStayInGame(
@@ -262,11 +283,7 @@ export function onEndRound(
   };
   if (typeof message === 'string') {
     gameManager
-      .game()
-      .then(game => {
-        game.roundGamer = message;
-        return game.save();
-      })
+      .passRoundToNext(message)
       .then(() => sendMessage())
       .catch(err => logger.error(err));
   } else if (isSolution(message)) {

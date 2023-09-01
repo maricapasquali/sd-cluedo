@@ -1,7 +1,7 @@
 import {Server} from 'socket.io';
 import {Socket} from 'socket.io-client';
 import {logger} from '@utils/logger';
-import {Peers} from '@model';
+import {Peers, Peer} from '@model';
 import {PeerServerManager} from '../../managers/peers-servers';
 import {createServerStub} from '@utils/socket';
 import {createAxiosInstance} from '@utils/axios';
@@ -100,7 +100,7 @@ export function connectAndListenOnDiscoveryServer(
             .filter(
               (p: Peer) =>
                 p.identifier !== myPeer.identifier &&
-                p.status === Peers.Status.ONLINE
+                p.status === Peer.Status.ONLINE
             )
             .map((peer: Peer) => ({
               peer,
@@ -121,7 +121,7 @@ export function connectAndListenOnDiscoveryServer(
     .on(DiscoveryPeerEvent.PEER, (peer: PeerMessage) => {
       logger.info('Peer (' + JSON.stringify(peer) + `) is ${peer.status}`);
       const fServer = peerServerManager.find(peer.identifier);
-      if (fServer && (peer.status as Peers.Status) === Peers.Status.OFFLINE) {
+      if (fServer && (peer.status as Peer.Status) === Peer.Status.OFFLINE) {
         fServer.socket.disconnect();
         peerServerManager.removePeer(fServer.peer.identifier);
       }

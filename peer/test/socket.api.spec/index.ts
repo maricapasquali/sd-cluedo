@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
 import {AxiosInstance} from 'axios';
 import {createAxiosInstance} from '@utils/axios';
 import {CluedoGameEvent} from '../../src/socket/events';
-import {CluedoGames, GamerElements, Peers} from '@model';
+import {CluedoGame, GameElements, Peers, Peer} from '@model';
 import {v4 as uuid} from 'uuid';
 import {promises} from '@utils/test-helper';
 import {
@@ -34,8 +34,8 @@ describe('Socket API', function () {
     identifier: uuid(),
     hostname: 'localhost',
     address: '127.0.0.1',
-    protocol: Peers.Protocol.HTTPS,
-    status: Peers.Status.ONLINE,
+    protocol: Peer.Protocol.HTTPS,
+    status: Peer.Status.ONLINE,
     port: port,
   };
   othersPeers.push(mePeer);
@@ -102,7 +102,7 @@ describe('Socket API', function () {
     const creator: Gamer = {
       identifier: uuid(),
       username: 'mario03',
-      characterToken: GamerElements.CharacterName.MISS_SCARLET,
+      characterToken: GameElements.CharacterName.MISS_SCARLET,
     };
     const receivers = promises(actualClients, client => {
       return resolve => {
@@ -113,7 +113,7 @@ describe('Socket API', function () {
             should.exist(game);
             game.should.have
               .property('status')
-              .equal(CluedoGames.Status.WAITING);
+              .equal(CluedoGame.Status.WAITING);
             game.gamers.should.a('array').not.empty;
             game.gamers
               .map((g: Gamer) => g.identifier)
@@ -142,7 +142,7 @@ describe('Socket API', function () {
     const gamer: Gamer = {
       identifier: uuid(),
       username: 'jake-reed',
-      characterToken: GamerElements.CharacterName.REVEREND_GREEN,
+      characterToken: GameElements.CharacterName.REVEREND_GREEN,
     };
     const receivers = promises(actualClients, client => {
       return resolve => {
