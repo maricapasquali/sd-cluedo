@@ -22,7 +22,7 @@ if he "pronounces" a correct accusation, the solution cards are revealed to the 
 Gamers who make wrong accusations must continue to show cards to other participants for the remainder of the game,
 or they can redeal their cards and leave the game.
 
-## Architecture
+## Design
 
 The adopting architecture is a distributed P2P (peer-to-peer) architecture with a discovery server.
 
