@@ -748,7 +748,11 @@ export default defineComponent({
               const nextConfGamer = this.nextConfutationGamer(
                 message.refuterGamer
               );
-              if (nextConfGamer.identifier !== this.game?.roundGamer) {
+              if (
+                nextConfGamer.identifier !== this.game?.roundGamer &&
+                nextConfGamer.identifier ===
+                  sessionStoreManager.gamer.identifier
+              ) {
                 this.confutationAssumptionModal.show = true;
                 this.confutationAssumptionModal.arrivalAssumption = {
                   gamer: this.inRoundGamer.identifier,
