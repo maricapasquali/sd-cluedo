@@ -1,7 +1,7 @@
 <script lang="ts" src="./script.ts" />
 
 <template>
-  <BCard class="h-100 mb-2" :key="game.identifier" :bg-variant="game.status===CluedoGames.Status.WAITING ? 'light': 'lightgray'">
+  <BCard class="h-100 mb-2" :key="game.identifier" :bg-variant="game.status===CluedoGame.Status.WAITING ? 'light': 'lightgray'">
     <template #header>
       <BContainer>
         <BRow>
