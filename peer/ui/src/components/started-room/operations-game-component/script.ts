@@ -290,6 +290,23 @@ export default defineComponent({
     },
 
     /*MAKE ASSUMPTION*/
+    addAssumption(suggestion: Suggestion) {
+      console.debug(
+        'Gamer in round make assumption (suggestion): ',
+        suggestion
+      );
+      const assumption: Assumption = {
+        ...suggestion,
+        confutation: [],
+      };
+      console.debug('Gamer in round assumption: ', assumption);
+      if (this.inRoundGamer.assumptions) {
+        this.inRoundGamer.assumptions.push(assumption);
+      } else {
+        this.inRoundGamer.assumptions = [assumption];
+      }
+      console.debug('Gamer in round ', this.inRoundGamer);
+    },
     checkIfMakingAssumptions() {
       if (
         sessionStoreManager.gamer.identifier === this.inRoundGamer.identifier &&
@@ -356,7 +373,7 @@ export default defineComponent({
             action: Action.MAKE_ASSUMPTION,
             message: response.data,
           });
-
+          this.addAssumption(this.makeAssumptionModal.assumption);
           this.makeAssumptionModal.message = true;
           this.moveCharacterTokenIn(
             this.makeAssumptionModal.assumption.room || '',
@@ -581,6 +598,16 @@ export default defineComponent({
     },
 
     /* CONFUTATIONS */
+    addConfutation(confItem: {gamer: string; card: boolean}) {
+      if (this.lastAssumptionOfInRoundGamer) {
+        if (this.lastAssumptionOfInRoundGamer.confutation) {
+          this.lastAssumptionOfInRoundGamer.confutation.push(confItem);
+        } else {
+          this.lastAssumptionOfInRoundGamer.confutation = [confItem];
+        }
+      }
+    },
+
     checkIfMakingConfutation() {
       if (
         sessionStoreManager.gamer.identifier !== this.inRoundGamer.identifier &&
@@ -638,6 +665,10 @@ export default defineComponent({
             gamer: res.data.refuterGamer,
             action: Action.CONFUTATION_ASSUMPTION,
             message: res.data,
+          });
+          this.addConfutation({
+            gamer: sessionStoreManager.gamer.identifier,
+            card: this.confutationAssumptionModal.confute.length > 0,
           });
           this.resetConfutationAssumptionModal();
         })
@@ -703,7 +734,8 @@ export default defineComponent({
               message.suggestion.room,
               message.suggestion.weapon
             );
-            this.gamer(message.gamer).assumptions?.push(message.suggestion);
+
+            this.addAssumption(message.suggestion);
 
             emitter.emit(ACTION_GAMER, {
               gamer: message.gamer,
@@ -731,6 +763,13 @@ export default defineComponent({
               gamer: message.refuterGamer,
               action: Action.CONFUTATION_ASSUMPTION,
               message,
+            });
+            this.addConfutation({
+              gamer: message.refuterGamer,
+              card:
+                typeof message.card === 'string'
+                  ? message.card.length > 0
+                  : message.card,
             });
             if (sessionStoreManager.gamer.identifier === message.roundGamer) {
               this.makeAssumptionModal.confutation[message.refuterGamer] =
@@ -851,6 +890,8 @@ export default defineComponent({
               ).length <= 1
             ) {
               this.stopGame();
+            } else {
+              this.checkIfMakingConfutation();
             }
           }
         )

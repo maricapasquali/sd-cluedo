@@ -39,26 +39,37 @@ function leaveGame(peer: Peer, socketServer: Server, socket: Socket) {
       .then(() => {
         logger.info('Leave performed');
         GamersSocket.remove(auth);
-        axiosInstance
-          .patch(RestAPIRouteName.GAME.replace(':id', gameId), null, {
-            params: {
-              action: Action.END_ROUND,
-            },
-          })
-          .then(response => {
-            logger.info('End round performed');
-            if (typeof response.data !== 'string') {
+        MongoDBGamesManager.gameManagers(gameId)
+          .isInRound(gamerId)
+          .then(isInRound => {
+            if (isInRound) {
               axiosInstance
                 .patch(RestAPIRouteName.GAME.replace(':id', gameId), null, {
                   params: {
-                    action: Action.STOP_GAME,
+                    action: Action.END_ROUND,
                   },
                 })
-                .then(() => logger.info(`Game ${gameId} is finished.`))
+                .then(response => {
+                  logger.info('End round performed');
+                  if (typeof response.data !== 'string') {
+                    axiosInstance
+                      .patch(
+                        RestAPIRouteName.GAME.replace(':id', gameId),
+                        null,
+                        {
+                          params: {
+                            action: Action.STOP_GAME,
+                          },
+                        }
+                      )
+                      .then(() => logger.info(`Game ${gameId} is finished.`))
+                      .catch(err => logger.error(err.response));
+                  }
+                })
                 .catch(err => logger.error(err.response));
             }
           })
-          .catch(err => logger.error(err.response));
+          .catch(err => logger.error(err));
       })
       .catch(err => {
         if (
