@@ -307,7 +307,7 @@ export default defineComponent({
       }
       console.debug('Gamer in round ', this.inRoundGamer);
     },
-    checkIfMakingAssumptions() {
+    checkIfMakingAssumptions(noMoreAssumptionCallback?: () => void) {
       if (
         sessionStoreManager.gamer.identifier === this.inRoundGamer.identifier &&
         this.lastAssumptionOfInRoundGamer
@@ -329,6 +329,13 @@ export default defineComponent({
           conf.forEach(c => {
             this.makeAssumptionModal.confutation[c.gamer] = c.card as string;
           });
+        }
+
+        if (
+          this.makeAssumptionModal.assumption.room !== null &&
+          typeof noMoreAssumptionCallback === 'function'
+        ) {
+          noMoreAssumptionCallback();
         }
       }
     },
@@ -891,6 +898,7 @@ export default defineComponent({
             ) {
               this.stopGame();
             } else {
+              this.checkIfMakingAssumptions(() => this.endRound());
               this.checkIfMakingConfutation();
             }
           }
