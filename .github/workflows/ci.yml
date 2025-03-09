@@ -34,7 +34,9 @@ jobs:
       - name: Cache node dependencies
         uses: actions/cache@v4
         with:
-          path: node_modules/
+          path: |
+            node_modules/
+            peer/ui/node_modules/
           key: ${{ runner.os }}-node_modules
 
       - name: Build application
@@ -43,7 +45,7 @@ jobs:
       - name: Archive production artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: build
+          name: dist
           path: build/
 
   deploy-discovery:
@@ -56,13 +58,16 @@ jobs:
       - name: Restore node dependencies
         uses: actions/cache/restore@v4
         with:
-          path: node_modules/
+          path: |
+            node_modules/
+            peer/ui/node_modules/
           key: ${{ runner.os }}-node_modules
 
       - name: Download build
         uses: actions/download-artifact@v4
         with:
-          name: build
+          name: dist
+          path: build/
 
       - name: Run discovery server
         run: ENV_CI=CI/CD npm start -w discovery
@@ -82,13 +87,16 @@ jobs:
       - name: Restore node dependencies
         uses: actions/cache/restore@v4
         with:
-          path: node_modules/
+          path: |
+            node_modules/
+            peer/ui/node_modules/
           key: ${{ runner.os }}-node_modules
 
       - name: Download build
         uses: actions/download-artifact@v4
         with:
-          name: build
+          name: dist
+          path: build/
 
       - name: Run peer
         run: MONGODB_ADDRESS=mongodb://localhost:27017/cluedo ENV_CI=CI/CD npm start -w peer
@@ -103,7 +111,9 @@ jobs:
       - name: Restore node dependencies
         uses: actions/cache/restore@v4
         with:
-          path: node_modules/
+          path: |
+            node_modules/
+            peer/ui/node_modules/
           key: ${{ runner.os }}-node_modules
 
       - name: Run tests of discovery server
@@ -125,7 +135,9 @@ jobs:
       - name: Restore node dependencies
         uses: actions/cache/restore@v4
         with:
-          path: node_modules/
+          path: |
+            node_modules/
+            peer/ui/node_modules/
           key: ${{ runner.os }}-node_modules
 
       - name: Run tests of peer
@@ -142,7 +154,9 @@ jobs:
       - name: Restore node dependencies
         uses: actions/cache/restore@v4
         with:
-          path: node_modules/
+          path: |
+            node_modules/
+            peer/ui/node_modules/
           key: ${{ runner.os }}-node_modules
 
       - name: Run lint
